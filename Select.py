@@ -57,7 +57,7 @@ def find_json_file(name):
     return found_paths[0]
 
 
-def query_by_name(name):
+def query_by_name(name, quantity=1):
     # 1. 调用函数查找Json原材料清单
     json_path = find_json_file(name)
     if json_path is None:
@@ -78,7 +78,9 @@ def query_by_name(name):
 
     # 3. 从 list 中获取该物品对应的 ID
     item_list = data.get('list') # 读取Json文件中list下的数据
-    materials = []   # 用于保存数据，例如：[{'name':'氧', 'id':3683, 'num':1}, ...]
+    if not item_list or not isinstance(item_list, dict):
+        return None
+    materials_raw = []   # 用于保存数据，例如：[{'name':'氧', 'id':3683, 'num':1}, ...]
     ids = []         # 假设有多个物品，用于保存多个物品的ID，例如：[3683, 34, 16633]
 
     # 循环取出材料名和材料的ID、Num
@@ -91,7 +93,7 @@ def query_by_name(name):
         mid = info.get("ID")
         mnum = info.get("Num")
         if mid is not None:
-            materials.append({'name': mat_name, 'id': mid, 'num': mnum}) # 写入到materials 数组中
+            materials_raw.append({'name': mat_name, 'id': mid, 'num': mnum}) # 写入到materials 数组中
             ids.append(mid) # 写入到ids数组中
 
     if not ids:
@@ -107,10 +109,8 @@ def query_by_name(name):
             sql = f"SELECT ID, buy_max, sell_max FROM test WHERE ID IN ({placeholders})"
             cursor.execute(sql, ids)
             rows = cursor.fetchall()
-            
             # 转成字典方便查找：{3683: (buy_max, sell_max), ...}
             price_map = {row[0]: (row[1], row[2]) for row in rows}
-
     except pymysql.Error as e:
         print(f"数据库错误: {e}")
         return
@@ -119,35 +119,45 @@ def query_by_name(name):
             conn.close()
 
     # 5. 打印结果
-    print(f"\n{'='*60}")
-    print(f"制作清单: {name}")
-    print(f"{'='*60}")
-    print(f"{'材料':<12} {'ID':<8} {'数量':<6} {'buy_max':<10} {'sell_max':<10}")
-    print("-" * 60)
+#    print(f"\n{'='*60}")
+#    print(f"制作清单: {name}")
+#    print(f"{'='*60}")
+#    print(f"{'材料':<12} {'ID':<8} {'数量':<6} {'buy_max':<10} {'sell_max':<10}")
+#    print("-" * 60)
 
+    materials = []
     total_buy = 0
     total_sell = 0
 
-    for mat in materials:
+    for mat in materials_raw:
         mid = mat['id']
-        mnum = mat['num'] or 0
-        buy_max, sell_max = price_map.get(mid, (None, None))
+        num_per_unit = mat['num']
+        total_num = num_per_unit * quantity
+        buy_max, sell_max = price_map.get(mid, (0, 0))
 
-        print(f"{mat['name']:<12} {mid:<8} {mnum:<6} {str(buy_max):<10} {str(sell_max):<10}")
+        # 求列表中单个总价
+        mat_buy = (buy_max or 0) * total_num
+        mat_sell = (sell_max or 0) * total_num
+#       print(f"{mat['name']:<12} {mid:<8} {mnum:<6} {str(buy_max):<10} {str(sell_max):<10}")
+        materials.append({
+            'name': mat['name'],
+            'id': mid,
+            'num_per_unit': num_per_unit,
+            'total_num': total_num,
+            'buy_max': buy_max,
+            'sell_max': sell_max,
+            'total_buy': mat_buy,
+            'total_sell': mat_sell
+        })
+        # 累加最终的总价格
+        total_buy += mat_buy
+        total_sell += mat_sell
 
-        # 累计总成本
-        if buy_max is not None:
-            total_buy += buy_max * mnum
-        if sell_max is not None:
-            total_sell += sell_max * mnum
-
-    print("-" * 60)
-    print(f"按收购价(buy_max) 预估总成本: {total_buy:,.2f}")
-    print(f"按出售价(sell_max) 预估总成本: {total_sell:,.2f}")
-    print(f"{'='*60}")
-
-
-if __name__ == '__main__':
-    item_name = input("请输入制作清单名称: ").strip()
-    if item_name:
-        query_by_name(item_name)
+    # 返回结果
+    return {
+        'name': name,
+        'quantity': quantity,
+        'materials': materials,
+        'total_buy': total_buy,
+        'total_sell': total_sell
+    }

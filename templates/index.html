@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>EVE 批量制作成本查询</title>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            font-family: "Microsoft YaHei", Arial, sans-serif;
+            background: #f0f2f5;
+            margin: 0;
+            padding: 40px 20px;
+        }
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            background: #fff;
+            padding: 30px 40px;
+            border-radius: 10px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+        }
+        h2 {
+            color: #222;
+            margin-bottom: 25px;
+            padding-bottom: 12px;
+            border-bottom: 3px solid #007bff;
+        }
+        .query-list { margin-bottom: 15px; }
+        .query-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        .query-row input[type="text"] {
+            width: 180px;
+            padding: 10px 12px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+        .query-row input[type="number"] {
+            width: 100px;
+            padding: 10px 12px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+        .btn-remove {
+            background: #dc3545;
+            color: #fff;
+            border: none;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 18px;
+            line-height: 1;
+        }
+        .btn-remove:hover { background: #c82333; }
+        .btn-add {
+            background: #28a745;
+            color: #fff;
+            border: none;
+            padding: 8px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-right: 10px;
+        }
+        .btn-add:hover { background: #218838; }
+        .btn-query {
+            background: #007bff;
+            color: #fff;
+            border: none;
+            padding: 10px 30px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 15px;
+        }
+        .btn-query:hover { background: #0056b3; }
+        .error {
+            color: #d9534f;
+            background: #fdf2f2;
+            padding: 10px 15px;
+            border-radius: 6px;
+            margin-top: 10px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            font-size: 14px;
+        }
+        th, td {
+            border: 1px solid #e0e0e0;
+            padding: 10px;
+            text-align: center;
+        }
+        th {
+            background: #007bff;
+            color: #fff;
+            font-weight: 600;
+        }
+        tr:nth-child(even) { background: #fafafa; }
+        tr:hover { background: #f0f7ff; }
+        .group-header {
+            background: #e3f2fd !important;
+            font-weight: bold;
+            text-align: left;
+            padding-left: 20px !important;
+            color: #1565c0;
+        }
+        .summary {
+            margin-top: 25px;
+            padding: 18px 22px;
+            background: #fff8e6;
+            border-left: 5px solid #ffc107;
+            border-radius: 6px;
+        }
+        .summary div {
+            margin: 6px 0;
+            font-size: 15px;
+        }
+        .summary .label { color: #666; margin-right: 8px; }
+        .summary .value {
+            color: #c9302c;
+            font-weight: bold;
+            font-size: 20px;
+        }
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>🔧 EVE 批量制作成本查询</h2>
+
+        <div class="query-list" id="query-list">
+            <div class="query-row">
+                <input type="text" class="item-name" placeholder="物品名称，如：氧">
+                <input type="number" class="item-quantity" value="1" min="1">
+                <button class="btn-remove" onclick="removeRow(this)">-</button>
+            </div>
+        </div>
+
+        <div>
+            <button class="btn-add" onclick="addQueryRow()">+ 添加物品</button>
+            <button class="btn-query" onclick="doBatchQuery()">批量查询</button>
+        </div>
+
+        <div id="error" class="error hidden"></div>
+
+        <div id="result" class="hidden">
+            <h3 id="result-title"></h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>材料</th>
+                        <th>ID</th>
+                        <th>单件需要</th>
+                        <th>制作数量</th>
+                        <th>总共需要</th>
+                        <th>buy_max</th>
+                        <th>sell_max</th>
+                        <th>收购总价</th>
+                        <th>出售总价</th>
+                    </tr>
+                </thead>
+                <tbody id="result-body"></tbody>
+            </table>
+            <div class="summary">
+                <div>
+                    <span class="label">查询物品种类：</span>
+                    <span id="total-items" class="value"></span>
+                </div>
+                <div>
+                    <span class="label">按收购价预估总成本：</span>
+                    <span id="total-buy" class="value"></span> ISK
+                </div>
+                <div>
+                    <span class="label">按出售价预估总成本：</span>
+                    <span id="total-sell" class="value"></span> ISK
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ==========================================
+        // 全局 DOM 元素
+        // ==========================================
+        const errorDiv = document.getElementById('error');
+        const resultDiv = document.getElementById('result');
+
+        // ==========================================
+        // 添加/删除输入行
+        // ==========================================
+        function addQueryRow() {
+            const container = document.getElementById('query-list');
+            const row = document.createElement('div');
+            row.className = 'query-row';
+            row.innerHTML = `
+                <input type="text" class="item-name" placeholder="物品名称">
+                <input type="number" class="item-quantity" value="1" min="1">
+                <button class="btn-remove" onclick="removeRow(this)">-</button>
+            `;
+            container.appendChild(row);
+        }
+
+        function removeRow(btn) {
+            const rows = document.querySelectorAll('.query-row');
+            if (rows.length > 1) {
+                btn.parentElement.remove();
+            } else {
+                // 只剩一行时清空内容
+                const row = btn.parentElement;
+                const nameInput = row.querySelector('.item-name');
+                const qtyInput = row.querySelector('.item-quantity');
+                if (nameInput) nameInput.value = '';
+                if (qtyInput) qtyInput.value = '1';
+            }
+        }
+
+        // ==========================================
+        // 批量查询
+        // ==========================================
+        async function doBatchQuery() {
+            const rows = document.querySelectorAll('.query-row');
+            const items = [];
+
+            // 遍历所有输入行，收集数据（带空值保护）
+            rows.forEach(row => {
+                const nameInput = row.querySelector('.item-name');
+                const qtyInput = row.querySelector('.item-quantity');
+
+                // 空值保护：如果找不到 input 元素就跳过该行
+                if (!nameInput || !qtyInput) return;
+
+                const name = nameInput.value.trim();
+                const qty = parseInt(qtyInput.value) || 1;
+
+                if (name) {
+                    items.push({ name: name, quantity: qty });
+                }
+            });
+
+            // 隐藏之前的提示和结果
+            errorDiv.classList.add('hidden');
+            resultDiv.classList.add('hidden');
+
+            if (items.length === 0) {
+                errorDiv.textContent = '请至少输入一个物品';
+                errorDiv.classList.remove('hidden');
+                return;
+            }
+
+            try {
+                const res = await fetch('/query_batch', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ items: items })
+                });
+
+                const json = await res.json();
+
+                if (!json.success) {
+                    errorDiv.textContent = json.error || '查询失败';
+                    errorDiv.classList.remove('hidden');
+                    return;
+                }
+
+                renderBatchResult(json.data);
+            } catch (err) {
+                errorDiv.textContent = '网络请求错误：' + err.message;
+                errorDiv.classList.remove('hidden');
+            }
+        }
+
+        // ==========================================
+        // 渲染结果
+        // ==========================================
+        function renderBatchResult(data) {
+            document.getElementById('result-title').textContent = '批量制作清单汇总';
+            document.getElementById('total-items').textContent = data.items.length;
+            document.getElementById('total-buy').textContent = fmt(data.grand_total_buy);
+            document.getElementById('total-sell').textContent = fmt(data.grand_total_sell);
+
+            const tbody = document.getElementById('result-body');
+            tbody.innerHTML = '';
+
+            data.items.forEach(item => {
+                // 分组标题行：显示成品名称和制作数量
+                const groupRow = document.createElement('tr');
+                groupRow.innerHTML = `
+                    <td colspan="9" class="group-header">
+                        📦 ${item.name} × ${item.quantity}
+                    </td>
+                `;
+                tbody.appendChild(groupRow);
+
+                // 该物品的所有材料明细
+                item.materials.forEach(mat => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td>${mat.name}</td>
+                        <td>${mat.id}</td>
+                        <td>${mat.num_per_unit}</td>
+                        <td>${item.quantity}</td>
+                        <td><strong>${mat.total_num}</strong></td>
+                        <td>${fmt(mat.buy_max)}</td>
+                        <td>${fmt(mat.sell_max)}</td>
+                        <td>${fmt(mat.total_buy)}</td>
+                        <td>${fmt(mat.total_sell)}</td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            });
+
+            resultDiv.classList.remove('hidden');
+        }
+
+        function fmt(num) {
+            if (num === null || num === undefined) return '-';
+            return num.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        }
+    </script>
+</body>
+</html>
