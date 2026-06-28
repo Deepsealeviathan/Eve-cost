@@ -2,139 +2,361 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>EVE 批量制作成本查询</title>
     <style>
-        * { box-sizing: border-box; }
-        body {
-            font-family: "Microsoft YaHei", Arial, sans-serif;
-            background: #f0f2f5;
-            margin: 0;
-            padding: 40px 20px;
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --primary: #4f46e5;
+            --primary-dark: #3730a3;
+            --accent: #06b6d4;
+            --success: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --bg: #0b0f19;
+            --card: rgba(255, 255, 255, 0.92);
+            --text: #1f2937;
+            --muted: #6b7280;
+            --border: rgba(0, 0, 0, 0.06);
         }
+
+        body {
+            font-family: "Microsoft YaHei", "PingFang SC", Arial, sans-serif;
+            background:
+                radial-gradient(circle at 10% 20%, rgba(79, 70, 229, 0.18) 0%, transparent 35%),
+                radial-gradient(circle at 90% 80%, rgba(6, 182, 212, 0.14) 0%, transparent 35%),
+                linear-gradient(135deg, #0b0f19 0%, #111827 50%, #0b0f19 100%);
+            min-height: 100vh;
+            margin: 0;
+            padding: 60px 20px;
+            color: var(--text);
+        }
+
         .container {
             max-width: 1100px;
             margin: 0 auto;
-            background: #fff;
-            padding: 30px 40px;
-            border-radius: 10px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            background: var(--card);
+            padding: 44px 52px;
+            border-radius: 24px;
+            box-shadow:
+                0 32px 80px rgba(0, 0, 0, 0.35),
+                inset 0 1px 0 rgba(255, 255, 255, 0.6);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border: 1px solid rgba(255, 255, 255, 0.45);
+            animation: slideIn 0.6s ease-out;
         }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
         h2 {
-            color: #222;
-            margin-bottom: 25px;
-            padding-bottom: 12px;
-            border-bottom: 3px solid #007bff;
+            font-size: 32px;
+            font-weight: 700;
+            margin-bottom: 32px;
+            padding-bottom: 18px;
+            border-bottom: 1px solid var(--border);
+            background: linear-gradient(90deg, var(--primary) 0%, var(--accent) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            display: flex;
+            align-items: center;
+            gap: 12px;
         }
-        .query-list { margin-bottom: 15px; }
+
+        h3 {
+            font-size: 20px;
+            font-weight: 600;
+            margin: 34px 0 18px;
+            color: #111827;
+        }
+
+        .section-label {
+            font-size: 14px;
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .paste-section {
+            margin-bottom: 24px;
+        }
+
+        .paste-box {
+            width: 100%;
+            min-height: 110px;
+            padding: 16px;
+            border: 1px solid #e5e7eb;
+            border-radius: 14px;
+            font-size: 14px;
+            line-height: 1.6;
+            font-family: "Microsoft YaHei", Consolas, monospace;
+            background: #fff;
+            color: var(--text);
+            outline: none;
+            resize: vertical;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        .paste-box:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.12);
+        }
+
+        .paste-hint {
+            font-size: 12px;
+            color: var(--muted);
+            margin-top: 8px;
+        }
+
+        .query-list { margin-bottom: 22px; }
+
         .query-row {
             display: flex;
             align-items: center;
-            gap: 10px;
-            margin-bottom: 10px;
+            gap: 14px;
+            margin-bottom: 14px;
+            padding: 14px 16px;
+            background: #f8fafc;
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            transition: box-shadow 0.2s, border-color 0.2s;
         }
-        .query-row input[type="text"] {
-            width: 180px;
-            padding: 10px 12px;
-            border: 1px solid #ccc;
-            border-radius: 6px;
-            font-size: 14px;
+
+        .query-row:focus-within {
+            border-color: rgba(79, 70, 229, 0.35);
+            box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.08);
         }
+
+        .query-row input[type="text"],
         .query-row input[type="number"] {
-            width: 100px;
-            padding: 10px 12px;
-            border: 1px solid #ccc;
-            border-radius: 6px;
+            padding: 12px 16px;
+            border: 1px solid #e5e7eb;
+            border-radius: 10px;
             font-size: 14px;
+            background: #fff;
+            color: var(--text);
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
         }
+
+        .query-row input[type="text"] { width: 200px; }
+        .query-row input[type="number"] { width: 110px; }
+
+        .query-row input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.12);
+        }
+
+        .query-row input::placeholder { color: #9ca3af; }
+
         .btn-remove {
-            background: #dc3545;
-            color: #fff;
-            border: none;
-            width: 32px;
-            height: 32px;
+            background: #fff;
+            color: var(--danger);
+            border: 1px solid #fecaca;
+            width: 34px;
+            height: 34px;
             border-radius: 50%;
             cursor: pointer;
-            font-size: 18px;
+            font-size: 20px;
             line-height: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
         }
-        .btn-remove:hover { background: #c82333; }
-        .btn-add {
-            background: #28a745;
+
+        .btn-remove:hover {
+            background: var(--danger);
             color: #fff;
-            border: none;
-            padding: 8px 20px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 14px;
-            margin-right: 10px;
+            border-color: var(--danger);
+            transform: rotate(90deg);
         }
-        .btn-add:hover { background: #218838; }
-        .btn-query {
-            background: #007bff;
-            color: #fff;
+
+        .actions {
+            display: flex;
+            gap: 14px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .btn-add, .btn-query, .btn-parse {
             border: none;
-            padding: 10px 30px;
-            border-radius: 6px;
+            padding: 12px 26px;
+            border-radius: 12px;
             cursor: pointer;
             font-size: 15px;
+            font-weight: 600;
+            color: #fff;
+            transition: transform 0.15s, box-shadow 0.2s;
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
         }
-        .btn-query:hover { background: #0056b3; }
+
+        .btn-add:hover, .btn-query:hover, .btn-parse:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 22px rgba(0, 0, 0, 0.18);
+        }
+
+        .btn-add:active, .btn-query:active, .btn-parse:active { transform: translateY(0); }
+
+        .btn-add {
+            background: linear-gradient(135deg, var(--success) 0%, #059669 100%);
+        }
+
+        .btn-query {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+        }
+
+        .btn-parse {
+            background: linear-gradient(135deg, var(--accent) 0%, #0891b2 100%);
+        }
+
         .error {
-            color: #d9534f;
-            background: #fdf2f2;
-            padding: 10px 15px;
-            border-radius: 6px;
-            margin-top: 10px;
+            color: #b91c1c;
+            background: #fef2f2;
+            padding: 14px 18px;
+            border-radius: 12px;
+            margin-top: 18px;
+            border: 1px solid #fecaca;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
+
+        .table-wrapper {
+            width: 100%;
+            overflow-x: auto;
+            border-radius: 16px;
+            border: 1px solid var(--border);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+            margin-top: 18px;
+        }
+
         table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 20px;
             font-size: 14px;
+            background: #fff;
         }
+
         th, td {
-            border: 1px solid #e0e0e0;
-            padding: 10px;
+            padding: 14px 16px;
             text-align: center;
+            border-bottom: 1px solid var(--border);
         }
+
         th {
-            background: #007bff;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
             color: #fff;
             font-weight: 600;
+            white-space: nowrap;
+            position: sticky;
+            top: 0;
         }
-        tr:nth-child(even) { background: #fafafa; }
-        tr:hover { background: #f0f7ff; }
+
+        tbody tr { transition: background 0.15s; }
+
+        tbody tr:nth-child(even) { background: #f8fafc; }
+
+        tbody tr:hover { background: #eef2ff; }
+
         .group-header {
-            background: #e3f2fd !important;
-            font-weight: bold;
+            background: linear-gradient(90deg, #e0e7ff 0%, #f0f9ff 100%) !important;
+            font-weight: 700;
             text-align: left;
-            padding-left: 20px !important;
-            color: #1565c0;
+            padding-left: 22px !important;
+            color: var(--primary-dark);
+            border-bottom: 1px solid #c7d2fe;
         }
+
         .summary {
-            margin-top: 25px;
-            padding: 18px 22px;
-            background: #fff8e6;
-            border-left: 5px solid #ffc107;
-            border-radius: 6px;
+            margin-top: 32px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 18px;
         }
-        .summary div {
-            margin: 6px 0;
-            font-size: 15px;
+
+        .summary-card {
+            background: #fff;
+            border-radius: 16px;
+            padding: 22px;
+            border: 1px solid var(--border);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.05);
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            position: relative;
+            overflow: hidden;
         }
-        .summary .label { color: #666; margin-right: 8px; }
+
+        .summary-card::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+        }
+
+        .summary-card:nth-child(1)::before { background: var(--primary); }
+        .summary-card:nth-child(2)::before { background: var(--success); }
+        .summary-card:nth-child(3)::before { background: var(--warning); }
+
+        .summary .label {
+            color: var(--muted);
+            font-size: 13px;
+            font-weight: 500;
+        }
+
         .summary .value {
-            color: #c9302c;
-            font-weight: bold;
-            font-size: 20px;
+            color: #111827;
+            font-weight: 700;
+            font-size: 24px;
         }
+
+        .summary-card:nth-child(2) .value { color: var(--success); }
+        .summary-card:nth-child(3) .value { color: #d97706; }
+
         .hidden { display: none; }
+
+        @media (max-width: 768px) {
+            .container { padding: 28px 22px; }
+            h2 { font-size: 24px; }
+            .query-row {
+                flex-wrap: wrap;
+                gap: 10px;
+            }
+            .query-row input[type="text"],
+            .query-row input[type="number"] { flex: 1; min-width: 120px; }
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <h2>🔧 EVE 批量制作成本查询</h2>
 
+        <div class="paste-section">
+            <div class="section-label">📋 批量粘贴区</div>
+            <textarea
+                id="paste-input"
+                class="paste-box"
+                placeholder="请粘贴物品和数量，例如：&#10;氧    2000&#10;细菌    3565"></textarea>
+            <div class="paste-hint">每行格式：物品名 + 空格/Tab + 数量。只有物品名时，数量默认为 1。</div>
+            <div class="actions" style="margin-top: 14px;">
+                <button class="btn-parse" onclick="parsePaste()">解析粘贴内容</button>
+                <button class="btn-add" onclick="addQueryRow()">+ 手动添加物品</button>
+                <button class="btn-query" onclick="doBatchQuery()">批量查询</button>
+            </div>
+        </div>
+
+        <div class="section-label">📝 待查询物品</div>
         <div class="query-list" id="query-list">
             <div class="query-row">
                 <input type="text" class="item-name" placeholder="物品名称，如：氧">
@@ -143,43 +365,40 @@
             </div>
         </div>
 
-        <div>
-            <button class="btn-add" onclick="addQueryRow()">+ 添加物品</button>
-            <button class="btn-query" onclick="doBatchQuery()">批量查询</button>
-        </div>
-
         <div id="error" class="error hidden"></div>
 
         <div id="result" class="hidden">
             <h3 id="result-title"></h3>
-            <table>
-                <thead>
-                    <tr>
-                        <th>材料</th>
-                        <th>ID</th>
-                        <th>单件需要</th>
-                        <th>制作数量</th>
-                        <th>总共需要</th>
-                        <th>buy_max</th>
-                        <th>sell_max</th>
-                        <th>收购总价</th>
-                        <th>出售总价</th>
-                    </tr>
-                </thead>
-                <tbody id="result-body"></tbody>
-            </table>
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>材料</th>
+                            <th>ID</th>
+                            <th>单件需要</th>
+                            <th>制作数量</th>
+                            <th>总共需要</th>
+                            <th>buy_max</th>
+                            <th>sell_max</th>
+                            <th>收购总价</th>
+                            <th>出售总价</th>
+                        </tr>
+                    </thead>
+                    <tbody id="result-body"></tbody>
+                </table>
+            </div>
             <div class="summary">
-                <div>
-                    <span class="label">查询物品种类：</span>
+                <div class="summary-card">
+                    <span class="label">查询物品种类</span>
                     <span id="total-items" class="value"></span>
                 </div>
-                <div>
-                    <span class="label">按收购价预估总成本：</span>
-                    <span id="total-buy" class="value"></span> ISK
+                <div class="summary-card">
+                    <span class="label">按收购价预估总成本</span>
+                    <span><span id="total-buy" class="value"></span> ISK</span>
                 </div>
-                <div>
-                    <span class="label">按出售价预估总成本：</span>
-                    <span id="total-sell" class="value"></span> ISK
+                <div class="summary-card">
+                    <span class="label">按出售价预估总成本</span>
+                    <span><span id="total-sell" class="value"></span> ISK</span>
                 </div>
             </div>
         </div>
@@ -191,6 +410,66 @@
         // ==========================================
         const errorDiv = document.getElementById('error');
         const resultDiv = document.getElementById('result');
+
+        // ==========================================
+        // 解析粘贴内容
+        // ==========================================
+        function parsePaste() {
+            const raw = document.getElementById('paste-input').value || '';
+            const lines = raw.split(/\r?\n/);
+            const items = [];
+
+            lines.forEach(line => {
+                const trimmed = line.trim();
+                if (!trimmed) return;
+
+                // 按任意空白字符分割（空格、Tab、多个空格都支持）
+                const parts = trimmed.split(/\s+/);
+                const name = parts[0];
+                let quantity = 1;
+
+                if (parts.length > 1) {
+                    const parsed = parseInt(parts[1], 10);
+                    if (!isNaN(parsed) && parsed > 0) {
+                        quantity = parsed;
+                    }
+                }
+
+                if (name) {
+                    items.push({ name, quantity });
+                }
+            });
+
+            const container = document.getElementById('query-list');
+            container.innerHTML = '';
+
+            if (items.length === 0) {
+                errorDiv.textContent = '没有解析到有效内容，请检查粘贴格式';
+                errorDiv.classList.remove('hidden');
+                addQueryRow();
+                return;
+            }
+
+            errorDiv.classList.add('hidden');
+
+            items.forEach(item => {
+                const row = document.createElement('div');
+                row.className = 'query-row';
+                row.innerHTML = `
+                    <input type="text" class="item-name" value="${escapeHtml(item.name)}" placeholder="物品名称">
+                    <input type="number" class="item-quantity" value="${item.quantity}" min="1">
+                    <button class="btn-remove" onclick="removeRow(this)">-</button>
+                `;
+                container.appendChild(row);
+            });
+        }
+
+        // 简单的 HTML 转义，防止粘贴内容破坏页面
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
 
         // ==========================================
         // 添加/删除输入行
