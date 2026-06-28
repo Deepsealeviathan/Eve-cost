@@ -62,9 +62,9 @@ def query_by_name(name, quantity=1):
     json_path = find_json_file(name)
     if json_path is None:
         print(f"错误：在以下目录及其子目录中均未找到 {name}.json")
-        for root in SEARCH_ROOTS:
-            print(f"  搜索过: {root}")
-        return None
+#        for root in SEARCH_ROOTS:
+#            print(f"  搜索过: {root}")
+#        return None
     
     print(f"找到文件: {json_path}")
 
@@ -105,11 +105,24 @@ def query_by_name(name, quantity=1):
     try:
         conn = pymysql.connect(**DB_CONFIG)
         with conn.cursor() as cursor:
+            # 根据 ID 的数量，生成对应数量的 %s 占位符，并用逗号连接。
+            # 假设ids = [2393, 3683]
+            # len(ids) = 2
+            # 所以placeholders = "%s,%s"
             placeholders = ','.join(['%s'] * len(ids))
+            # 从 test 表中查询 ID 在 [2393, 3683] 这些值中的记录，并返回 ID、buy_max、sell_max 三列。
             sql = f"SELECT ID, buy_max, sell_max FROM test WHERE ID IN ({placeholders})"
+            # 执行 SQL 查询，并把 ids 中的值安全地填充到 %s 占位符里。
+            # 相当于SELECT ID, buy_max, sell_max FROM test WHERE ID IN (2393, 3683)
             cursor.execute(sql, ids)
+            # 获取查询结果的所有行。
             rows = cursor.fetchall()
             # 转成字典方便查找：{3683: (buy_max, sell_max), ...}
+            # 例如:
+            # price_map = {
+            #   2393: (100, 80),
+            #   3683: (50, 40)
+            #   }
             price_map = {row[0]: (row[1], row[2]) for row in rows}
     except pymysql.Error as e:
         print(f"数据库错误: {e}")

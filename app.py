@@ -79,37 +79,69 @@ def query():
 # 装饰器：注册 /query_batch 路由，只接受 HTTP POST 请求
 # 前端点击"批量查询"时，会向这个地址发送 POST 请求
 @app.route('/query_batch', methods=['POST'])
+# 定义批量查询的视图函数
 def query_batch():
     """批量查询接口：支持同时查多个物品"""
+    # 开始异常捕获块，防止代码出错时 Flask 直接返回 500 错误页面
     try:
+        # 从 HTTP 请求体中解析 JSON 数据
         data = request.get_json()
+        # 前端 fetch 发送的 {"items": [{"name":"氧","quantity":2}, ...]} 在这里被提取
+        # 从解析后的字典中取出 'items' 字段的值
+        # data.get('items', []) 表示如果 items 不存在，默认返回空列表 []
         items = data.get('items', [])
-
+        # 判断 items 是否为空列表
         if not items:
+            # 空列表时返回 JSON 错误提示给前端
+            # success: False 表示请求处理失败
             return jsonify({'success': False, 'error': '请至少输入一个物品'})
 
+
+        # 初始化空列表，用于存放每个物品查询成功的结果
         results = []
+        # 初始化数字 0，用于累加所有物品的收购价总成本
         grand_total_buy = 0
+        # 初始化数字 0，用于累加所有物品的出售价总成本
         grand_total_sell = 0
 
+        # 开始循环遍历前端传来的每个物品
         for item in items:
+            # 从当前物品字典中取出 name 字段的值
+            # .strip() 去掉首尾空格，防止用户误输入空格
             name = item.get('name', '').strip()
+            # 从当前物品字典中取出 quantity 字段的值，默认给 1
+            # int() 将字符串转成整数，比如 "3" → 3
             quantity = int(item.get('quantity', 1))
 
-            if not name:
-                continue
 
+            # 判断 name 是否为空字符串（用户可能只填了数量没填名称）
+            if not name:
+                # 跳过当前这个物品，继续处理下一个
+                continue
+            
+            # 调用 Select.py 中的查询函数，传入物品名和制作数量
+            # 返回值是字典（包含该物品的材料明细和总成本），失败返回 None
             result = query_by_name(name, quantity)
+            # 判断查询函数是否返回了有效结果（不是 None）
             if result:
+                # 将该物品的查询结果追加到 results 列表中
                 results.append(result)
+                # 将该物品的收购总成本累加到全局收购总价
                 grand_total_buy += result['total_buy']
+                # 将该物品的出售总成本累加到全局出售价总价
                 grand_total_sell += result['total_sell']
 
+        # 所有物品处理完毕，构造 JSON 响应返回给前端
         return jsonify({
+            # success: True 表示批量查询整体成功
             'success': True,
+            # data 字段包裹所有返回数据
             'data': {
+                # items: 每个物品的详细查询结果数组
                 'items': results,
+                # grand_total_buy: 所有物品收购价的总和
                 'grand_total_buy': grand_total_buy,
+                # grand_total_sell: 所有物品出售价的总和
                 'grand_total_sell': grand_total_sell
             }
         })
