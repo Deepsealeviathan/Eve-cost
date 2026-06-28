@@ -174,3 +174,31 @@ def query_by_name(name, quantity=1):
         'total_buy': total_buy,
         'total_sell': total_sell
     }
+
+# 0628更新 里加一个读取 test 表目录的函数。 从数据库中获取所有物品的 name、buy_max、sell_min 并提供给前端目录栏
+def get_catalog():
+    """
+    从 MySQL 的 test 表中读取所有物品的 ID、name、buy_max、sell_min
+    返回列表，形如 [{'id':34,'name':'三钛合金','buy_max':9.58,'sell_min':10}, ...]
+    """
+    conn = None
+    try:
+        conn = pymysql.connect(**DB_CONFIG)
+        with conn.cursor() as cursor:
+            cursor.execute("SELECT ID, name, buy_max, sell_min FROM test ORDER BY name ASC")
+            rows = cursor.fetchall()
+            return [
+                {
+                    'id': row[0],
+                    'name': row[1],
+                    'buy_max': row[2],
+                    'sell_min': row[3]
+                }
+                for row in rows
+            ]
+    except pymysql.Error as e:
+        print(f"读取目录失败: {e}")
+        return []
+    finally:
+        if conn:
+            conn.close()

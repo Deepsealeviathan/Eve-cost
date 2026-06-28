@@ -10,7 +10,7 @@ from flask import Flask, render_template, request, jsonify
 
 # 从同目录的 query_logic.py 中导入 query_craft_cost 函数
 # 该函数负责读取 JSON 制作清单并查询数据库计算成本
-from Select import query_by_name
+from Select import query_by_name, get_catalog
 
 # 创建一个 Flask 应用实例
 # __name__ 是当前模块名，Flask 用它来确定资源路径
@@ -148,6 +148,18 @@ def query_batch():
 
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
+
+# 0628 /catalog 接口返回所有物品的 name、buy_max、sell_min
+@app.route('/catalog', methods=['GET'])
+def catalog():
+    """返回数据库中所有物品的目录（名称、buy_max、sell_min）"""
+    try:
+        items = get_catalog()
+        return jsonify({'success': True, 'data': items})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+
 
 # 判断当前文件是否是直接运行（不是被其他文件导入）
 if __name__ == '__main__':

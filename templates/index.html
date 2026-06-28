@@ -29,13 +29,94 @@
                 linear-gradient(135deg, #0b0f19 0%, #111827 50%, #0b0f19 100%);
             min-height: 100vh;
             margin: 0;
-            padding: 60px 20px;
+            padding: 40px 20px;
             color: var(--text);
         }
 
+        .page {
+            max-width: 1440px;
+            margin: 0 auto;
+            display: flex;
+            gap: 24px;
+            align-items: flex-start;
+            justify-content: center;
+        }
+
+        /* 左侧目录栏 */
+        .sidebar {
+            width: 280px;
+            flex-shrink: 0;
+            background: var(--card);
+            border-radius: 20px;
+            padding: 24px;
+            box-shadow:
+                0 20px 60px rgba(0, 0, 0, 0.25),
+                inset 0 1px 0 rgba(255, 255, 255, 0.6);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.45);
+            position: sticky;
+            top: 40px;
+            max-height: calc(100vh - 80px);
+            display: flex;
+            flex-direction: column;
+            animation: slideIn 0.6s ease-out;
+        }
+
+        .sidebar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .sidebar-title {
+            font-size: 17px;
+            font-weight: 700;
+            color: #111827;
+        }
+
+        .catalog-list {
+            list-style: none;
+            overflow-y: auto;
+            flex: 1;
+            padding-right: 4px;
+        }
+
+        .catalog-list li {
+            padding: 10px 14px;
+            border-radius: 12px;
+            cursor: pointer;
+            color: #374151;
+            font-size: 14px;
+            transition: all 0.15s;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .catalog-list li:hover {
+            background: #eef2ff;
+            color: var(--primary);
+        }
+
+        .catalog-list li::after {
+            content: '›';
+            color: #9ca3af;
+            font-size: 16px;
+        }
+
+        .catalog-count {
+            font-size: 12px;
+            color: var(--muted);
+            margin-top: 10px;
+            text-align: center;
+        }
+
+        /* 主内容区 */
         .container {
             max-width: 1100px;
-            margin: 0 auto;
+            flex: 1;
             background: var(--card);
             padding: 44px 52px;
             border-radius: 24px;
@@ -84,9 +165,7 @@
             gap: 6px;
         }
 
-        .paste-section {
-            margin-bottom: 24px;
-        }
+        .paste-section { margin-bottom: 24px; }
 
         .paste-box {
             width: 100%;
@@ -205,17 +284,9 @@
 
         .btn-add:active, .btn-query:active, .btn-parse:active { transform: translateY(0); }
 
-        .btn-add {
-            background: linear-gradient(135deg, var(--success) 0%, #059669 100%);
-        }
-
-        .btn-query {
-            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
-        }
-
-        .btn-parse {
-            background: linear-gradient(135deg, var(--accent) 0%, #0891b2 100%);
-        }
+        .btn-add { background: linear-gradient(135deg, var(--success) 0%, #059669 100%); }
+        .btn-query { background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%); }
+        .btn-parse { background: linear-gradient(135deg, var(--accent) 0%, #0891b2 100%); }
 
         .error {
             color: #b91c1c;
@@ -262,9 +333,7 @@
         }
 
         tbody tr { transition: background 0.15s; }
-
         tbody tr:nth-child(even) { background: #f8fafc; }
-
         tbody tr:hover { background: #eef2ff; }
 
         .group-header {
@@ -324,7 +393,94 @@
         .summary-card:nth-child(2) .value { color: var(--success); }
         .summary-card:nth-child(3) .value { color: #d97706; }
 
+        /* 弹窗 */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.45);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.2s, visibility 0.2s;
+        }
+
+        .modal-overlay:not(.hidden) {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal {
+            background: #fff;
+            padding: 28px;
+            border-radius: 20px;
+            width: 90%;
+            max-width: 360px;
+            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.3);
+            position: relative;
+            transform: scale(0.95);
+            transition: transform 0.2s;
+        }
+
+        .modal-overlay:not(.hidden) .modal { transform: scale(1); }
+
+        .modal-close {
+            position: absolute;
+            top: 12px;
+            right: 16px;
+            background: none;
+            border: none;
+            font-size: 24px;
+            color: #9ca3af;
+            cursor: pointer;
+            line-height: 1;
+        }
+
+        .modal-close:hover { color: #374151; }
+
+        .modal-title {
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 20px;
+            color: #111827;
+            padding-right: 24px;
+        }
+
+        .modal-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 14px 0;
+            border-bottom: 1px solid #f3f4f6;
+        }
+
+        .modal-row:last-child { border-bottom: none; }
+
+        .modal-label {
+            color: var(--muted);
+            font-size: 14px;
+        }
+
+        .modal-value {
+            font-size: 18px;
+            font-weight: 700;
+        }
+
+        .modal-value.buy { color: var(--success); }
+        .modal-value.sell { color: #d97706; }
+
         .hidden { display: none; }
+
+        @media (max-width: 900px) {
+            .page { flex-direction: column; align-items: stretch; }
+            .sidebar {
+                width: 100%;
+                position: static;
+                max-height: 320px;
+            }
+        }
 
         @media (max-width: 768px) {
             .container { padding: 28px 22px; }
@@ -339,67 +495,97 @@
     </style>
 </head>
 <body>
-    <div class="container">
-        <h2>🔧 EVE 批量制作成本查询</h2>
-
-        <div class="paste-section">
-            <div class="section-label">📋 批量粘贴区</div>
-            <textarea
-                id="paste-input"
-                class="paste-box"
-                placeholder="请粘贴物品和数量，例如：&#10;氧    2000&#10;细菌    3565"></textarea>
-            <div class="paste-hint">每行格式：物品名 + 空格/Tab + 数量。只有物品名时，数量默认为 1。</div>
-            <div class="actions" style="margin-top: 14px;">
-                <button class="btn-parse" onclick="parsePaste()">解析粘贴内容</button>
-                <button class="btn-add" onclick="addQueryRow()">+ 手动添加物品</button>
-                <button class="btn-query" onclick="doBatchQuery()">批量查询</button>
+    <div class="page">
+        <!-- 左侧目录栏 -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-title">📚 物品目录</div>
             </div>
-        </div>
+            <ul class="catalog-list" id="catalog-list">
+                <li style="color:#9ca3af; cursor:default;">加载中...</li>
+            </ul>
+            <div class="catalog-count" id="catalog-count"></div>
+        </aside>
 
-        <div class="section-label">📝 待查询物品</div>
-        <div class="query-list" id="query-list">
-            <div class="query-row">
-                <input type="text" class="item-name" placeholder="物品名称，如：氧">
-                <input type="number" class="item-quantity" value="1" min="1">
-                <button class="btn-remove" onclick="removeRow(this)">-</button>
+        <!-- 主内容区 -->
+        <main class="container">
+            <h2>🔧 EVE 批量制作成本查询</h2>
+
+            <div class="paste-section">
+                <div class="section-label">📋 批量粘贴区</div>
+                <textarea
+                    id="paste-input"
+                    class="paste-box"
+                    placeholder="请粘贴物品和数量，例如：&#10;氧    2000&#10;细菌    3565"></textarea>
+                <div class="paste-hint">每行格式：物品名 + 空格/Tab + 数量。只有物品名时，数量默认为 1。</div>
+                <div class="actions" style="margin-top: 14px;">
+                    <button class="btn-parse" onclick="parsePaste()">解析粘贴内容</button>
+                    <button class="btn-add" onclick="addQueryRow()">+ 手动添加物品</button>
+                    <button class="btn-query" onclick="doBatchQuery()">批量查询</button>
+                </div>
             </div>
-        </div>
 
-        <div id="error" class="error hidden"></div>
-
-        <div id="result" class="hidden">
-            <h3 id="result-title"></h3>
-            <div class="table-wrapper">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>材料</th>
-                            <th>ID</th>
-                            <th>单件需要</th>
-                            <th>制作数量</th>
-                            <th>总共需要</th>
-                            <th>buy_max</th>
-                            <th>sell_max</th>
-                            <th>收购总价</th>
-                            <th>出售总价</th>
-                        </tr>
-                    </thead>
-                    <tbody id="result-body"></tbody>
-                </table>
+            <div class="section-label">📝 待查询物品</div>
+            <div class="query-list" id="query-list">
+                <div class="query-row">
+                    <input type="text" class="item-name" placeholder="物品名称，如：氧">
+                    <input type="number" class="item-quantity" value="1" min="1">
+                    <button class="btn-remove" onclick="removeRow(this)">-</button>
+                </div>
             </div>
-            <div class="summary">
-                <div class="summary-card">
-                    <span class="label">查询物品种类</span>
-                    <span id="total-items" class="value"></span>
+
+            <div id="error" class="error hidden"></div>
+
+            <div id="result" class="hidden">
+                <h3 id="result-title"></h3>
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>材料</th>
+                                <th>ID</th>
+                                <th>单件需要</th>
+                                <th>制作数量</th>
+                                <th>总共需要</th>
+                                <th>buy_max</th>
+                                <th>sell_max</th>
+                                <th>收购总价</th>
+                                <th>出售总价</th>
+                            </tr>
+                        </thead>
+                        <tbody id="result-body"></tbody>
+                    </table>
                 </div>
-                <div class="summary-card">
-                    <span class="label">按收购价预估总成本</span>
-                    <span><span id="total-buy" class="value"></span> ISK</span>
+                <div class="summary">
+                    <div class="summary-card">
+                        <span class="label">查询物品种类</span>
+                        <span id="total-items" class="value"></span>
+                    </div>
+                    <div class="summary-card">
+                        <span class="label">按收购价预估总成本</span>
+                        <span><span id="total-buy" class="value"></span> ISK</span>
+                    </div>
+                    <div class="summary-card">
+                        <span class="label">按出售价预估总成本</span>
+                        <span><span id="total-sell" class="value"></span> ISK</span>
+                    </div>
                 </div>
-                <div class="summary-card">
-                    <span class="label">按出售价预估总成本</span>
-                    <span><span id="total-sell" class="value"></span> ISK</span>
-                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- 弹窗 -->
+    <div id="modal-overlay" class="modal-overlay hidden" onclick="closeModal(event)">
+        <div class="modal" onclick="event.stopPropagation()">
+            <button class="modal-close" onclick="closeModal()">×</button>
+            <div class="modal-title" id="modal-title">物品名称</div>
+            <div class="modal-row">
+                <span class="modal-label">收购最高价 (buy_max)</span>
+                <span class="modal-value buy" id="modal-buy"></span>
+            </div>
+            <div class="modal-row">
+                <span class="modal-label">出售最低价 (sell_min)</span>
+                <span class="modal-value sell" id="modal-sell"></span>
             </div>
         </div>
     </div>
@@ -410,6 +596,64 @@
         // ==========================================
         const errorDiv = document.getElementById('error');
         const resultDiv = document.getElementById('result');
+        const modalOverlay = document.getElementById('modal-overlay');
+
+        // ==========================================
+        // 加载目录栏
+        // ==========================================
+        async function loadCatalog() {
+            const list = document.getElementById('catalog-list');
+            const count = document.getElementById('catalog-count');
+
+            try {
+                const res = await fetch('/catalog');
+                const json = await res.json();
+
+                if (!json.success) {
+                    list.innerHTML = '<li style="color:#b91c1c; cursor:default;">目录加载失败</li>';
+                    return;
+                }
+
+                const items = json.data || [];
+                list.innerHTML = '';
+
+                if (items.length === 0) {
+                    list.innerHTML = '<li style="color:#9ca3af; cursor:default;">暂无数据</li>';
+                    count.textContent = '';
+                    return;
+                }
+
+                items.forEach(item => {
+                    const li = document.createElement('li');
+                    li.textContent = item.name;
+                    li.title = `点击查看 ${item.name} 的价格`;
+                    li.onclick = () => openModal(item.name, item.buy_max, item.sell_min);
+                    list.appendChild(li);
+                });
+
+                count.textContent = `共 ${items.length} 条记录`;
+            } catch (err) {
+                list.innerHTML = '<li style="color:#b91c1c; cursor:default;">网络错误，无法加载目录</li>';
+                console.error(err);
+            }
+        }
+
+        // ==========================================
+        // 弹窗控制
+        // ==========================================
+        function openModal(name, buyMax, sellMin) {
+            document.getElementById('modal-title').textContent = name;
+            document.getElementById('modal-buy').textContent = fmt(buyMax);
+            document.getElementById('modal-sell').textContent = fmt(sellMin);
+            modalOverlay.classList.remove('hidden');
+        }
+
+        function closeModal(event) {
+            // 点击遮罩层或关闭按钮时关闭；点击弹窗内容不关闭
+            if (!event || event.target === modalOverlay || event.target.classList.contains('modal-close')) {
+                modalOverlay.classList.add('hidden');
+            }
+        }
 
         // ==========================================
         // 解析粘贴内容
@@ -423,21 +667,16 @@
                 const trimmed = line.trim();
                 if (!trimmed) return;
 
-                // 按任意空白字符分割（空格、Tab、多个空格都支持）
                 const parts = trimmed.split(/\s+/);
                 const name = parts[0];
                 let quantity = 1;
 
                 if (parts.length > 1) {
                     const parsed = parseInt(parts[1], 10);
-                    if (!isNaN(parsed) && parsed > 0) {
-                        quantity = parsed;
-                    }
+                    if (!isNaN(parsed) && parsed > 0) quantity = parsed;
                 }
 
-                if (name) {
-                    items.push({ name, quantity });
-                }
+                if (name) items.push({ name, quantity });
             });
 
             const container = document.getElementById('query-list');
@@ -464,7 +703,6 @@
             });
         }
 
-        // 简单的 HTML 转义，防止粘贴内容破坏页面
         function escapeHtml(text) {
             const div = document.createElement('div');
             div.textContent = text;
@@ -491,7 +729,6 @@
             if (rows.length > 1) {
                 btn.parentElement.remove();
             } else {
-                // 只剩一行时清空内容
                 const row = btn.parentElement;
                 const nameInput = row.querySelector('.item-name');
                 const qtyInput = row.querySelector('.item-quantity');
@@ -507,23 +744,18 @@
             const rows = document.querySelectorAll('.query-row');
             const items = [];
 
-            // 遍历所有输入行，收集数据（带空值保护）
             rows.forEach(row => {
                 const nameInput = row.querySelector('.item-name');
                 const qtyInput = row.querySelector('.item-quantity');
 
-                // 空值保护：如果找不到 input 元素就跳过该行
                 if (!nameInput || !qtyInput) return;
 
                 const name = nameInput.value.trim();
                 const qty = parseInt(qtyInput.value) || 1;
 
-                if (name) {
-                    items.push({ name: name, quantity: qty });
-                }
+                if (name) items.push({ name: name, quantity: qty });
             });
 
-            // 隐藏之前的提示和结果
             errorDiv.classList.add('hidden');
             resultDiv.classList.add('hidden');
 
@@ -568,7 +800,6 @@
             tbody.innerHTML = '';
 
             data.items.forEach(item => {
-                // 分组标题行：显示成品名称和制作数量
                 const groupRow = document.createElement('tr');
                 groupRow.innerHTML = `
                     <td colspan="9" class="group-header">
@@ -577,7 +808,6 @@
                 `;
                 tbody.appendChild(groupRow);
 
-                // 该物品的所有材料明细
                 item.materials.forEach(mat => {
                     const tr = document.createElement('tr');
                     tr.innerHTML = `
@@ -602,6 +832,9 @@
             if (num === null || num === undefined) return '-';
             return num.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         }
+
+        // 页面加载时获取目录
+        document.addEventListener('DOMContentLoaded', loadCatalog);
     </script>
 </body>
 </html>
