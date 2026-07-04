@@ -1,11 +1,20 @@
 # -*- coding: utf-8 -*-         
 
+import os
+import json
+import csv
+import sys
+import subprocess
+import re
+
 # 从 flask 库导入四个工具：
 # Flask: 创建 Web 应用的核心类
 # render_template: 渲染 HTML 模板文件
 # request: 获取前端发来的 HTTP 请求数据
 # jsonify: 将 Python 字典转成 JSON 格式响应给前端
 from flask import Flask, render_template, request, jsonify
+
+
 
 
 # 从同目录的 query_logic.py 中导入 query_craft_cost 函数
@@ -159,6 +168,37 @@ def catalog():
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
 
+# 0704
+@app.route('/update_database', methods=['POST'])
+def update_database():
+    """执行数据库更新流水线（下载 JSON + 同步 MySQL）"""
+    try:
+        script_path = os.path.join(os.path.dirname(__file__), 'update_database.py')
+
+        result = subprocess.run(
+            [sys.executable, script_path],
+            capture_output=True,
+            text=True,
+            timeout=600  # 给 10 分钟，防止数据量大时超时
+        )
+
+        if result.returncode != 0:
+            return jsonify({'success': False, 'error': result.stderr or '更新脚本执行失败'})
+
+        # 从输出中解析更新条数
+        match = re.search(r'导入完成，共更新 (\d+) 条记录', result.stdout)
+        updated = int(match.group(1)) if match else None
+
+        return jsonify({
+            'success': True,
+            'updated': updated,
+            'output': result.stdout
+        })
+
+    except subprocess.TimeoutExpired:
+        return jsonify({'success': False, 'error': '更新超时，请稍后重试'})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
 
 
 # 判断当前文件是否是直接运行（不是被其他文件导入）

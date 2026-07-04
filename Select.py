@@ -185,14 +185,15 @@ def get_catalog():
     try:
         conn = pymysql.connect(**DB_CONFIG)
         with conn.cursor() as cursor:
-            cursor.execute("SELECT ID, name, buy_max, sell_min FROM test ORDER BY name ASC")
+            cursor.execute("SELECT ID, name, buy_max, sell_min, update_time FROM test ORDER BY name ASC")
             rows = cursor.fetchall()
             return [
                 {
                     'id': row[0],
                     'name': row[1],
                     'buy_max': row[2],
-                    'sell_min': row[3]
+                    'sell_min': row[3],
+                    'update_time': str(row[4]) if row[4] is not None else '-'
                 }
                 for row in rows
             ]
