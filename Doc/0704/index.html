@@ -230,18 +230,19 @@
 
         /* 每一行输入框 */
         .query-row {
-            display: flex;
-            align-items: center;
-            gap: 14px;
-            margin-bottom: 14px;
-            padding: 14px 16px;
-            background: #f8fafc;
-            border: 1px solid var(--border);
-            border-radius: 14px;
-            transition: box-shadow 0.2s, border-color 0.2s;
+            display: flex;                    /* 让这一行里的输入框、按钮横向排列 */
+            align-items: center;              /* 让行内元素垂直居中对齐 */
+            gap: 14px;                        /* 每个子元素之间的间距为 14px */
+            margin-bottom: 14px;              /* 每行底部留出 14px 空白 */
+            padding: 14px 16px;               /* 行内部上下留 14px，左右留 16px */
+            background: #f8fafc;              /* 浅灰蓝色背景 */
+            border: 1px solid var(--border);  /* 1px 细边框，颜色用变量 --border */
+            border-radius: 14px;              /* 圆角 14px，看起来圆润 */
+            transition: box-shadow 0.2s, border-color 0.2s;  /* 阴影和边框颜色变化时有 0.2 秒过渡动画 */
         }
 
         /* 输入行获得焦点时的高亮效果 */
+        /*这是一个伪类，意思是“当内部有元素获得焦点时, :focus-within 会让外面的 .query-row 也触发样式*/
         .query-row:focus-within {
             border-color: rgba(79, 70, 229, 0.35);
             box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.08);
@@ -256,7 +257,7 @@
             font-size: 14px;
             background: #fff;
             color: var(--text);
-            outline: none;
+            outline: none;   /*这个默认样式通常比较丑。`outline: none` 就是去掉它。*/
             transition: border-color 0.2s, box-shadow 0.2s;
         }
 
@@ -265,7 +266,7 @@
 
         /* 输入框聚焦效果 */
         .query-row input:focus {
-            border-color: var(--primary);
+            border-color: var(--primary);   /*把元素的边框颜色设置成 --primary 这个变量代表的颜色*/
             box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.12);
         }
 
@@ -299,13 +300,14 @@
 
         /* 按钮容器 */
         .actions {
-            display: flex;
-            gap: 14px;
+            display: flex;   /* 开启弹性布局，子元素横向排列 */
+            gap: 14px;       /* 按钮之间的间距为 14px */
             flex-wrap: wrap; /* 空间不够时自动换行 */
-            align-items: center;
+            align-items: center; /* 按钮在垂直方向居中对齐 */
         }
 
         /* 所有功能按钮的公共样式 */
+        /*解析按钮;批量查询按钮;解析粘贴按钮;更新数据库按钮*/
         .btn-add, .btn-query, .btn-parse, .btn-update {
             border: none;
             padding: 12px 26px;
