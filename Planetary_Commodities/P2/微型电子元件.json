@@ -1,12 +1,12 @@
 {
-  "id": ,
+  "id": 9842,
   "name": "微型电子元件",
   "tier": "P2",
   "recipe": {
-    "outputCount": 3,
+    "outputCount": 5,
     "inputs": [
-      { "materialId": "", "count": 1 },
-      { "materialId": "", "count": 1 }
+      { "materialId": 9828, "materialname": "硅", "count": 40 },
+      { "materialId": 2401, "materialname": "手性结构", "count": 40 }
     ]
   }
 }

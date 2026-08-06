@@ -840,7 +840,7 @@
         // 渲染结果
         // ==========================================
         function renderBatchResult(data) {
-            document.getElementById('result-title').textContent = '批量制作清单汇总';
+            document.getElementById('result-title').textContent = '批量成本估算（P2 按合成配方计算单件成本）';
             document.getElementById('total-items').textContent = data.items.length;
             document.getElementById('total-buy').textContent = fmt(data.grand_total_buy);
             document.getElementById('total-sell').textContent = fmt(data.grand_total_sell);
@@ -849,10 +849,16 @@
             tbody.innerHTML = '';
 
             data.items.forEach(item => {
+                const isP2 = item.tier === 'P2';
+                const tierLabel = isP2
+                    ? `<span style="margin-left:12px; font-size:12px; color:#4f46e5;">[P2 合成 | 单次产出 ${item.output_count} 个]</span>`
+                    : `<span style="margin-left:12px; font-size:12px; color:#059669;">[P1 基础材料]</span>`;
+                const icon = isP2 ? '⚗️' : '📦';
+
                 const groupRow = document.createElement('tr');
                 groupRow.innerHTML = `
                     <td colspan="9" class="group-header">
-                        📦 ${item.name} × ${item.quantity}
+                        ${icon} ${item.name} × ${item.quantity} ${tierLabel}
                     </td>
                 `;
                 tbody.appendChild(groupRow);
@@ -862,9 +868,9 @@
                     tr.innerHTML = `
                         <td>${mat.name}</td>
                         <td>${mat.id}</td>
-                        <td>${mat.num_per_unit}</td>
+                        <td>${fmt(mat.num_per_unit)}</td>
                         <td>${item.quantity}</td>
-                        <td><strong>${mat.total_num}</strong></td>
+                        <td><strong>${fmt(mat.total_num)}</strong></td>
                         <td>${fmt(mat.buy_max)}</td>
                         <td>${fmt(mat.sell_max)}</td>
                         <td>${fmt(mat.total_buy)}</td>
@@ -872,6 +878,18 @@
                     `;
                     tbody.appendChild(tr);
                 });
+
+                if (isP2) {
+                    const unitBuy = item.quantity ? item.total_buy / item.quantity : 0;
+                    const unitSell = item.quantity ? item.total_sell / item.quantity : 0;
+                    const summaryRow = document.createElement('tr');
+                    summaryRow.innerHTML = `
+                        <td colspan="5" style="text-align:right; font-weight:600;">单件 ${item.name} 合成成本：</td>
+                        <td colspan="2" style="color:var(--success); font-weight:700;">${fmt(unitBuy)} ISK</td>
+                        <td colspan="2" style="color:#d97706; font-weight:700;">${fmt(unitSell)} ISK</td>
+                    `;
+                    tbody.appendChild(summaryRow);
+                }
             });
 
             resultDiv.classList.remove('hidden');

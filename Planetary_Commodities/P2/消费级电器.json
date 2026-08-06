@@ -1,12 +1,12 @@
 {
-  "id": ,
+  "id": 9836,
   "name": "消费级电器",
   "tier": "P2",
   "recipe": {
-    "outputCount": 3,
+    "outputCount": 5,
     "inputs": [
-      { "materialId": "", "count": 0 },
-      { "materialId": "", "count": 0 }
+      { "materialId": 2400, "materialname": "有毒金属", "count": 40 },
+      { "materialId": 2401, "materialname": "手性结构", "count": 40 }
     ]
   }
 }

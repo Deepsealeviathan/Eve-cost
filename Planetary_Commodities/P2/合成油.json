@@ -5,8 +5,8 @@
   "recipe": {
     "outputCount": 5,
     "inputs": [
-      { "materialId": , "materialname": "电解物", "count": 40 },
-      { "materialId": , "materialname": "氧", "count": 40 }
+      { "materialId": 2390, "materialname": "电解物", "count": 40 },
+      { "materialId": 3683, "materialname": "氧", "count": 40 }
     ]
   }
 }

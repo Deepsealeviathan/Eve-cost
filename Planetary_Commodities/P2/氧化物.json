@@ -1,12 +1,12 @@
 {
-  "id": ,
+  "id": 2317,
   "name": "氧化物",
   "tier": "P2",
   "recipe": {
-    "outputCount": 3,
+    "outputCount": 5,
     "inputs": [
-      { "materialId": "", "count": 0 },
-      { "materialId": "", "count": 0 }
+      { "materialId": 2392, "materialname": "氧化剂", "count": 40 },
+      { "materialId": 3683, "materialname": "氧", "count": 40 }
     ]
   }
 }
