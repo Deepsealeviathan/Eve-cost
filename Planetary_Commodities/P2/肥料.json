@@ -1,4 +1,12 @@
 {
-    "list":{"":{ "ID":, "Num":40},
-            "":{ "ID":, "Num":40}}
+  "id": 3693,
+  "name": "肥料",
+  "tier": "P2",
+  "recipe": {
+    "outputCount": 5,
+    "inputs": [
+      { "materialId": , "materialname": "细菌", "count": 40 },
+      { "materialId": , "materialname": "蛋白质", "count": 40 }
+    ]
+  }
 }

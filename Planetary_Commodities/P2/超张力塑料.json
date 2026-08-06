@@ -1,4 +1,12 @@
 {
-    "list":{"氧":{ "ID":, "Num":40},
-            "生物质":{ "ID":, "Num":40}}
+  "id": 2312,
+  "name": "超张力塑料",
+  "tier": "P2",
+  "recipe": {
+    "outputCount": 5,
+    "inputs": [
+      { "materialId": , "materialname": "氧", "count": 40 },
+      { "materialId": , "materialname": "生物质", "count": 40 }
+    ]
+  }
 }

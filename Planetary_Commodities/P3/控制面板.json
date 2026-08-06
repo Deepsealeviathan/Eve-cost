@@ -1,0 +1,12 @@
+{
+  "id": 2354,
+  "name": "控制面板",
+  "tier": "P3",
+  "recipe": {
+    "outputCount": 3,
+    "inputs": [
+      { "materialId": "", "count": 0 },
+      { "materialId": "", "count": 0 }
+    ]
+  }
+}

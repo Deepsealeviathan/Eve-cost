@@ -1,0 +1,12 @@
+{
+  "id": 2875,
+  "name": "无菌管道",
+  "tier": "P4",
+  "recipe": {
+    "outputCount": 3,
+    "inputs": [
+      { "materialId": "", "count": 0 },
+      { "materialId": "", "count": 0 }
+    ]
+  }
+}

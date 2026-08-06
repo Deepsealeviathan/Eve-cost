@@ -1,0 +1,12 @@
+{
+  "id": 28974,
+  "name": "疫苗",
+  "tier": "P3",
+  "recipe": {
+    "outputCount": 3,
+    "inputs": [
+      { "materialId": "", "count": 0 },
+      { "materialId": "", "count": 0 }
+    ]
+  }
+}

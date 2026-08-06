@@ -1,0 +1,12 @@
+{
+  "id": 17136,
+  "name": "乌克米超导体",
+  "tier": "P3",
+  "recipe": {
+    "outputCount": 3,
+    "inputs": [
+      { "materialId": "", "count": 0 },
+      { "materialId": "", "count": 0 }
+    ]
+  }
+}

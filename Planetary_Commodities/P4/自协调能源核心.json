@@ -1,0 +1,12 @@
+{
+  "id": 2872,
+  "name": "自协调能源核心",
+  "tier": "P4",
+  "recipe": {
+    "outputCount": 3,
+    "inputs": [
+      { "materialId": "", "count": 0 },
+      { "materialId": "", "count": 0 }
+    ]
+  }
+}

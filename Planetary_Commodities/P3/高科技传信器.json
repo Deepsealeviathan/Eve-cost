@@ -1,0 +1,12 @@
+{
+  "id": 17898,
+  "name": "高科技传信器",
+  "tier": "P3",
+  "recipe": {
+    "outputCount": 3,
+    "inputs": [
+      { "materialId": "", "count": 0 },
+      { "materialId": "", "count": 0 }
+    ]
+  }
+}

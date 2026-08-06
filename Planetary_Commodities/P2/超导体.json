@@ -1,4 +1,12 @@
 {
-    "list":{"等离子体团":{ "ID":, "Num":40},
-            "水":{ "ID":, "Num":40}}
+  "id": 9838,
+  "name": "超导体",
+  "tier": "P2",
+  "recipe": {
+    "outputCount": 5,
+    "inputs": [
+      { "materialId": , "materialname": "等离子体团", "count": 40 },
+      { "materialId": , "materialname": "水", "count": 40 }
+    ]
+  }
 }

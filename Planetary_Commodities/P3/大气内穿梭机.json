@@ -1,0 +1,12 @@
+{
+  "id": 9846,
+  "name": "大气内穿梭机",
+  "tier": "P3",
+  "recipe": {
+    "outputCount": 3,
+    "inputs": [
+      { "materialId": "", "count": 0 },
+      { "materialId": "", "count": 0 }
+    ]
+  }
+}

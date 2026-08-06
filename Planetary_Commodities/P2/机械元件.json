@@ -1,4 +1,12 @@
 {
-    "list":{"细菌":{ "ID": 2393, "Num": 1},
-            "氧":{ "ID": 3683, "Num": 1}}
+  "id": 3689,
+  "name": "机械元件",
+  "tier": "P2",
+  "recipe": {
+    "outputCount": 5,
+    "inputs": [
+      { "materialId": , "materialname": "反应金属", "count": 40 },
+      { "materialId": , "materialname": "稀有金属", "count": 40 }
+    ]
+  }
 }

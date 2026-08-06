@@ -1,0 +1,12 @@
+{
+  "id": 2871,
+  "name": "递推计算机模块",
+  "tier": "P4",
+  "recipe": {
+    "outputCount": 3,
+    "inputs": [
+      { "materialId": "", "count": 0 },
+      { "materialId": "", "count": 0 }
+    ]
+  }
+}

@@ -1,5 +1,12 @@
 {
-    "TypeID":{"病原体":{"ID":,"Num":1}},
-    "list":{"细菌":{ "ID":, "Num":40},
-            "生物质":{ "ID":, "Num":40}}
+  "id": 3775,
+  "name": "病原体",
+  "tier": "P2",
+  "recipe": {
+    "outputCount": 5,
+    "inputs": [
+      { "materialId": , "materialname": "细菌", "count": 40 },
+      { "materialId": , "materialname": "生物质", "count": 40 }
+    ]
+  }
 }

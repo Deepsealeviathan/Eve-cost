@@ -1,4 +1,12 @@
 {
-    "list":{"生物燃料":{ "ID":, "Num":40},
-            "蛋白质":{ "ID":, "Num":40}}
+  "id": 3725,
+  "name": "家畜",
+  "tier": "P2",
+  "recipe": {
+    "outputCount": 5,
+    "inputs": [
+      { "materialId": , "materialname": "生物燃料", "count": 40 },
+      { "materialId": , "materialname": "蛋白质", "count": 40 }
+    ]
+  }
 }

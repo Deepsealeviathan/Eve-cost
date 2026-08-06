@@ -1,0 +1,12 @@
+{
+  "id": 2868,
+  "name": "反破损快速反应无人机",
+  "tier": "P4",
+  "recipe": {
+    "outputCount": 3,
+    "inputs": [
+      { "materialId": "", "count": 0 },
+      { "materialId": "", "count": 0 }
+    ]
+  }
+}

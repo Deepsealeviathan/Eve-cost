@@ -1,0 +1,12 @@
+{
+  "id": 2345,
+  "name": "监控无人机",
+  "tier": "P3",
+  "recipe": {
+    "outputCount": 3,
+    "inputs": [
+      { "materialId": "", "count": 0 },
+      { "materialId": "", "count": 0 }
+    ]
+  }
+}

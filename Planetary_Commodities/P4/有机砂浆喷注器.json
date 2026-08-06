@@ -1,0 +1,12 @@
+{
+  "id": 2870,
+  "name": "有机砂浆喷注器",
+  "tier": "P4",
+  "recipe": {
+    "outputCount": 3,
+    "inputs": [
+      { "materialId": "", "count": 0 },
+      { "materialId": "", "count": 0 }
+    ]
+  }
+}

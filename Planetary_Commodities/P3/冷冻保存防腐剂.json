@@ -1,0 +1,12 @@
+{
+  "id": 2367,
+  "name": "冷冻保存防腐剂",
+  "tier": "P3",
+  "recipe": {
+    "outputCount": 3,
+    "inputs": [
+      { "materialId": "", "count": 0 },
+      { "materialId": "", "count": 0 }
+    ]
+  }
+}

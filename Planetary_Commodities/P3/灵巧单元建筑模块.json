@@ -1,0 +1,12 @@
+{
+  "id": 2351,
+  "name": "灵巧单元建筑模块",
+  "tier": "P3",
+  "recipe": {
+    "outputCount": 3,
+    "inputs": [
+      { "materialId": "", "count": 0 },
+      { "materialId": "", "count": 0 }
+    ]
+  }
+}

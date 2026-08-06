@@ -1,0 +1,12 @@
+{
+  "id": 2876,
+  "name": "湿件主机",
+  "tier": "P4",
+  "recipe": {
+    "outputCount": 3,
+    "inputs": [
+      { "materialId": "", "count": 0 },
+      { "materialId": "", "count": 0 }
+    ]
+  }
+}

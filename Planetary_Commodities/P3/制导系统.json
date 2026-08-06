@@ -1,0 +1,12 @@
+{
+  "id": 9834,
+  "name": "制导系统",
+  "tier": "P3",
+  "recipe": {
+    "outputCount": 3,
+    "inputs": [
+      { "materialId": "", "count": 0 },
+      { "materialId": "", "count": 0 }
+    ]
+  }
+}

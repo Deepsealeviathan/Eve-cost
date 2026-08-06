@@ -1,0 +1,12 @@
+{
+  "id": 2869,
+  "name": "纳米-工厂",
+  "tier": "P4",
+  "recipe": {
+    "outputCount": 3,
+    "inputs": [
+      { "materialId": "", "count": 0 },
+      { "materialId": "", "count": 0 }
+    ]
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "id": 2366,
+  "name": "危险物探测系统",
+  "tier": "P3",
+  "recipe": {
+    "outputCount": 3,
+    "inputs": [
+      { "materialId": "", "count": 0 },
+      { "materialId": "", "count": 0 }
+    ]
+  }
+}

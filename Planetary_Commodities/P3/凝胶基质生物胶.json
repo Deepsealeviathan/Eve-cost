@@ -1,0 +1,12 @@
+{
+  "id": 2348,
+  "name": "凝胶基质生物胶",
+  "tier": "P3",
+  "recipe": {
+    "outputCount": 3,
+    "inputs": [
+      { "materialId": "", "count": 0 },
+      { "materialId": "", "count": 0 }
+    ]
+  }
+}

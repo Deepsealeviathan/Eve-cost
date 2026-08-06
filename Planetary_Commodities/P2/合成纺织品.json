@@ -1,4 +1,12 @@
 {
-    "list":{"生物燃料":{ "ID":, "Num":40},
-            "工业纤维":{ "ID":, "Num":40}}
+  "id": 3695,
+  "name": "合成纺织品",
+  "tier": "P2",
+  "recipe": {
+    "outputCount": 5,
+    "inputs": [
+      { "materialId": , "materialname": "生物燃料", "count": 40 },
+      { "materialId": , "materialname": "工业纤维", "count": 40 }
+    ]
+  }
 }

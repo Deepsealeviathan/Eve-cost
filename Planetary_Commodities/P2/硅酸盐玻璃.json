@@ -1,4 +1,12 @@
 {
-    "list":{"细菌":{ "ID": 2393, "Num": 1},
-            "氧":{ "ID": 3683, "Num": 1}}
+  "id": 3697,
+  "name": "硅酸盐玻璃",
+  "tier": "P2",
+  "recipe": {
+    "outputCount": 5,
+    "inputs": [
+      { "materialId": , "materialname": "氧化剂", "count": 40 },
+      { "materialId": , "materialname": "硅", "count": 40 }
+    ]
+  }
 }
