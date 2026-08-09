@@ -3,10 +3,23 @@
   "name": "无菌管道",
   "tier": "P4",
   "recipe": {
-    "outputCount": 3,
+    "outputCount": 1,
     "inputs": [
-      { "materialId": "", "count": 0 },
-      { "materialId": "", "count": 0 }
+      {
+        "materialId": 3645,
+        "materialname": "水",
+        "count": 40
+      },
+      {
+        "materialId": 2351,
+        "materialname": "灵巧单元建筑模块",
+        "count": 6
+      },
+      {
+        "materialId": 28974,
+        "materialname": "疫苗",
+        "count": 6
+      }
     ]
   }
 }

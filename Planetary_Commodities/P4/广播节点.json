@@ -3,10 +3,23 @@
   "name": "广播节点",
   "tier": "P4",
   "recipe": {
-    "outputCount": 3,
+    "outputCount": 1,
     "inputs": [
-      { "materialId": "", "count": 0 },
-      { "materialId": "", "count": 0 }
+      {
+        "materialId": 2354,
+        "materialname": "控制面板",
+        "count": 6
+      },
+      {
+        "materialId": 17392,
+        "materialname": "数据芯片",
+        "count": 6
+      },
+      {
+        "materialId": 17898,
+        "materialname": "高科技传信器",
+        "count": 6
+      }
     ]
   }
 }

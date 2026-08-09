@@ -3,10 +3,23 @@
   "name": "递推计算机模块",
   "tier": "P4",
   "recipe": {
-    "outputCount": 3,
+    "outputCount": 1,
     "inputs": [
-      { "materialId": "", "count": 0 },
-      { "materialId": "", "count": 0 }
+      {
+        "materialId": 2346,
+        "materialname": "合成神经键",
+        "count": 6
+      },
+      {
+        "materialId": 9834,
+        "materialname": "制导系统",
+        "count": 6
+      },
+      {
+        "materialId": 12836,
+        "materialname": "透颅微控器",
+        "count": 6
+      }
     ]
   }
 }

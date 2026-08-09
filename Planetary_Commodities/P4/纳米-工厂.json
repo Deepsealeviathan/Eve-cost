@@ -3,10 +3,23 @@
   "name": "纳米-工厂",
   "tier": "P4",
   "recipe": {
-    "outputCount": 3,
+    "outputCount": 1,
     "inputs": [
-      { "materialId": "", "count": 0 },
-      { "materialId": "", "count": 0 }
+      {
+        "materialId": 2360,
+        "materialname": "工业炸药",
+        "count": 6
+      },
+      {
+        "materialId": 17136,
+        "materialname": "乌克米超导体",
+        "count": 6
+      },
+      {
+        "materialId": 2398,
+        "materialname": "反应金属",
+        "count": 40
+      }
     ]
   }
 }

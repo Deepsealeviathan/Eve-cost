@@ -3,10 +3,23 @@
   "name": "有机砂浆喷注器",
   "tier": "P4",
   "recipe": {
-    "outputCount": 3,
+    "outputCount": 1,
     "inputs": [
-      { "materialId": "", "count": 0 },
-      { "materialId": "", "count": 0 }
+      {
+        "materialId": 2344,
+        "materialname": "凝缩液",
+        "count": 6
+      },
+      {
+        "materialId": 9848,
+        "materialname": "机器人技术",
+        "count": 6
+      },
+      {
+        "materialId": 2393,
+        "materialname": "细菌",
+        "count": 40
+      }
     ]
   }
 }

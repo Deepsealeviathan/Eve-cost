@@ -190,12 +190,11 @@ def _query_p2(data, quantity):
     }
 
 
-def _query_p3(data, quantity):
+def _query_crafted(data, quantity, tier):
     """
-    P3 合成物品：根据 recipe 计算单个合成品的成本。
-    P3 的原材料是 P2，P2 的成本会递归计算到 P1 的市场价格，
-    不会直接使用 P2 的市场价格。
-    单个 P3 成本 = Σ(单个 P2 合成成本 × 所需 P2 数量) / outputCount
+    P2/P3/P4 通用合成物品成本计算。
+    根据 recipe 递归计算原材料成本，最终落实到 P1 市场价格。
+    单个成本 = Σ(单个原材料合成成本 × 所需数量) / outputCount
     """
     item_id = data['id']
     item_name = data['name']
@@ -208,46 +207,46 @@ def _query_p3(data, quantity):
     total_sell = 0
 
     for inp in inputs:
-        p2_id = inp.get('materialId')
-        p2_name = inp.get('materialname', '未知材料')
+        sub_id = inp.get('materialId')
+        sub_name = inp.get('materialname', '未知材料')
         count_per_batch = inp.get('count', 0)
 
-        if p2_id is None:
+        if sub_id is None:
             continue
 
-        # 单个 P3 产出所需的 P2 数量
+        # 单个当前物品产出所需的原材料数量
         num_per_unit = count_per_batch / output_count if output_count else 0
         total_num = num_per_unit * quantity
 
-        # 递归计算 P2 成本（最终会落实到 P1 市场价格）
-        p2_result = query_by_name(p2_name, total_num)
-        if p2_result is None:
-            print(f"警告：无法计算 P2 材料 {p2_name} 的成本")
+        # 递归计算原材料成本（P1 会查询数据库，P2/P3/P4 会继续递归）
+        sub_result = query_by_name(sub_name, total_num)
+        if sub_result is None:
+            print(f"警告：无法计算材料 {sub_name} 的成本")
             continue
 
-        # 单个 P2 的合成成本
-        p2_unit_buy = p2_result['total_buy'] / total_num if total_num else 0
-        p2_unit_sell = p2_result['total_sell'] / total_num if total_num else 0
+        # 单个原材料的合成成本
+        sub_unit_buy = sub_result['total_buy'] / total_num if total_num else 0
+        sub_unit_sell = sub_result['total_sell'] / total_num if total_num else 0
 
         materials.append({
-            'name': p2_name,
-            'id': p2_id,
+            'name': sub_name,
+            'id': sub_id,
             'num_per_unit': num_per_unit,
             'total_num': total_num,
-            'buy_max': p2_unit_buy,
-            'sell_max': p2_unit_sell,
-            'total_buy': p2_result['total_buy'],
-            'total_sell': p2_result['total_sell'],
-            'sub_materials': p2_result.get('materials', [])
+            'buy_max': sub_unit_buy,
+            'sell_max': sub_unit_sell,
+            'total_buy': sub_result['total_buy'],
+            'total_sell': sub_result['total_sell'],
+            'sub_materials': sub_result.get('materials', [])
         })
 
-        total_buy += p2_result['total_buy']
-        total_sell += p2_result['total_sell']
+        total_buy += sub_result['total_buy']
+        total_sell += sub_result['total_sell']
 
     return {
         'name': item_name,
         'quantity': quantity,
-        'tier': 'P3',
+        'tier': tier,
         'output_count': output_count,
         'materials': materials,
         'total_buy': total_buy,
@@ -259,8 +258,7 @@ def query_by_name(name, quantity=1):
     """
     根据物品名称查询成本。
     - P1：直接返回数据库中的市场价格
-    - P2：读取 recipe，根据 P1 价格估算单个合成品的成本
-    - P3：读取 recipe，递归计算 P2 成本（最终落实到 P1 价格）
+    - P2/P3/P4：读取 recipe，递归计算原材料成本（最终落实到 P1 价格）
     """
     json_path = find_json_file(name)
     if json_path is None:
@@ -278,10 +276,8 @@ def query_by_name(name, quantity=1):
 
     tier = data.get('tier', 'P1')
 
-    if tier == 'P3':
-        return _query_p3(data, quantity)
-    elif tier == 'P2':
-        return _query_p2(data, quantity)
+    if tier in ('P2', 'P3', 'P4'):
+        return _query_crafted(data, quantity, tier)
     else:
         return _query_p1(data, quantity)
 

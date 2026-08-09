@@ -3,10 +3,23 @@
   "name": "自协调能源核心",
   "tier": "P4",
   "recipe": {
-    "outputCount": 3,
+    "outputCount": 1,
     "inputs": [
-      { "materialId": "", "count": 0 },
-      { "materialId": "", "count": 0 }
+      {
+        "materialId": 2345,
+        "materialname": "监控无人机",
+        "count": 6
+      },
+      {
+        "materialId": 2352,
+        "materialname": "核反应堆",
+        "count": 6
+      },
+      {
+        "materialId": 2361,
+        "materialname": "密封薄膜",
+        "count": 6
+      }
     ]
   }
 }

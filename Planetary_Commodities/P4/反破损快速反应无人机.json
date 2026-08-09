@@ -3,10 +3,23 @@
   "name": "反破损快速反应无人机",
   "tier": "P4",
   "recipe": {
-    "outputCount": 3,
+    "outputCount": 1,
     "inputs": [
-      { "materialId": "", "count": 0 },
-      { "materialId": "", "count": 0 }
+      {
+        "materialId": 2348,
+        "materialname": "凝胶基质生物胶",
+        "count": 6
+      },
+      {
+        "materialId": 2366,
+        "materialname": "危险物探测系统",
+        "count": 6
+      },
+      {
+        "materialId": 9846,
+        "materialname": "大气内穿梭机",
+        "count": 6
+      }
     ]
   }
 }
