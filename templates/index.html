@@ -837,6 +837,35 @@
         }
 
         // ==========================================
+        // 递归渲染材料行（P4 -> P3 -> P2 -> P1）
+        // ==========================================
+        function renderMaterialRow(mat, itemQuantity, depth = 0) {
+            const indent = depth * 24;
+            const prefix = depth > 0 ? '↳ ' : '';
+            const bgStyle = depth > 0 ? `background: rgba(238,242,255,${0.3 + depth * 0.15});` : '';
+            const rowHtml = `
+                <tr style="${bgStyle}">
+                    <td style="padding-left:${16 + indent}px">${prefix}${mat.name}</td>
+                    <td>${mat.id}</td>
+                    <td>${fmt(mat.num_per_unit)}</td>
+                    <td>${depth === 0 ? itemQuantity : '-'}</td>
+                    <td><strong>${fmt(mat.total_num)}</strong></td>
+                    <td>${fmt(mat.buy_max)}</td>
+                    <td>${fmt(mat.sell_max)}</td>
+                    <td>${fmt(mat.total_buy)}</td>
+                    <td>${fmt(mat.total_sell)}</td>
+                </tr>
+            `;
+
+            let childrenHtml = '';
+            if (mat.sub_materials && mat.sub_materials.length > 0) {
+                childrenHtml = mat.sub_materials.map(sub => renderMaterialRow(sub, itemQuantity, depth + 1)).join('');
+            }
+
+            return rowHtml + childrenHtml;
+        }
+
+        // ==========================================
         // 渲染结果
         // ==========================================
         function renderBatchResult(data) {
@@ -876,62 +905,7 @@
                 tbody.appendChild(groupRow);
 
                 item.materials.forEach(mat => {
-                    const tr = document.createElement('tr');
-                    tr.innerHTML = `
-                        <td>${mat.name}</td>
-                        <td>${mat.id}</td>
-                        <td>${fmt(mat.num_per_unit)}</td>
-                        <td>${item.quantity}</td>
-                        <td><strong>${fmt(mat.total_num)}</strong></td>
-                        <td>${fmt(mat.buy_max)}</td>
-                        <td>${fmt(mat.sell_max)}</td>
-                        <td>${fmt(mat.total_buy)}</td>
-                        <td>${fmt(mat.total_sell)}</td>
-                    `;
-                    tbody.appendChild(tr);
-
-                    // P3/P4 的原材料展开显示其下一层子材料
-                    if ((isP3 || isP4) && mat.sub_materials && mat.sub_materials.length > 0) {
-                        const subTr = document.createElement('tr');
-                        const subRows = mat.sub_materials.map(sub => `
-                            <tr>
-                                <td style="padding:6px;">${sub.name}</td>
-                                <td style="padding:6px;">${sub.id}</td>
-                                <td style="padding:6px;">${fmt(sub.num_per_unit)}</td>
-                                <td style="padding:6px;">${fmt(sub.total_num)}</td>
-                                <td style="padding:6px;">${fmt(sub.buy_max)}</td>
-                                <td style="padding:6px;">${fmt(sub.sell_max)}</td>
-                                <td style="padding:6px;">${fmt(sub.total_buy)}</td>
-                                <td style="padding:6px;">${fmt(sub.total_sell)}</td>
-                            </tr>
-                        `).join('');
-                        const subTitle = isP4
-                            ? `↳ ${mat.name} 的子材料`
-                            : `↳ ${mat.name} 的 P1 原材料（按 P1 市场价格计算）`;
-                        subTr.innerHTML = `
-                            <td colspan="9" style="padding:0 0 8px 0; border-bottom:none;">
-                                <div style="margin:2px 8px 10px 36px; padding:12px; background:#f8fafc; border-radius:10px; border:1px solid #e5e7eb;">
-                                    <div style="font-size:12px; color:#6b7280; margin-bottom:8px; font-weight:600;">${subTitle}</div>
-                                    <table style="width:100%; font-size:13px; border-collapse:collapse;">
-                                        <thead>
-                                            <tr style="background:#eef2ff;">
-                                                <th style="padding:6px; text-align:center;">材料</th>
-                                                <th style="padding:6px; text-align:center;">ID</th>
-                                                <th style="padding:6px; text-align:center;">单件需要</th>
-                                                <th style="padding:6px; text-align:center;">总需要</th>
-                                                <th style="padding:6px; text-align:center;">buy_max</th>
-                                                <th style="padding:6px; text-align:center;">sell_max</th>
-                                                <th style="padding:6px; text-align:center;">收购总价</th>
-                                                <th style="padding:6px; text-align:center;">出售总价</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>${subRows}</tbody>
-                                    </table>
-                                </div>
-                            </td>
-                        `;
-                        tbody.appendChild(subTr);
-                    }
+                    tbody.insertAdjacentHTML('beforeend', renderMaterialRow(mat, item.quantity, 0));
                 });
 
                 if (isP2 || isP3 || isP4) {
