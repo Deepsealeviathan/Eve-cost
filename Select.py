@@ -77,7 +77,7 @@ def find_json_file(name):
 
 
 def _query_price_map(ids):
-    """根据 ID 列表查询数据库中的 buy_max 和 sell_max"""
+    """根据 ID 列表查询数据库中的 buy_max 和 sell_max（用于成本计算）"""
     if not ids:
         return {}
 
@@ -87,6 +87,31 @@ def _query_price_map(ids):
         with conn.cursor() as cursor:
             placeholders = ','.join(['%s'] * len(ids))
             sql = f"SELECT ID, buy_max, sell_max FROM test WHERE ID IN ({placeholders})"
+            cursor.execute(sql, ids)
+            rows = cursor.fetchall()
+            return {row[0]: (row[1], row[2]) for row in rows}
+    except pymysql.Error as e:
+        print(f"数据库错误: {e}")
+        return {}
+    finally:
+        if conn:
+            conn.close()
+
+
+def _query_market_price(ids):
+    """
+    根据 ID 列表查询数据库中的市场价（buy_max / sell_min）。
+    用于与合成成本进行对比，和左侧目录弹窗保持一致。
+    """
+    if not ids:
+        return {}
+
+    conn = None
+    try:
+        conn = pymysql.connect(**DB_CONFIG)
+        with conn.cursor() as cursor:
+            placeholders = ','.join(['%s'] * len(ids))
+            sql = f"SELECT ID, buy_max, sell_min FROM test WHERE ID IN ({placeholders})"
             cursor.execute(sql, ids)
             rows = cursor.fetchall()
             return {row[0]: (row[1], row[2]) for row in rows}
@@ -195,12 +220,19 @@ def _query_crafted(data, quantity, tier):
     P2/P3/P4 通用合成物品成本计算。
     根据 recipe 递归计算原材料成本，最终落实到 P1 市场价格。
     单个成本 = Σ(单个原材料合成成本 × 所需数量) / outputCount
+
+    同时从数据库读取该物品自身的市场价（buy_max / sell_min），
+    方便与合成成本进行对比。
     """
     item_id = data['id']
     item_name = data['name']
     recipe = data.get('recipe', {})
     output_count = recipe.get('outputCount', 1)
     inputs = recipe.get('inputs', [])
+
+    # 查询该物品自身的市场价格（buy_max / sell_min，与目录弹窗保持一致）
+    market_price_map = _query_market_price([item_id])
+    market_buy, market_sell = market_price_map.get(item_id, (0, 0))
 
     materials = []
     total_buy = 0
@@ -245,12 +277,17 @@ def _query_crafted(data, quantity, tier):
 
     return {
         'name': item_name,
+        'id': item_id,
         'quantity': quantity,
         'tier': tier,
         'output_count': output_count,
         'materials': materials,
         'total_buy': total_buy,
-        'total_sell': total_sell
+        'total_sell': total_sell,
+        'market_buy': market_buy or 0,
+        'market_sell': market_sell or 0,
+        'total_market_buy': (market_buy or 0) * quantity,
+        'total_market_sell': (market_sell or 0) * quantity
     }
 
 

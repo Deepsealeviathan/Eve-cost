@@ -840,7 +840,7 @@
         // 渲染结果
         // ==========================================
         function renderBatchResult(data) {
-            document.getElementById('result-title').textContent = '批量成本估算（P4/P3 递归到 P1，P2 按合成配方计算）';
+            document.getElementById('result-title').textContent = '批量成本估算';
             document.getElementById('total-items').textContent = data.items.length;
             document.getElementById('total-buy').textContent = fmt(data.grand_total_buy);
             document.getElementById('total-sell').textContent = fmt(data.grand_total_sell);
@@ -945,6 +945,17 @@
                         <td colspan="2" style="color:#d97706; font-weight:700;">${fmt(unitSell)} ISK</td>
                     `;
                     tbody.appendChild(summaryRow);
+
+                    // 显示该物品自身的数据库市场价，方便与合成成本对比
+                    const marketBuy = item.market_buy || 0;
+                    const marketSell = item.market_sell || 0;
+                    const marketRow = document.createElement('tr');
+                    marketRow.innerHTML = `
+                        <td colspan="5" style="text-align:right; font-weight:600;">单件 ${item.name} 数据库市场价：</td>
+                        <td colspan="2" style="color:var(--success); font-weight:700;">${fmt(marketBuy)} ISK</td>
+                        <td colspan="2" style="color:#d97706; font-weight:700;">${fmt(marketSell)} ISK</td>
+                    `;
+                    tbody.appendChild(marketRow);
                 }
             });
 
