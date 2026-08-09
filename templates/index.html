@@ -882,8 +882,8 @@
             const missingStyle = mat.missing ? 'color:#b91c1c; font-weight:600;' : '';
             const missingBadge = mat.missing ? ' <span style="color:#b91c1c; font-size:12px;">(未找到 JSON)</span>' : '';
             const groupAttr = itemGroupId ? `data-item-group="${itemGroupId}"` : '';
-            // 有子材料的行默认隐藏（折叠状态），根材料行始终显示
-            const rowDisplay = depth > 0 ? 'display:none;' : '';
+            // 材料明细行默认全部隐藏（折叠状态），点击分组头部或材料树按钮后展开
+            const rowDisplay = 'display:none;';
             const rowHtml = `
                 <tr class="material-row" data-path="${rowPath}" data-depth="${depth}" ${groupAttr} style="${bgStyle} ${missingStyle} ${rowDisplay}">
                     <td style="padding-left:${16 + indent}px; text-align:left;" onclick="event.stopPropagation();">
