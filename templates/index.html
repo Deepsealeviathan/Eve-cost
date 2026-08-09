@@ -360,17 +360,15 @@
             width: 18px;
             height: 18px;
             margin-right: 6px;
-            border-radius: 4px;
-            background: #e0e7ff;
             color: var(--primary-dark);
             font-size: 12px;
             font-weight: 700;
             cursor: pointer;
             user-select: none;
-            transition: background 0.15s;
+            transition: transform 0.15s, color 0.15s;
         }
 
-        .toggle-btn:hover { background: #c7d2fe; }
+        .toggle-btn:hover { color: var(--primary); }
 
         .toggle-placeholder {
             display: inline-block;
@@ -876,15 +874,18 @@
             const prefix = depth > 0 ? '↳ ' : '';
             const bgStyle = depth > 0 ? `background: rgba(238,242,255,${0.3 + depth * 0.15});` : '';
             const hasChildren = mat.sub_materials && mat.sub_materials.length > 0;
+            // 默认折叠，使用右向三角形 ▶
             const toggleBtn = hasChildren
-                ? `<span class="toggle-btn" data-path="${rowPath}" onclick="event.stopPropagation(); toggleTree('${rowPath}')">[-]</span>`
+                ? `<span class="toggle-btn" data-path="${rowPath}" onclick="event.stopPropagation(); toggleTree('${rowPath}')">▶</span>`
                 : '<span class="toggle-placeholder"></span>';
 
             const missingStyle = mat.missing ? 'color:#b91c1c; font-weight:600;' : '';
             const missingBadge = mat.missing ? ' <span style="color:#b91c1c; font-size:12px;">(未找到 JSON)</span>' : '';
             const groupAttr = itemGroupId ? `data-item-group="${itemGroupId}"` : '';
+            // 有子材料的行默认隐藏（折叠状态），根材料行始终显示
+            const rowDisplay = depth > 0 ? 'display:none;' : '';
             const rowHtml = `
-                <tr class="material-row" data-path="${rowPath}" data-depth="${depth}" ${groupAttr} style="${bgStyle} ${missingStyle}">
+                <tr class="material-row" data-path="${rowPath}" data-depth="${depth}" ${groupAttr} style="${bgStyle} ${missingStyle} ${rowDisplay}">
                     <td style="padding-left:${16 + indent}px; text-align:left;" onclick="event.stopPropagation();">
                         ${toggleBtn}${prefix}${mat.name}${missingBadge}
                     </td>
@@ -911,20 +912,27 @@
             const parentBtn = document.querySelector(`.toggle-btn[data-path="${parentPath}"]`);
             if (!parentBtn) return;
 
-            const isExpanded = parentBtn.textContent === '[-]';
+            const parentRow = document.querySelector(`tr.material-row[data-path="${parentPath}"]`);
+            const parentDepth = parentRow ? parseInt(parentRow.getAttribute('data-depth'), 10) : 0;
+            const isExpanded = parentBtn.textContent === '▼';
             const rows = document.querySelectorAll('tr.material-row');
             rows.forEach(row => {
                 const path = row.getAttribute('data-path');
+                const depth = parseInt(row.getAttribute('data-depth'), 10);
                 if (path !== parentPath && path.startsWith(parentPath + '/')) {
-                    row.style.display = isExpanded ? 'none' : '';
-                    const btn = row.querySelector('.toggle-btn');
-                    if (btn) {
-                        btn.textContent = isExpanded ? '[+]' : '[-]';
+                    if (isExpanded) {
+                        // 折叠：隐藏所有后代
+                        row.style.display = 'none';
+                        const btn = row.querySelector('.toggle-btn');
+                        if (btn) btn.textContent = '▶';
+                    } else if (depth === parentDepth + 1) {
+                        // 展开：只显示直接子节点
+                        row.style.display = '';
                     }
                 }
             });
 
-            parentBtn.textContent = isExpanded ? '[+]' : '[-]';
+            parentBtn.textContent = isExpanded ? '▶' : '▼';
         }
 
         // ==========================================
@@ -984,7 +992,7 @@
                     <td colspan="9" class="group-header" style="cursor:pointer;" onclick="toggleItemGroup('${groupId}')">
                         <div style="display:flex; align-items:flex-start; justify-content:space-between;">
                             <div>
-                                <span class="toggle-btn" data-group="${groupId}" style="margin-right:8px;">[-]</span>
+                                <span class="toggle-btn" data-group="${groupId}" style="margin-right:8px;">▶</span>
                                 ${icon} ${item.name} × ${item.quantity} ${tierLabel}
                                 ${costSummary}
                                 ${marketSummary}
@@ -1007,11 +1015,21 @@
             const rows = document.querySelectorAll(`tr[data-item-group="${groupId}"]`);
             if (!btn || rows.length === 0) return;
 
-            const isExpanded = btn.textContent === '[-]';
+            const isExpanded = btn.textContent === '▼';
             rows.forEach(row => {
-                row.style.display = isExpanded ? 'none' : '';
+                const depth = parseInt(row.getAttribute('data-depth'), 10);
+                if (isExpanded) {
+                    // 折叠：隐藏所有材料明细
+                    row.style.display = 'none';
+                    const innerBtn = row.querySelector('.toggle-btn');
+                    if (innerBtn) innerBtn.textContent = '▶';
+                } else if (depth === 0) {
+                    // 展开：只显示直接材料（depth=0）
+                    row.style.display = '';
+                }
             });
-            btn.textContent = isExpanded ? '[+]' : '[-]';
+
+            btn.textContent = isExpanded ? '▶' : '▼';
         }
 
         function fmt(num) {
