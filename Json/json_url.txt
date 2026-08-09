@@ -66,7 +66,7 @@
 监控无人机;https://www.ceve-market.org/api/market/region/10000002/system/30000142/type/2345.json
 凝缩液;https://www.ceve-market.org/api/market/region/10000002/system/30000142/type/2344.json
 大气内穿梭机;https://www.ceve-market.org/api/market/region/10000002/system/30000142/type/9846.json
-递推计算机模块;https://www.ceve-market.org/api/market/region/10000002/system/30000142/type/2871.json
+递推计算模块;https://www.ceve-market.org/api/market/region/10000002/system/30000142/type/2871.json
 广播节点;https://www.ceve-market.org/api/market/region/10000002/system/30000142/type/2867.json
 反破损快速反应无人机;https://www.ceve-market.org/api/market/region/10000002/system/30000142/type/2868.json
 有机砂浆喷注器;https://www.ceve-market.org/api/market/region/10000002/system/30000142/type/2870.json
