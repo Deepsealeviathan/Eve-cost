@@ -254,11 +254,26 @@ def _query_crafted(data, quantity, tier):
         sub_result = query_by_name(sub_name, total_num)
         if sub_result is None:
             print(f"警告：无法计算材料 {sub_name} 的成本")
+            materials.append({
+                'name': sub_name,
+                'id': sub_id,
+                'num_per_unit': num_per_unit,
+                'total_num': total_num,
+                'buy_max': 0,
+                'sell_max': 0,
+                'total_buy': 0,
+                'total_sell': 0,
+                'sub_materials': [],
+                'missing': True
+            })
             continue
 
         # 单个原材料的合成成本
         sub_unit_buy = sub_result['total_buy'] / total_num if total_num else 0
         sub_unit_sell = sub_result['total_sell'] / total_num if total_num else 0
+
+        # P1 没有子材料，避免把自身当作子材料重复渲染
+        sub_materials = sub_result.get('materials', []) if sub_result.get('tier') != 'P1' else []
 
         materials.append({
             'name': sub_name,
@@ -269,7 +284,7 @@ def _query_crafted(data, quantity, tier):
             'sell_max': sub_unit_sell,
             'total_buy': sub_result['total_buy'],
             'total_sell': sub_result['total_sell'],
-            'sub_materials': sub_result.get('materials', [])
+            'sub_materials': sub_materials
         })
 
         total_buy += sub_result['total_buy']

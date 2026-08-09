@@ -353,6 +353,37 @@
             border-bottom: 1px solid #c7d2fe;
         }
 
+        .toggle-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 18px;
+            height: 18px;
+            margin-right: 6px;
+            border-radius: 4px;
+            background: #e0e7ff;
+            color: var(--primary-dark);
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            user-select: none;
+            transition: background 0.15s;
+        }
+
+        .toggle-btn:hover { background: #c7d2fe; }
+
+        .toggle-placeholder {
+            display: inline-block;
+            width: 18px;
+            height: 18px;
+            margin-right: 6px;
+        }
+
+        .material-row td:first-child {
+            text-align: left;
+            white-space: nowrap;
+        }
+
         .summary {
             margin-top: 32px;
             display: grid;
@@ -839,14 +870,24 @@
         // ==========================================
         // 递归渲染材料行（P4 -> P3 -> P2 -> P1）
         // ==========================================
-        function renderMaterialRow(mat, itemQuantity, depth = 0) {
+        function renderMaterialRow(mat, itemQuantity, path = '', depth = 0) {
+            const rowPath = path ? `${path}/${mat.name}` : mat.name;
             const indent = depth * 24;
             const prefix = depth > 0 ? '↳ ' : '';
             const bgStyle = depth > 0 ? `background: rgba(238,242,255,${0.3 + depth * 0.15});` : '';
+            const hasChildren = mat.sub_materials && mat.sub_materials.length > 0;
+            const toggleBtn = hasChildren
+                ? `<span class="toggle-btn" data-path="${rowPath}" onclick="toggleTree('${rowPath}')">[-]</span>`
+                : '<span class="toggle-placeholder"></span>';
+
+            const missingStyle = mat.missing ? 'color:#b91c1c; font-weight:600;' : '';
+            const missingBadge = mat.missing ? ' <span style="color:#b91c1c; font-size:12px;">(未找到 JSON)</span>' : '';
             const rowHtml = `
-                <tr style="${bgStyle}">
-                    <td style="padding-left:${16 + indent}px">${prefix}${mat.name}</td>
-                    <td>${mat.id}</td>
+                <tr class="material-row" data-path="${rowPath}" data-depth="${depth}" style="${bgStyle} ${missingStyle}">
+                    <td style="padding-left:${16 + indent}px; text-align:left;">
+                        ${toggleBtn}${prefix}${mat.name}${missingBadge}
+                    </td>
+                    <td>${mat.id || '-'}</td>
                     <td>${fmt(mat.num_per_unit)}</td>
                     <td>${depth === 0 ? itemQuantity : '-'}</td>
                     <td><strong>${fmt(mat.total_num)}</strong></td>
@@ -858,11 +899,31 @@
             `;
 
             let childrenHtml = '';
-            if (mat.sub_materials && mat.sub_materials.length > 0) {
-                childrenHtml = mat.sub_materials.map(sub => renderMaterialRow(sub, itemQuantity, depth + 1)).join('');
+            if (hasChildren) {
+                childrenHtml = mat.sub_materials.map(sub => renderMaterialRow(sub, itemQuantity, rowPath, depth + 1)).join('');
             }
 
             return rowHtml + childrenHtml;
+        }
+
+        function toggleTree(parentPath) {
+            const parentBtn = document.querySelector(`.toggle-btn[data-path="${parentPath}"]`);
+            if (!parentBtn) return;
+
+            const isExpanded = parentBtn.textContent === '[-]';
+            const rows = document.querySelectorAll('tr.material-row');
+            rows.forEach(row => {
+                const path = row.getAttribute('data-path');
+                if (path !== parentPath && path.startsWith(parentPath + '/')) {
+                    row.style.display = isExpanded ? 'none' : '';
+                    const btn = row.querySelector('.toggle-btn');
+                    if (btn) {
+                        btn.textContent = isExpanded ? '[+]' : '[-]';
+                    }
+                }
+            });
+
+            parentBtn.textContent = isExpanded ? '[+]' : '[-]';
         }
 
         // ==========================================
@@ -905,7 +966,7 @@
                 tbody.appendChild(groupRow);
 
                 item.materials.forEach(mat => {
-                    tbody.insertAdjacentHTML('beforeend', renderMaterialRow(mat, item.quantity, 0));
+                    tbody.insertAdjacentHTML('beforeend', renderMaterialRow(mat, item.quantity, '', 0));
                 });
 
                 if (isP2 || isP3 || isP4) {
