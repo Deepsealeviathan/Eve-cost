@@ -5,8 +5,16 @@
   "recipe": {
     "outputCount": 3,
     "inputs": [
-      { "materialId": "", "count": 0 },
-      { "materialId": "", "count": 0 }
+      {
+        "materialId": 2321,
+        "materialname": "聚芳酰胺",
+        "count": 10
+      },
+      {
+        "materialId": 15317,
+        "materialname": "基因肉制品",
+        "count": 10
+      }
     ]
   }
 }

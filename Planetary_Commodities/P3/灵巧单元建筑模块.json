@@ -5,8 +5,16 @@
   "recipe": {
     "outputCount": 3,
     "inputs": [
-      { "materialId": "", "count": 0 },
-      { "materialId": "", "count": 0 }
+      {
+        "materialId": 3828,
+        "materialname": "建筑模块",
+        "count": 10
+      },
+      {
+        "materialId": 9842,
+        "materialname": "微型电子元件",
+        "count": 10
+      }
     ]
   }
 }

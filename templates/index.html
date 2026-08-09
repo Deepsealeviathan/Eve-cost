@@ -840,7 +840,7 @@
         // 渲染结果
         // ==========================================
         function renderBatchResult(data) {
-            document.getElementById('result-title').textContent = '批量成本估算（P2 按合成配方计算单件成本）';
+            document.getElementById('result-title').textContent = '批量成本估算（P3 递归到 P1，P2 按合成配方计算）';
             document.getElementById('total-items').textContent = data.items.length;
             document.getElementById('total-buy').textContent = fmt(data.grand_total_buy);
             document.getElementById('total-sell').textContent = fmt(data.grand_total_sell);
@@ -850,10 +850,18 @@
 
             data.items.forEach(item => {
                 const isP2 = item.tier === 'P2';
-                const tierLabel = isP2
-                    ? `<span style="margin-left:12px; font-size:12px; color:#4f46e5;">[P2 合成 | 单次产出 ${item.output_count} 个]</span>`
-                    : `<span style="margin-left:12px; font-size:12px; color:#059669;">[P1 基础材料]</span>`;
-                const icon = isP2 ? '⚗️' : '📦';
+                const isP3 = item.tier === 'P3';
+                let tierLabel, icon;
+                if (isP3) {
+                    tierLabel = `<span style="margin-left:12px; font-size:12px; color:#7c3aed;">[P3 合成 | 单次产出 ${item.output_count} 个 | 成本递归到 P1]</span>`;
+                    icon = '🏭';
+                } else if (isP2) {
+                    tierLabel = `<span style="margin-left:12px; font-size:12px; color:#4f46e5;">[P2 合成 | 单次产出 ${item.output_count} 个]</span>`;
+                    icon = '⚗️';
+                } else {
+                    tierLabel = `<span style="margin-left:12px; font-size:12px; color:#059669;">[P1 基础材料]</span>`;
+                    icon = '📦';
+                }
 
                 const groupRow = document.createElement('tr');
                 groupRow.innerHTML = `
@@ -877,14 +885,55 @@
                         <td>${fmt(mat.total_sell)}</td>
                     `;
                     tbody.appendChild(tr);
+
+                    // P3 的 P2 材料展开显示其 P1 子材料
+                    if (isP3 && mat.sub_materials && mat.sub_materials.length > 0) {
+                        const subTr = document.createElement('tr');
+                        const subRows = mat.sub_materials.map(sub => `
+                            <tr>
+                                <td style="padding:6px;">${sub.name}</td>
+                                <td style="padding:6px;">${sub.id}</td>
+                                <td style="padding:6px;">${fmt(sub.num_per_unit)}</td>
+                                <td style="padding:6px;">${fmt(sub.total_num)}</td>
+                                <td style="padding:6px;">${fmt(sub.buy_max)}</td>
+                                <td style="padding:6px;">${fmt(sub.sell_max)}</td>
+                                <td style="padding:6px;">${fmt(sub.total_buy)}</td>
+                                <td style="padding:6px;">${fmt(sub.total_sell)}</td>
+                            </tr>
+                        `).join('');
+                        subTr.innerHTML = `
+                            <td colspan="9" style="padding:0 0 8px 0; border-bottom:none;">
+                                <div style="margin:2px 8px 10px 36px; padding:12px; background:#f8fafc; border-radius:10px; border:1px solid #e5e7eb;">
+                                    <div style="font-size:12px; color:#6b7280; margin-bottom:8px; font-weight:600;">↳ ${mat.name} 的 P1 原材料（按 P1 市场价格计算）</div>
+                                    <table style="width:100%; font-size:13px; border-collapse:collapse;">
+                                        <thead>
+                                            <tr style="background:#eef2ff;">
+                                                <th style="padding:6px; text-align:center;">P1 材料</th>
+                                                <th style="padding:6px; text-align:center;">ID</th>
+                                                <th style="padding:6px; text-align:center;">单件需要</th>
+                                                <th style="padding:6px; text-align:center;">总需要</th>
+                                                <th style="padding:6px; text-align:center;">buy_max</th>
+                                                <th style="padding:6px; text-align:center;">sell_max</th>
+                                                <th style="padding:6px; text-align:center;">收购总价</th>
+                                                <th style="padding:6px; text-align:center;">出售总价</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>${subRows}</tbody>
+                                    </table>
+                                </div>
+                            </td>
+                        `;
+                        tbody.appendChild(subTr);
+                    }
                 });
 
-                if (isP2) {
+                if (isP2 || isP3) {
                     const unitBuy = item.quantity ? item.total_buy / item.quantity : 0;
                     const unitSell = item.quantity ? item.total_sell / item.quantity : 0;
+                    const tierText = isP3 ? 'P3' : 'P2';
                     const summaryRow = document.createElement('tr');
                     summaryRow.innerHTML = `
-                        <td colspan="5" style="text-align:right; font-weight:600;">单件 ${item.name} 合成成本：</td>
+                        <td colspan="5" style="text-align:right; font-weight:600;">单件 ${item.name} ${tierText} 合成成本：</td>
                         <td colspan="2" style="color:var(--success); font-weight:700;">${fmt(unitBuy)} ISK</td>
                         <td colspan="2" style="color:#d97706; font-weight:700;">${fmt(unitSell)} ISK</td>
                     `;

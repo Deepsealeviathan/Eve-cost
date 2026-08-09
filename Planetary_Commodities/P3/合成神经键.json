@@ -5,8 +5,16 @@
   "recipe": {
     "outputCount": 3,
     "inputs": [
-      { "materialId": "", "count": 0 },
-      { "materialId": "", "count": 0 }
+      {
+        "materialId": 2312,
+        "materialname": "超张力塑料",
+        "count": 10
+      },
+      {
+        "materialId": 2319,
+        "materialname": "培养基",
+        "count": 10
+      }
     ]
   }
 }

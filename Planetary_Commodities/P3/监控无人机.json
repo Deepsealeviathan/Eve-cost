@@ -5,8 +5,16 @@
   "recipe": {
     "outputCount": 3,
     "inputs": [
-      { "materialId": "", "count": 0 },
-      { "materialId": "", "count": 0 }
+      {
+        "materialId": 3697,
+        "materialname": "硅酸盐玻璃",
+        "count": 10
+      },
+      {
+        "materialId": 9830,
+        "materialname": "火箭燃料",
+        "count": 10
+      }
     ]
   }
 }

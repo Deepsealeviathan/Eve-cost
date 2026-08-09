@@ -5,8 +5,21 @@
   "recipe": {
     "outputCount": 3,
     "inputs": [
-      { "materialId": "", "count": 0 },
-      { "materialId": "", "count": 0 }
+      {
+        "materialId": 2328,
+        "materialname": "水冷CPU",
+        "count": 10
+      },
+      {
+        "materialId": 9832,
+        "materialname": "冷却剂",
+        "count": 10
+      },
+      {
+        "materialId": 9836,
+        "materialname": "消费级电器",
+        "count": 10
+      }
     ]
   }
 }

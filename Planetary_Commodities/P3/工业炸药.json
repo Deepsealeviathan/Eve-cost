@@ -5,8 +5,16 @@
   "recipe": {
     "outputCount": 3,
     "inputs": [
-      { "materialId": "", "count": 0 },
-      { "materialId": "", "count": 0 }
+      {
+        "materialId": 3693,
+        "materialname": "肥料",
+        "count": 10
+      },
+      {
+        "materialId": 3695,
+        "materialname": "合成纺织品",
+        "count": 10
+      }
     ]
   }
 }

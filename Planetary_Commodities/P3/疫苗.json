@@ -5,8 +5,16 @@
   "recipe": {
     "outputCount": 3,
     "inputs": [
-      { "materialId": "", "count": 0 },
-      { "materialId": "", "count": 0 }
+      {
+        "materialId": 3725,
+        "materialname": "家畜",
+        "count": 10
+      },
+      {
+        "materialId": 3775,
+        "materialname": "病原体",
+        "count": 10
+      }
     ]
   }
 }

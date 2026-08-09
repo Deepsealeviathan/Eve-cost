@@ -5,8 +5,16 @@
   "recipe": {
     "outputCount": 3,
     "inputs": [
-      { "materialId": "", "count": 0 },
-      { "materialId": "", "count": 0 }
+      {
+        "materialId": 2317,
+        "materialname": "氧化物",
+        "count": 10
+      },
+      {
+        "materialId": 9832,
+        "materialname": "冷却剂",
+        "count": 10
+      }
     ]
   }
 }

@@ -5,8 +5,16 @@
   "recipe": {
     "outputCount": 3,
     "inputs": [
-      { "materialId": "", "count": 0 },
-      { "materialId": "", "count": 0 }
+      {
+        "materialId": 3689,
+        "materialname": "机械元件",
+        "count": 10
+      },
+      {
+        "materialId": 9836,
+        "materialname": "消费级电器",
+        "count": 10
+      }
     ]
   }
 }

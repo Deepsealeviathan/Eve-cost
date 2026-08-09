@@ -5,8 +5,16 @@
   "recipe": {
     "outputCount": 3,
     "inputs": [
-      { "materialId": "", "count": 0 },
-      { "materialId": "", "count": 0 }
+      {
+        "materialId": 3691,
+        "materialname": "合成油",
+        "count": 10
+      },
+      {
+        "materialId": 9838,
+        "materialname": "超导体",
+        "count": 10
+      }
     ]
   }
 }

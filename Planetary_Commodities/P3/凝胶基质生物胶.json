@@ -5,8 +5,21 @@
   "recipe": {
     "outputCount": 3,
     "inputs": [
-      { "materialId": "", "count": 0 },
-      { "materialId": "", "count": 0 }
+      {
+        "materialId": 2317,
+        "materialname": "氧化物",
+        "count": 10
+      },
+      {
+        "materialId": 2329,
+        "materialname": "生物电池",
+        "count": 10
+      },
+      {
+        "materialId": 9838,
+        "materialname": "超导体",
+        "count": 10
+      }
     ]
   }
 }

@@ -5,8 +5,21 @@
   "recipe": {
     "outputCount": 3,
     "inputs": [
-      { "materialId": "", "count": 0 },
-      { "materialId": "", "count": 0 }
+      {
+        "materialId": 2319,
+        "materialname": "培养基",
+        "count": 10
+      },
+      {
+        "materialId": 3691,
+        "materialname": "合成油",
+        "count": 10
+      },
+      {
+        "materialId": 3693,
+        "materialname": "肥料",
+        "count": 10
+      }
     ]
   }
 }

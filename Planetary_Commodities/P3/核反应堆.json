@@ -5,8 +5,16 @@
   "recipe": {
     "outputCount": 3,
     "inputs": [
-      { "materialId": "", "count": 0 },
-      { "materialId": "", "count": 0 }
+      {
+        "materialId": 2327,
+        "materialname": "微纤维护盾",
+        "count": 10
+      },
+      {
+        "materialId": 44,
+        "materialname": "核能燃料",
+        "count": 10
+      }
     ]
   }
 }
