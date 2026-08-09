@@ -77,32 +77,7 @@ def find_json_file(name):
 
 
 def _query_price_map(ids):
-    """根据 ID 列表查询数据库中的 buy_max 和 sell_max（用于成本计算）"""
-    if not ids:
-        return {}
-
-    conn = None
-    try:
-        conn = pymysql.connect(**DB_CONFIG)
-        with conn.cursor() as cursor:
-            placeholders = ','.join(['%s'] * len(ids))
-            sql = f"SELECT ID, buy_max, sell_max FROM test WHERE ID IN ({placeholders})"
-            cursor.execute(sql, ids)
-            rows = cursor.fetchall()
-            return {row[0]: (row[1], row[2]) for row in rows}
-    except pymysql.Error as e:
-        print(f"数据库错误: {e}")
-        return {}
-    finally:
-        if conn:
-            conn.close()
-
-
-def _query_market_price(ids):
-    """
-    根据 ID 列表查询数据库中的市场价（buy_max / sell_min）。
-    用于与合成成本进行对比，和左侧目录弹窗保持一致。
-    """
+    """根据 ID 列表查询数据库中的 buy_max 和 sell_min（用于成本计算）"""
     if not ids:
         return {}
 
@@ -125,16 +100,16 @@ def _query_market_price(ids):
 
 def _query_p1(data, quantity):
     """
-    P1 基础材料：直接查询数据库中该物品的 buy_max/sell_max
+    P1 基础材料：直接查询数据库中该物品的 buy_max/sell_min
     """
     item_id = data['id']
     item_name = data['name']
 
     price_map = _query_price_map([item_id])
-    buy_max, sell_max = price_map.get(item_id, (0, 0))
+    buy_max, sell_min = price_map.get(item_id, (0, 0))
 
     total_buy = (buy_max or 0) * quantity
-    total_sell = (sell_max or 0) * quantity
+    total_sell = (sell_min or 0) * quantity
 
     return {
         'name': item_name,
@@ -146,7 +121,7 @@ def _query_p1(data, quantity):
             'num_per_unit': 1,
             'total_num': quantity,
             'buy_max': buy_max,
-            'sell_max': sell_max,
+            'sell_min': sell_min,
             'total_buy': total_buy,
             'total_sell': total_sell
         }],
@@ -185,10 +160,10 @@ def _query_p2(data, quantity):
         # 单个 P2 产出所需的原材料数量
         num_per_unit = count_per_batch / output_count if output_count else 0
         total_num = num_per_unit * quantity
-        buy_max, sell_max = price_map.get(mid, (0, 0))
+        buy_max, sell_min = price_map.get(mid, (0, 0))
 
         mat_buy = (buy_max or 0) * total_num
-        mat_sell = (sell_max or 0) * total_num
+        mat_sell = (sell_min or 0) * total_num
 
         materials.append({
             'name': mname,
@@ -196,7 +171,7 @@ def _query_p2(data, quantity):
             'num_per_unit': num_per_unit,
             'total_num': total_num,
             'buy_max': buy_max,
-            'sell_max': sell_max,
+            'sell_min': sell_min,
             'total_buy': mat_buy,
             'total_sell': mat_sell
         })
@@ -230,8 +205,8 @@ def _query_crafted(data, quantity, tier):
     output_count = recipe.get('outputCount', 1)
     inputs = recipe.get('inputs', [])
 
-    # 查询该物品自身的市场价格（buy_max / sell_min，与目录弹窗保持一致）
-    market_price_map = _query_market_price([item_id])
+    # 查询该物品自身的市场价格（buy_max / sell_min）
+    market_price_map = _query_price_map([item_id])
     market_buy, market_sell = market_price_map.get(item_id, (0, 0))
 
     materials = []
@@ -260,7 +235,7 @@ def _query_crafted(data, quantity, tier):
                 'num_per_unit': num_per_unit,
                 'total_num': total_num,
                 'buy_max': 0,
-                'sell_max': 0,
+                'sell_min': 0,
                 'total_buy': 0,
                 'total_sell': 0,
                 'sub_materials': [],
@@ -281,7 +256,7 @@ def _query_crafted(data, quantity, tier):
             'num_per_unit': num_per_unit,
             'total_num': total_num,
             'buy_max': sub_unit_buy,
-            'sell_max': sub_unit_sell,
+            'sell_min': sub_unit_sell,
             'total_buy': sub_result['total_buy'],
             'total_sell': sub_result['total_sell'],
             'sub_materials': sub_materials

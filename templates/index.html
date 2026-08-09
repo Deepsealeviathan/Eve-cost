@@ -582,8 +582,8 @@
                                 <th>单件需要</th>
                                 <th>制作数量</th>
                                 <th>总共需要</th>
-                                <th>buy_max</th>
-                                <th>sell_max</th>
+                                <th>收单最高</th>
+                                <th>卖单最低</th>
                                 <th>收购总价</th>
                                 <th>出售总价</th>
                             </tr>
@@ -894,7 +894,7 @@
                     <td>${depth === 0 ? itemQuantity : '-'}</td>
                     <td><strong>${fmt(mat.total_num)}</strong></td>
                     <td>${fmt(mat.buy_max)}</td>
-                    <td>${fmt(mat.sell_max)}</td>
+                    <td>${fmt(mat.sell_min)}</td>
                     <td>${fmt(mat.total_buy)}</td>
                     <td>${fmt(mat.total_sell)}</td>
                 </tr>
