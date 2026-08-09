@@ -870,21 +870,22 @@
         // ==========================================
         // 递归渲染材料行（P4 -> P3 -> P2 -> P1）
         // ==========================================
-        function renderMaterialRow(mat, itemQuantity, path = '', depth = 0) {
+        function renderMaterialRow(mat, itemQuantity, path = '', depth = 0, itemGroupId = null) {
             const rowPath = path ? `${path}/${mat.name}` : mat.name;
             const indent = depth * 24;
             const prefix = depth > 0 ? '↳ ' : '';
             const bgStyle = depth > 0 ? `background: rgba(238,242,255,${0.3 + depth * 0.15});` : '';
             const hasChildren = mat.sub_materials && mat.sub_materials.length > 0;
             const toggleBtn = hasChildren
-                ? `<span class="toggle-btn" data-path="${rowPath}" onclick="toggleTree('${rowPath}')">[-]</span>`
+                ? `<span class="toggle-btn" data-path="${rowPath}" onclick="event.stopPropagation(); toggleTree('${rowPath}')">[-]</span>`
                 : '<span class="toggle-placeholder"></span>';
 
             const missingStyle = mat.missing ? 'color:#b91c1c; font-weight:600;' : '';
             const missingBadge = mat.missing ? ' <span style="color:#b91c1c; font-size:12px;">(未找到 JSON)</span>' : '';
+            const groupAttr = itemGroupId ? `data-item-group="${itemGroupId}"` : '';
             const rowHtml = `
-                <tr class="material-row" data-path="${rowPath}" data-depth="${depth}" style="${bgStyle} ${missingStyle}">
-                    <td style="padding-left:${16 + indent}px; text-align:left;">
+                <tr class="material-row" data-path="${rowPath}" data-depth="${depth}" ${groupAttr} style="${bgStyle} ${missingStyle}">
+                    <td style="padding-left:${16 + indent}px; text-align:left;" onclick="event.stopPropagation();">
                         ${toggleBtn}${prefix}${mat.name}${missingBadge}
                     </td>
                     <td>${mat.id || '-'}</td>
@@ -900,7 +901,7 @@
 
             let childrenHtml = '';
             if (hasChildren) {
-                childrenHtml = mat.sub_materials.map(sub => renderMaterialRow(sub, itemQuantity, rowPath, depth + 1)).join('');
+                childrenHtml = mat.sub_materials.map(sub => renderMaterialRow(sub, itemQuantity, rowPath, depth + 1, itemGroupId)).join('');
             }
 
             return rowHtml + childrenHtml;
@@ -938,10 +939,11 @@
             const tbody = document.getElementById('result-body');
             tbody.innerHTML = '';
 
-            data.items.forEach(item => {
+            data.items.forEach((item, idx) => {
                 const isP2 = item.tier === 'P2';
                 const isP3 = item.tier === 'P3';
                 const isP4 = item.tier === 'P4';
+                const groupId = `item-group-${idx}`;
                 let tierLabel, icon;
                 if (isP4) {
                     tierLabel = `<span style="margin-left:12px; font-size:12px; color:#be185d;">[P4 高级产物 | 单次产出 ${item.output_count} 个 | 成本递归到 P1]</span>`;
@@ -957,44 +959,59 @@
                     icon = '📦';
                 }
 
+                const unitBuy = item.quantity ? item.total_buy / item.quantity : 0;
+                const unitSell = item.quantity ? item.total_sell / item.quantity : 0;
+                const hasCraftingInfo = isP2 || isP3 || isP4;
+                const costSummary = hasCraftingInfo
+                    ? `<div style="margin-top:6px; font-size:13px; color:#374151;">
+                         <span style="font-weight:600;">单件 ${item.name} ${isP4 ? 'P4' : (isP3 ? 'P3' : 'P2')} 合成成本：</span>
+                         <span style="color:var(--success); font-weight:700;">${fmt(unitBuy)} ISK</span>
+                         <span style="margin:0 8px; color:#9ca3af;">|</span>
+                         <span style="color:#d97706; font-weight:700;">${fmt(unitSell)} ISK</span>
+                       </div>`
+                    : '';
+                const marketSummary = hasCraftingInfo
+                    ? `<div style="margin-top:4px; font-size:13px; color:#374151;">
+                         <span style="font-weight:600;">单件 ${item.name} 数据库市场价：</span>
+                         <span style="color:var(--success); font-weight:700;">${fmt(item.market_buy || 0)} ISK</span>
+                         <span style="margin:0 8px; color:#9ca3af;">|</span>
+                         <span style="color:#d97706; font-weight:700;">${fmt(item.market_sell || 0)} ISK</span>
+                       </div>`
+                    : '';
+
                 const groupRow = document.createElement('tr');
                 groupRow.innerHTML = `
-                    <td colspan="9" class="group-header">
-                        ${icon} ${item.name} × ${item.quantity} ${tierLabel}
+                    <td colspan="9" class="group-header" style="cursor:pointer;" onclick="toggleItemGroup('${groupId}')">
+                        <div style="display:flex; align-items:flex-start; justify-content:space-between;">
+                            <div>
+                                <span class="toggle-btn" data-group="${groupId}" style="margin-right:8px;">[-]</span>
+                                ${icon} ${item.name} × ${item.quantity} ${tierLabel}
+                                ${costSummary}
+                                ${marketSummary}
+                            </div>
+                        </div>
                     </td>
                 `;
                 tbody.appendChild(groupRow);
 
                 item.materials.forEach(mat => {
-                    tbody.insertAdjacentHTML('beforeend', renderMaterialRow(mat, item.quantity, '', 0));
+                    tbody.insertAdjacentHTML('beforeend', renderMaterialRow(mat, item.quantity, '', 0, groupId));
                 });
-
-                if (isP2 || isP3 || isP4) {
-                    const unitBuy = item.quantity ? item.total_buy / item.quantity : 0;
-                    const unitSell = item.quantity ? item.total_sell / item.quantity : 0;
-                    const tierText = isP4 ? 'P4' : (isP3 ? 'P3' : 'P2');
-                    const summaryRow = document.createElement('tr');
-                    summaryRow.innerHTML = `
-                        <td colspan="5" style="text-align:right; font-weight:600;">单件 ${item.name} ${tierText} 合成成本：</td>
-                        <td colspan="2" style="color:var(--success); font-weight:700;">${fmt(unitBuy)} ISK</td>
-                        <td colspan="2" style="color:#d97706; font-weight:700;">${fmt(unitSell)} ISK</td>
-                    `;
-                    tbody.appendChild(summaryRow);
-
-                    // 显示该物品自身的数据库市场价，方便与合成成本对比
-                    const marketBuy = item.market_buy || 0;
-                    const marketSell = item.market_sell || 0;
-                    const marketRow = document.createElement('tr');
-                    marketRow.innerHTML = `
-                        <td colspan="5" style="text-align:right; font-weight:600;">单件 ${item.name} 数据库市场价：</td>
-                        <td colspan="2" style="color:var(--success); font-weight:700;">${fmt(marketBuy)} ISK</td>
-                        <td colspan="2" style="color:#d97706; font-weight:700;">${fmt(marketSell)} ISK</td>
-                    `;
-                    tbody.appendChild(marketRow);
-                }
             });
 
             resultDiv.classList.remove('hidden');
+        }
+
+        function toggleItemGroup(groupId) {
+            const btn = document.querySelector(`.toggle-btn[data-group="${groupId}"]`);
+            const rows = document.querySelectorAll(`tr[data-item-group="${groupId}"]`);
+            if (!btn || rows.length === 0) return;
+
+            const isExpanded = btn.textContent === '[-]';
+            rows.forEach(row => {
+                row.style.display = isExpanded ? 'none' : '';
+            });
+            btn.textContent = isExpanded ? '[+]' : '[-]';
         }
 
         function fmt(num) {
