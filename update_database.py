@@ -15,7 +15,7 @@ from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 # ================== 用户配置 ==================
-JSON_DIR = r'D:\\eve\\New\\Json\\'
+JSON_DIR = Path(__file__).resolve().parent / 'Json'   # JSON 文件目录（默认本脚本所在目录下的 Json/）
 URL_FILE = 'json_url.txt'
 CSV_FILE = 'data.csv'
 

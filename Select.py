@@ -18,18 +18,8 @@ DB_CONFIG = {
 def _get_search_roots():
     """
     返回配方 JSON 的搜索根目录。
-    优先使用原始 Windows 绝对路径；若不存在则回退到项目相对路径。
+    路径基于本脚本所在目录自动定位，Windows / Linux 通用。
     """
-    windows_roots = [
-        r'D:\\eve\\New\\Ore',
-        r'D:\\eve\\New\\Planetary_Commodities\\P1',
-        r'D:\\eve\\New\\Planetary_Commodities\\P2',
-        r'D:\\eve\\New\\Planetary_Commodities\\P3',
-        r'D:\\eve\\New\\Planetary_Commodities\\P4',
-    ]
-    if any(os.path.isdir(r) for r in windows_roots):
-        return windows_roots
-
     base_dir = os.path.dirname(os.path.abspath(__file__))
     return [
         os.path.join(base_dir, 'Ore'),

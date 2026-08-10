@@ -15,7 +15,7 @@ DB_CONFIG = {
     'autocommit': False,       # 关闭自动提交，手动批量 commit
 }
 
-CSV_FILE = Path('D:\\eve\\New\\Json\\data.csv')
+CSV_FILE = Path(__file__).resolve().parent / 'data.csv'  # 默认读取本脚本所在目录的 data.csv
 BATCH_SIZE = 100             # 每 100 条批量提交一次，可酌情调整
 # ==========================================
 
