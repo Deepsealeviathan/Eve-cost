@@ -65,7 +65,7 @@ python update_database.py
 python app.py
 ```
 
-Web 页面支持：单个/批量成本查询、物品目录浏览、一键更新数据库（调用 `update_database.py`）。
+Web 页面支持：单个/批量成本查询、物品目录浏览（按 P1~P4 分类 + 搜索，分类依据 Planetary_Commodities 目录自动划分，未归入的物品显示在「其他」）、一键更新数据库（调用 `update_database.py`）。
 
 ## 使用方式（命令行）
 

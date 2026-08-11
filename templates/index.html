@@ -112,6 +112,58 @@
             text-align: center;
         }
 
+        /* 目录搜索框 */
+        .catalog-search {
+            width: 100%;
+            padding: 10px 14px;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            font-size: 14px;
+            margin-bottom: 12px;
+            outline: none;
+            background: #f9fafb;
+            transition: all 0.15s;
+        }
+
+        .catalog-search:focus {
+            border-color: var(--primary);
+            background: #fff;
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.12);
+        }
+
+        /* 目录分类：大类 / 小类 */
+        .catalog-cats { margin-bottom: 10px; }
+
+        .cat-row, .cat-sub {
+            padding: 8px 12px;
+            border-radius: 10px;
+            cursor: pointer;
+            color: #4b5563;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.15s;
+        }
+
+        .cat-row { font-size: 14px; font-weight: 600; color: #374151; }
+        .cat-sub { font-size: 13px; padding-left: 28px; }
+
+        .cat-row:hover, .cat-sub:hover {
+            background: #eef2ff;
+            color: var(--primary);
+        }
+
+        .cat-row.active, .cat-sub.active {
+            background: var(--primary);
+            color: #fff;
+        }
+
+        .cat-num { font-size: 11px; color: var(--muted); font-weight: 400; }
+
+        .cat-row.active .cat-num, .cat-sub.active .cat-num {
+            color: rgba(255, 255, 255, 0.85);
+        }
+
         .container {
             max-width: 1100px;
             flex: 1;
@@ -536,6 +588,8 @@
             <div class="sidebar-header">
                 <div class="sidebar-title">📚 物品目录</div>
             </div>
+            <input type="text" id="catalog-search" class="catalog-search" placeholder="🔍 搜索物品...">
+            <div class="catalog-cats" id="catalog-cats"></div>
             <ul class="catalog-list" id="catalog-list">
                 <li style="color:#9ca3af; cursor:default;">加载中...</li>
             </ul>
@@ -634,11 +688,78 @@
         const modalOverlay = document.getElementById('modal-overlay');
 
         // ==========================================
-        // 加载目录栏
+        // 物品目录（搜索 + 分类）
         // ==========================================
-        async function loadCatalog() {
+        let catalogItems = [];          // 全量物品（含后端返回的 tier 分类）
+        let activeCat = '行星商品';     // 当前选中的分类，默认展示行星商品
+
+        // 分类定义：sub=true 表示缩进的小类，挂在「行星商品」大类下面
+        const CATALOG_CATS = [
+            { key: 'all',      label: '📋 全部' },
+            { key: '行星商品', label: '🪐 行星商品' },
+            { key: 'P1', label: 'P1', sub: true },
+            { key: 'P2', label: 'P2', sub: true },
+            { key: 'P3', label: 'P3', sub: true },
+            { key: 'P4', label: 'P4', sub: true },
+            { key: '其他',     label: '🗃 其他' },
+        ];
+
+        function itemTier(item) { return item.tier || '其他'; }
+
+        // 统计每个分类下的物品数量
+        function catCount(key) {
+            if (key === 'all') return catalogItems.length;
+            if (key === '行星商品') return catalogItems.filter(i => ['P1','P2','P3','P4'].includes(itemTier(i))).length;
+            return catalogItems.filter(i => itemTier(i) === key).length;
+        }
+
+        // 当前筛选结果：搜索时全局匹配名称（忽略分类），空搜索按所选分类过滤
+        function filteredItems() {
+            const kw = document.getElementById('catalog-search').value.trim();
+            if (kw) {
+                return catalogItems.filter(i => i.name.includes(kw));
+            }
+            if (activeCat === 'all') return catalogItems;
+            if (activeCat === '行星商品') {
+                return catalogItems.filter(i => ['P1','P2','P3','P4'].includes(itemTier(i)));
+            }
+            return catalogItems.filter(i => itemTier(i) === activeCat);
+        }
+
+        function renderCatalog() {
             const list = document.getElementById('catalog-list');
             const count = document.getElementById('catalog-count');
+            const items = filteredItems();
+
+            list.innerHTML = '';
+            if (items.length === 0) {
+                list.innerHTML = '<li style="color:#9ca3af; cursor:default;">没有匹配的物品</li>';
+            } else {
+                items.forEach(item => {
+                    const li = document.createElement('li');
+                    li.textContent = item.name;
+                    li.title = `点击查看 ${item.name} 的价格`;
+                    li.onclick = () => openModal(item.name, item.buy_max, item.sell_min, item.update_time);
+                    list.appendChild(li);
+                });
+            }
+            count.textContent = `显示 ${items.length} / 共 ${catalogItems.length} 条记录`;
+        }
+
+        function renderCats() {
+            const box = document.getElementById('catalog-cats');
+            box.innerHTML = '';
+            CATALOG_CATS.forEach(cat => {
+                const div = document.createElement('div');
+                div.className = (cat.sub ? 'cat-sub' : 'cat-row') + (activeCat === cat.key ? ' active' : '');
+                div.innerHTML = `<span>${cat.label}</span><span class="cat-num">${catCount(cat.key)}</span>`;
+                div.onclick = () => { activeCat = cat.key; renderCats(); renderCatalog(); };
+                box.appendChild(div);
+            });
+        }
+
+        async function loadCatalog() {
+            const list = document.getElementById('catalog-list');
 
             try {
                 const res = await fetch('/catalog');
@@ -649,29 +770,17 @@
                     return;
                 }
 
-                const items = json.data || [];
-                list.innerHTML = '';
-
-                if (items.length === 0) {
-                    list.innerHTML = '<li style="color:#9ca3af; cursor:default;">暂无数据</li>';
-                    count.textContent = '';
-                    return;
-                }
-
-                items.forEach(item => {
-                    const li = document.createElement('li');
-                    li.textContent = item.name;
-                    li.title = `点击查看 ${item.name} 的价格`;
-                    li.onclick = () => openModal(item.name, item.buy_max, item.sell_min, item.update_time);
-                    list.appendChild(li);
-                });
-
-                count.textContent = `共 ${items.length} 条记录`;
+                catalogItems = json.data || [];
+                renderCats();
+                renderCatalog();
             } catch (err) {
                 list.innerHTML = '<li style="color:#b91c1c; cursor:default;">网络错误，无法加载目录</li>';
                 console.error(err);
             }
         }
+
+        // 搜索框输入时实时过滤
+        document.getElementById('catalog-search').addEventListener('input', renderCatalog);
 
         // ==========================================
         // 弹窗控制
