@@ -693,16 +693,45 @@
         let catalogItems = [];          // 全量物品（含后端返回的 tier 分类）
         let activeCat = '行星商品';     // 当前选中的分类，默认展示行星商品
 
-        // 分类定义：sub=true 表示缩进的小类，挂在「行星商品」大类下面
-        const CATALOG_CATS = [
+        // 固定分类：大类 + P1~P4 小类
+        // 其余分类（矿物 / 气云 等）由后端数据驱动，从物品的 tier 字段自动收集
+        const FIXED_CATS = [
             { key: 'all',      label: '📋 全部' },
             { key: '行星商品', label: '🪐 行星商品' },
             { key: 'P1', label: 'P1', sub: true },
             { key: 'P2', label: 'P2', sub: true },
             { key: 'P3', label: 'P3', sub: true },
             { key: 'P4', label: 'P4', sub: true },
-            { key: '其他',     label: '🗃 其他' },
         ];
+
+        // 新分类的显示顺序与图标；未列出的分类自动排在已知名分类之后、「其他」固定在最后
+        const CAT_ORDER = ['矿物', '卫星原料', '气云', '燃料', '挖坟材料'];
+        const CAT_META = {
+            '矿物':     { icon: '⛏️' },
+            '卫星原料': { icon: '🌙' },
+            '气云':     { icon: '💨' },
+            '燃料':     { icon: '🔥' },
+            '挖坟材料': { icon: '🏺' },
+        };
+
+        // 从当前物品数据中动态构建完整分类列表
+        function buildCatList() {
+            const reserved = new Set(['P1', 'P2', 'P3', 'P4', '其他']);
+            const dynamic = new Set();
+            catalogItems.forEach(i => {
+                const t = itemTier(i);
+                if (!reserved.has(t)) dynamic.add(t);
+            });
+            const ordered = CAT_ORDER.filter(c => dynamic.has(c));
+            const extra = [...dynamic].filter(c => !CAT_ORDER.includes(c)).sort();
+            const cats = [...FIXED_CATS];
+            [...ordered, ...extra].forEach(key => {
+                const icon = (CAT_META[key] || {}).icon || '🗂';
+                cats.push({ key, label: `${icon} ${key}` });
+            });
+            cats.push({ key: '其他', label: '🗃 其他' });
+            return cats;
+        }
 
         function itemTier(item) { return item.tier || '其他'; }
 
@@ -749,7 +778,7 @@
         function renderCats() {
             const box = document.getElementById('catalog-cats');
             box.innerHTML = '';
-            CATALOG_CATS.forEach(cat => {
+            buildCatList().forEach(cat => {
                 const div = document.createElement('div');
                 div.className = (cat.sub ? 'cat-sub' : 'cat-row') + (activeCat === cat.key ? ' active' : '');
                 div.innerHTML = `<span>${cat.label}</span><span class="cat-num">${catCount(cat.key)}</span>`;

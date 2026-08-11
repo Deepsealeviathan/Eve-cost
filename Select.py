@@ -305,9 +305,11 @@ _TIER_MAP = None
 
 def _get_tier_map():
     """
-    扫描 Planetary_Commodities/P1~P4 目录，构建「物品名 -> P1/P2/P3/P4」映射。
-    不在这些目录中的物品，在 get_catalog 中归入「其他」。
-    结果模块级缓存；新增/调整配方文件后重启服务生效。
+    构建「物品名 -> 分类」映射：
+    1. 扫描 Planetary_Commodities/P1~P4 目录，分类记为 P1/P2/P3/P4（前端归入「行星商品」大类）
+    2. 读取根目录 categories.json（格式 {"分类名": ["物品名", ...]}），如「矿物」「气云」
+    不在任何分类中的物品，在 get_catalog 中归入「其他」。
+    结果模块级缓存；新增分类或配方文件后重启服务生效。
     """
     global _TIER_MAP
     if _TIER_MAP is not None:
@@ -327,6 +329,17 @@ def _get_tier_map():
                 item_name = None
             # JSON 里的 name 与数据库一致；读取失败则退回使用文件名
             tier_map[item_name or json_file.stem] = tier
+
+    # 自定义分类（矿物 / 卫星原料 / 气云 / 燃料 / 挖坟材料 等），可自由增改
+    cat_file = Path(base_dir) / 'categories.json'
+    if cat_file.is_file():
+        try:
+            with open(cat_file, 'r', encoding='utf-8') as f:
+                for cat_name, item_names in json.load(f).items():
+                    for item_name in item_names:
+                        tier_map[item_name] = cat_name
+        except Exception as e:
+            print(f"警告：categories.json 读取失败，已忽略: {e}")
 
     _TIER_MAP = tier_map
     return tier_map
