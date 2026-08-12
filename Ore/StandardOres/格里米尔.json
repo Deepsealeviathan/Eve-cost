@@ -1,0 +1,19 @@
+{
+  "name": "格里米尔",
+  "tier": "标准矿石",
+  "recipe": {
+    "outputCount": 100,
+    "inputs": [
+      {
+        "materialId": 34,
+        "materialname": "三钛合金",
+        "count": 250
+      },
+      {
+        "materialId": 37,
+        "materialname": "同位聚合体",
+        "count": 80
+      }
+    ]
+  }
+}

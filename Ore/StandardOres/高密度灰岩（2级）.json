@@ -1,0 +1,34 @@
+{
+  "name": "高密度灰岩（2级）",
+  "tier": "标准矿石",
+  "recipe": {
+    "outputCount": 100,
+    "inputs": [
+      {
+        "materialId": 34,
+        "materialname": "三钛合金",
+        "count": 50400
+      },
+      {
+        "materialId": 37,
+        "materialname": "同位聚合体",
+        "count": 1050
+      },
+      {
+        "materialId": 38,
+        "materialname": "超新星诺克石",
+        "count": 168
+      },
+      {
+        "materialId": 39,
+        "materialname": "晶状石英核岩",
+        "count": 84
+      },
+      {
+        "materialId": 40,
+        "materialname": "超噬矿",
+        "count": 42
+      }
+    ]
+  }
+}

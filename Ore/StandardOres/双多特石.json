@@ -1,0 +1,24 @@
+{
+  "name": "双多特石",
+  "tier": "标准矿石",
+  "recipe": {
+    "outputCount": 100,
+    "inputs": [
+      {
+        "materialId": 35,
+        "materialname": "类晶体胶矿",
+        "count": 3200
+      },
+      {
+        "materialId": 36,
+        "materialname": "类银超金属",
+        "count": 1200
+      },
+      {
+        "materialId": 39,
+        "materialname": "晶状石英核岩",
+        "count": 160
+      }
+    ]
+  }
+}

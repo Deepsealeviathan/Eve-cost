@@ -1,0 +1,14 @@
+{
+  "name": "高密度莫德合金（2级）",
+  "tier": "标准矿石",
+  "recipe": {
+    "outputCount": 100,
+    "inputs": [
+      {
+        "materialId": 35,
+        "materialname": "类晶体胶矿",
+        "count": 101
+      }
+    ]
+  }
+}

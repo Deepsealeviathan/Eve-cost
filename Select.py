@@ -192,15 +192,18 @@ def _query_crafted(data, quantity, tier):
     同时从数据库读取该物品自身的市场价（buy_max / sell_min），
     方便与合成成本进行对比。
     """
-    item_id = data['id']
+    item_id = data.get('id')   # 标准矿石等无固定 ID 的物品为 None
     item_name = data['name']
     recipe = data.get('recipe', {})
     output_count = recipe.get('outputCount', 1)
     inputs = recipe.get('inputs', [])
 
-    # 查询该物品自身的市场价格（buy_max / sell_min）
-    market_price_map = _query_price_map([item_id])
-    market_buy, market_sell = market_price_map.get(item_id, (0, 0))
+    # 查询该物品自身的市场价格（buy_max / sell_min）；无 ID 的物品没有直接市场价
+    if item_id is not None:
+        market_price_map = _query_price_map([item_id])
+        market_buy, market_sell = market_price_map.get(item_id, (0, 0))
+    else:
+        market_buy, market_sell = 0, 0
 
     materials = []
     total_buy = 0
@@ -296,7 +299,8 @@ def query_by_name(name, quantity=1):
 
     tier = data.get('tier', 'P1')
 
-    if tier in ('P2', 'P3', 'P4'):
+    # 有 recipe 的物品（P2~P4、标准矿石等）按配方推算价值；否则按数据库市场价
+    if data.get('recipe') or tier in ('P2', 'P3', 'P4'):
         return _query_crafted(data, quantity, tier)
     else:
         return _query_p1(data, quantity)

@@ -1,0 +1,24 @@
+{
+  "name": "诺克希特",
+  "tier": "标准矿石",
+  "recipe": {
+    "outputCount": 100,
+    "inputs": [
+      {
+        "materialId": 34,
+        "materialname": "三钛合金",
+        "count": 900
+      },
+      {
+        "materialId": 35,
+        "materialname": "类晶体胶矿",
+        "count": 150
+      },
+      {
+        "materialId": 38,
+        "materialname": "超新星诺克石",
+        "count": 105
+      }
+    ]
+  }
+}

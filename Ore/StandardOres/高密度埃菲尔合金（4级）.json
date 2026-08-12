@@ -1,0 +1,14 @@
+{
+  "name": "高密度埃菲尔合金（4级）",
+  "tier": "标准矿石",
+  "recipe": {
+    "outputCount": 100,
+    "inputs": [
+      {
+        "materialId": 39,
+        "materialname": "晶状石英核岩",
+        "count": 306
+      }
+    ]
+  }
+}

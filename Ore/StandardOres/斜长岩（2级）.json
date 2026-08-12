@@ -1,0 +1,19 @@
+{
+  "name": "斜长岩（2级）",
+  "tier": "标准矿石",
+  "recipe": {
+    "outputCount": 100,
+    "inputs": [
+      {
+        "materialId": 34,
+        "materialname": "三钛合金",
+        "count": 184
+      },
+      {
+        "materialId": 36,
+        "materialname": "类银超金属",
+        "count": 74
+      }
+    ]
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "name": "同位原矿（2级）",
+  "tier": "标准矿石",
+  "recipe": {
+    "outputCount": 100,
+    "inputs": [
+      {
+        "materialId": 35,
+        "materialname": "类晶体胶矿",
+        "count": 473
+      },
+      {
+        "materialId": 38,
+        "materialname": "超新星诺克石",
+        "count": 126
+      }
+    ]
+  }
+}

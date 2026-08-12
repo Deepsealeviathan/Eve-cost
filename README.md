@@ -20,6 +20,7 @@ EVE Online（国服）制造成本估算工具：抓取吉他（Jita）市场实
 │   └── *.json                 # 各物品缓存行情（按 typeID 命名）
 ├── Planetary_Commodities/     # 行星产物配方（P1 / P2 / P3 / P4）
 ├── Ore/                       # 矿物（基础材料，按市场价计算）
+│   └── StandardOres/          # 标准矿石（无直接市场价，按"100 单位提炼产物"折算单个矿石价值）
 ├── MoonMaterials/             # 卫星原料（基础材料）
 ├── Gas/                       # 气云（基础材料）
 └── Commodities/               # 挖坟材料（基础材料）

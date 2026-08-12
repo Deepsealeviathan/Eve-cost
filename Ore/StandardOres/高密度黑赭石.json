@@ -1,0 +1,24 @@
+{
+  "name": "高密度黑赭石",
+  "tier": "标准矿石",
+  "recipe": {
+    "outputCount": 100,
+    "inputs": [
+      {
+        "materialId": 36,
+        "materialname": "类银超金属",
+        "count": 1360
+      },
+      {
+        "materialId": 37,
+        "materialname": "同位聚合体",
+        "count": 1200
+      },
+      {
+        "materialId": 38,
+        "materialname": "超新星诺克石",
+        "count": 320
+      }
+    ]
+  }
+}

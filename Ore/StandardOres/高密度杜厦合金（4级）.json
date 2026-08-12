@@ -1,0 +1,14 @@
+{
+  "name": "高密度杜厦合金（4级）",
+  "tier": "标准矿石",
+  "recipe": {
+    "outputCount": 100,
+    "inputs": [
+      {
+        "materialId": 40,
+        "materialname": "超噬矿",
+        "count": 196
+      }
+    ]
+  }
+}

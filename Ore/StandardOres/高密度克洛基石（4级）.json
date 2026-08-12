@@ -1,0 +1,24 @@
+{
+  "name": "高密度克洛基石（4级）",
+  "tier": "标准矿石",
+  "recipe": {
+    "outputCount": 100,
+    "inputs": [
+      {
+        "materialId": 35,
+        "materialname": "类晶体胶矿",
+        "count": 920
+      },
+      {
+        "materialId": 36,
+        "materialname": "类银超金属",
+        "count": 2300
+      },
+      {
+        "materialId": 38,
+        "materialname": "超新星诺克石",
+        "count": 920
+      }
+    ]
+  }
+}

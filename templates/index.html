@@ -1101,23 +1101,28 @@
                     tierLabel = `<span style="margin-left:12px; font-size:12px; color:#4f46e5;">[P2 合成 | 单次产出 ${item.output_count} 个]</span>`;
                     icon = '⚗️';
                 } else {
-                    const baseLabel = item.tier && item.tier !== 'P1' ? `[${item.tier} | 基础材料]` : '[P1 基础材料]';
+                    // 非 P1~P4：有配方的（如标准矿石）由提炼产物推算，无配方的为基础材料
+                    const baseLabel = item.tier && item.tier !== 'P1'
+                        ? `[${item.tier} | ${item.output_count !== undefined ? '由提炼产物推算' : '基础材料'}]`
+                        : '[P1 基础材料]';
                     tierLabel = `<span style="margin-left:12px; font-size:12px; color:#059669;">${baseLabel}</span>`;
                     icon = '📦';
                 }
 
                 const unitBuy = item.quantity ? item.total_buy / item.quantity : 0;
                 const unitSell = item.quantity ? item.total_sell / item.quantity : 0;
-                const hasCraftingInfo = isP2 || isP3 || isP4;
+                // 由配方推算价值的物品（P2/P3/P4、标准矿石等），展示推算成本
+                const hasCraftingInfo = item.output_count !== undefined;
                 const costSummary = hasCraftingInfo
                     ? `<div style="margin-top:6px; font-size:13px; color:#374151;">
-                         <span style="font-weight:600;">单件 ${item.name} ${isP4 ? 'P4' : (isP3 ? 'P3' : 'P2')} 合成成本：</span>
+                         <span style="font-weight:600;">单件 ${item.name} ${isP4 ? 'P4 合成' : (isP3 ? 'P3 合成' : (isP2 ? 'P2 合成' : '推算'))}成本：</span>
                          <span style="color:var(--success); font-weight:700;">${fmt(unitBuy)} ISK</span>
                          <span style="margin:0 8px; color:#9ca3af;">|</span>
                          <span style="color:#d97706; font-weight:700;">${fmt(unitSell)} ISK</span>
                        </div>`
                     : '';
-                const marketSummary = hasCraftingInfo
+                // 仅在数据库确有市场价时展示市场价比对（标准矿石无直接市场价，不显示）
+                const marketSummary = hasCraftingInfo && (item.market_buy || item.market_sell)
                     ? `<div style="margin-top:4px; font-size:13px; color:#374151;">
                          <span style="font-weight:600;">单件 ${item.name} 数据库市场价：</span>
                          <span style="color:var(--success); font-weight:700;">${fmt(item.market_buy || 0)} ISK</span>

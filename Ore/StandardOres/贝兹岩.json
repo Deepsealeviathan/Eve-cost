@@ -1,0 +1,24 @@
+{
+  "name": "贝兹岩",
+  "tier": "标准矿石",
+  "recipe": {
+    "outputCount": 100,
+    "inputs": [
+      {
+        "materialId": 34,
+        "materialname": "三钛合金",
+        "count": 40000
+      },
+      {
+        "materialId": 37,
+        "materialname": "同位聚合体",
+        "count": 4800
+      },
+      {
+        "materialId": 40,
+        "materialname": "超噬矿",
+        "count": 128
+      }
+    ]
+  }
+}

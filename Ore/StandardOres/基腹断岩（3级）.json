@@ -1,0 +1,14 @@
+{
+  "name": "基腹断岩（3级）",
+  "tier": "标准矿石",
+  "recipe": {
+    "outputCount": 100,
+    "inputs": [
+      {
+        "materialId": 11399,
+        "materialname": "莫尔石",
+        "count": 154
+      }
+    ]
+  }
+}

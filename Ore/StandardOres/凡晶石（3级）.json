@@ -1,0 +1,14 @@
+{
+  "name": "凡晶石（3级）",
+  "tier": "标准矿石",
+  "recipe": {
+    "outputCount": 100,
+    "inputs": [
+      {
+        "materialId": 34,
+        "materialname": "三钛合金",
+        "count": 440
+      }
+    ]
+  }
+}

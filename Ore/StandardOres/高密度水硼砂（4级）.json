@@ -1,0 +1,19 @@
+{
+  "name": "高密度水硼砂（4级）",
+  "tier": "标准矿石",
+  "recipe": {
+    "outputCount": 100,
+    "inputs": [
+      {
+        "materialId": 36,
+        "materialname": "类银超金属",
+        "count": 69
+      },
+      {
+        "materialId": 37,
+        "materialname": "同位聚合体",
+        "count": 138
+      }
+    ]
+  }
+}

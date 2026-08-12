@@ -1,0 +1,19 @@
+{
+  "name": "杰斯贝矿（3级）",
+  "tier": "标准矿石",
+  "recipe": {
+    "outputCount": 100,
+    "inputs": [
+      {
+        "materialId": 36,
+        "materialname": "类银超金属",
+        "count": 165
+      },
+      {
+        "materialId": 38,
+        "materialname": "超新星诺克石",
+        "count": 55
+      }
+    ]
+  }
+}

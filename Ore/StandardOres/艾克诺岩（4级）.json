@@ -1,0 +1,24 @@
+{
+  "name": "艾克诺岩（4级）",
+  "tier": "标准矿石",
+  "recipe": {
+    "outputCount": 100,
+    "inputs": [
+      {
+        "materialId": 35,
+        "materialname": "类晶体胶矿",
+        "count": 3680
+      },
+      {
+        "materialId": 36,
+        "materialname": "类银超金属",
+        "count": 1380
+      },
+      {
+        "materialId": 40,
+        "materialname": "超噬矿",
+        "count": 138
+      }
+    ]
+  }
+}

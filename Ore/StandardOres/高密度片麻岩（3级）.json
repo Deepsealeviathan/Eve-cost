@@ -1,0 +1,24 @@
+{
+  "name": "高密度片麻岩（3级）",
+  "tier": "标准矿石",
+  "recipe": {
+    "outputCount": 100,
+    "inputs": [
+      {
+        "materialId": 35,
+        "materialname": "类晶体胶矿",
+        "count": 2200
+      },
+      {
+        "materialId": 36,
+        "materialname": "类银超金属",
+        "count": 1650
+      },
+      {
+        "materialId": 37,
+        "materialname": "同位聚合体",
+        "count": 880
+      }
+    ]
+  }
+}

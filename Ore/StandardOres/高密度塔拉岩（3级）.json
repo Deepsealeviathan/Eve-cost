@@ -1,0 +1,24 @@
+{
+  "name": "高密度塔拉岩（3级）",
+  "tier": "标准矿石",
+  "recipe": {
+    "outputCount": 100,
+    "inputs": [
+      {
+        "materialId": 34,
+        "materialname": "三钛合金",
+        "count": 44000
+      },
+      {
+        "materialId": 38,
+        "materialname": "超新星诺克石",
+        "count": 1056
+      },
+      {
+        "materialId": 40,
+        "materialname": "超噬矿",
+        "count": 35
+      }
+    ]
+  }
+}
