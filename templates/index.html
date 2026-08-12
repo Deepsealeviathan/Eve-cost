@@ -1101,7 +1101,8 @@
                     tierLabel = `<span style="margin-left:12px; font-size:12px; color:#4f46e5;">[P2 合成 | 单次产出 ${item.output_count} 个]</span>`;
                     icon = '⚗️';
                 } else {
-                    tierLabel = `<span style="margin-left:12px; font-size:12px; color:#059669;">[P1 基础材料]</span>`;
+                    const baseLabel = item.tier && item.tier !== 'P1' ? `[${item.tier} | 基础材料]` : '[P1 基础材料]';
+                    tierLabel = `<span style="margin-left:12px; font-size:12px; color:#059669;">${baseLabel}</span>`;
                     icon = '📦';
                 }
 

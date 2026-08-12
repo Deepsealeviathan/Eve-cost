@@ -23,6 +23,9 @@ def _get_search_roots():
     base_dir = os.path.dirname(os.path.abspath(__file__))
     return [
         os.path.join(base_dir, 'Ore'),
+        os.path.join(base_dir, 'MoonMaterials'),
+        os.path.join(base_dir, 'Gas'),
+        os.path.join(base_dir, 'Commodities'),
         os.path.join(base_dir, 'Planetary_Commodities', 'P1'),
         os.path.join(base_dir, 'Planetary_Commodities', 'P2'),
         os.path.join(base_dir, 'Planetary_Commodities', 'P3'),
@@ -104,7 +107,7 @@ def _query_p1(data, quantity):
     return {
         'name': item_name,
         'quantity': quantity,
-        'tier': 'P1',
+        'tier': data.get('tier', 'P1'),
         'materials': [{
             'name': item_name,
             'id': item_id,
