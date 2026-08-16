@@ -4,15 +4,10 @@ import json
 import pymysql
 from pathlib import Path
 
+from db_config import load_db_config
+
 # ================== 配置区 ==================
-DB_CONFIG = {
-    'host': '127.0.0.1',
-    'user': 'root',
-    'password': '622513',
-    'database': 'eve',
-    'port': 3306,
-    'charset': 'utf8mb4',
-}
+REGION_ID = 10000002  # 行情所属星域(伏尔戈 The Forge / 吉他)
 
 
 def _get_search_roots():
@@ -76,11 +71,12 @@ def _query_price_map(ids):
 
     conn = None
     try:
-        conn = pymysql.connect(**DB_CONFIG)
+        conn = pymysql.connect(**load_db_config())
         with conn.cursor() as cursor:
             placeholders = ','.join(['%s'] * len(ids))
-            sql = f"SELECT ID, buy_max, sell_min FROM test WHERE ID IN ({placeholders})"
-            cursor.execute(sql, ids)
+            sql = (f"SELECT type_id, buy_max, sell_min FROM market_prices "
+                   f"WHERE region_id = %s AND type_id IN ({placeholders})")
+            cursor.execute(sql, [REGION_ID, *ids])
             rows = cursor.fetchall()
             return {row[0]: (row[1], row[2]) for row in rows}
     except pymysql.Error as e:
@@ -306,65 +302,24 @@ def query_by_name(name, quantity=1):
         return _query_p1(data, quantity)
 
 
-# 物品名 -> 分类 映射的模块级缓存（None 表示尚未扫描）
-_TIER_MAP = None
-
-
-def _get_tier_map():
-    """
-    构建「物品名 -> 分类」映射：
-    1. 扫描 Planetary_Commodities/P1~P4 目录，分类记为 P1/P2/P3/P4（前端归入「行星商品」大类）
-    2. 读取根目录 categories.json（格式 {"分类名": ["物品名", ...]}），如「矿物」「气云」
-    不在任何分类中的物品，在 get_catalog 中归入「其他」。
-    结果模块级缓存；新增分类或配方文件后重启服务生效。
-    """
-    global _TIER_MAP
-    if _TIER_MAP is not None:
-        return _TIER_MAP
-
-    tier_map = {}
-    base_dir = os.path.dirname(os.path.abspath(__file__))
-    for tier in ('P1', 'P2', 'P3', 'P4'):
-        tier_dir = Path(base_dir) / 'Planetary_Commodities' / tier
-        if not tier_dir.is_dir():
-            continue
-        for json_file in tier_dir.glob('*.json'):
-            try:
-                with open(json_file, 'r', encoding='utf-8') as f:
-                    item_name = json.load(f).get('name')
-            except Exception:
-                item_name = None
-            # JSON 里的 name 与数据库一致；读取失败则退回使用文件名
-            tier_map[item_name or json_file.stem] = tier
-
-    # 自定义分类（矿物 / 卫星原料 / 气云 / 燃料 / 挖坟材料 等），可自由增改
-    cat_file = Path(base_dir) / 'categories.json'
-    if cat_file.is_file():
-        try:
-            with open(cat_file, 'r', encoding='utf-8') as f:
-                for cat_name, item_names in json.load(f).items():
-                    for item_name in item_names:
-                        tier_map[item_name] = cat_name
-        except Exception as e:
-            print(f"警告：categories.json 读取失败，已忽略: {e}")
-
-    _TIER_MAP = tier_map
-    return tier_map
-
-
 def get_catalog():
     """
-    从 MySQL 的 test 表中读取所有物品的 ID、name、buy_max、sell_min，
-    并按 Planetary_Commodities 目录归属附上 tier 分类（P1~P4 或「其他」）。
-    返回列表，形如 [{'id':34,'name':'三钛合金','buy_max':9.58,'sell_min':10,'tier':'其他'}, ...]
+    从 items / market_prices 读取所有物品的 ID、name、buy_max、sell_min 和分类,
+    分类在 update_market.py 入库时已写入 items.category(P1~P4 / categories.json 自定义 / 其他)。
+    返回列表,形如 [{'id':34,'name':'三钛合金','buy_max':9.58,'sell_min':10,'tier':'其他'}, ...]
     """
     conn = None
     try:
-        conn = pymysql.connect(**DB_CONFIG)
+        conn = pymysql.connect(**load_db_config())
         with conn.cursor() as cursor:
-            cursor.execute("SELECT ID, name, buy_max, sell_min, update_time FROM test ORDER BY name ASC")
+            cursor.execute("""
+                SELECT i.type_id, i.name, p.buy_max, p.sell_min, p.updated_at, i.category
+                FROM items i
+                LEFT JOIN market_prices p
+                    ON p.type_id = i.type_id AND p.region_id = %s
+                ORDER BY i.name ASC
+            """, (REGION_ID,))
             rows = cursor.fetchall()
-            tier_map = _get_tier_map()
             return [
                 {
                     'id': row[0],
@@ -372,7 +327,7 @@ def get_catalog():
                     'buy_max': row[2],
                     'sell_min': row[3],
                     'update_time': str(row[4]) if row[4] is not None else '-',
-                    'tier': tier_map.get(row[1], '其他')
+                    'tier': row[5] or '其他'
                 }
                 for row in rows
             ]

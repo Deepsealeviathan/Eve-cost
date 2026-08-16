@@ -171,9 +171,9 @@ def catalog():
 # 0704
 @app.route('/update_database', methods=['POST'])
 def update_database():
-    """执行数据库更新流水线（下载 JSON + 同步 MySQL）"""
+    """执行行情更新流水线(直连 ESI 拉取吉他 4-4 订单并 upsert 到 MySQL)"""
     try:
-        script_path = os.path.join(os.path.dirname(__file__), 'update_database.py')
+        script_path = os.path.join(os.path.dirname(__file__), 'update_market.py')
 
         result = subprocess.run(
             [sys.executable, script_path],
