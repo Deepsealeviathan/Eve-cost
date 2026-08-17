@@ -100,8 +100,6 @@ def collect_tracked_items():
         if not root_path.is_dir():
             continue
         for json_file in root_path.rglob('*.json'):
-            if 'old' in json_file.parts:
-                continue
             try:
                 data = json.loads(json_file.read_text(encoding='utf-8'))
             except (json.JSONDecodeError, UnicodeDecodeError):

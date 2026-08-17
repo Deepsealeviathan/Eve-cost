@@ -51,17 +51,13 @@ def find_json_file(name):
     if not found_paths:
         return None
 
-    # 优先使用非 old 目录下的文件（old 为历史备份格式）
-    non_old_paths = [p for p in found_paths if f"{os.sep}old{os.sep}" not in p]
-    chosen_paths = non_old_paths if non_old_paths else found_paths
-
     if len(found_paths) > 1:
         print(f"警告：找到多个 {target}，使用:")
-        for p in found_paths:
-            marker = "  -> " if p == chosen_paths[0] else "     "
+        for i, p in enumerate(found_paths):
+            marker = "  -> " if i == 0 else "     "
             print(f"{marker}{p}")
 
-    return chosen_paths[0]
+    return found_paths[0]
 
 
 def _query_price_map(ids):
