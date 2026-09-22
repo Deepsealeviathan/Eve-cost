@@ -19,7 +19,7 @@ from flask import Flask, render_template, request, jsonify
 
 # 从同目录的 query_logic.py 中导入 query_craft_cost 函数
 # 该函数负责读取 JSON 制作清单并查询数据库计算成本
-from Select import query_by_name, get_catalog
+from Select import query_by_name, get_catalog, get_recipes
 
 # 创建一个 Flask 应用实例
 # __name__ 是当前模块名，Flask 用它来确定资源路径
@@ -206,6 +206,23 @@ def update_database():
 def components_page():
     """组件制造计算页:目录选件 + 数量加减 + 建筑加成减免"""
     return render_template('components.html')
+
+
+# 制造清单汇总页:粘贴购物单,一键递归展开到最终原材料
+@app.route('/bom')
+def bom_page():
+    """制造清单汇总页:粘贴清单 + 建筑加成/蓝图ME → 汇总矿物/行星商品等最终原材料"""
+    return render_template('bom.html')
+
+
+# 0.6.0 /recipes 接口返回全部配方的轻量索引,供 BOM 页前端递归展开
+@app.route('/recipes', methods=['GET'])
+def recipes():
+    """返回全部配方索引(name/id/tier/outputCount/inputs)"""
+    try:
+        return jsonify({'success': True, 'data': get_recipes()})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
 
 
 # 判断当前文件是否是直接运行（不是被其他文件导入）

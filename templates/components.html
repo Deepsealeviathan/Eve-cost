@@ -249,6 +249,17 @@
         select:focus, .me-input:focus { border-color: var(--primary); }
         .me-input { width: 70px; cursor: text; }
 
+        .rig-box { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; max-width: 430px; }
+        .rig-check {
+            display: inline-flex; align-items: center; gap: 5px;
+            padding: 7px 12px; border: 2px solid var(--border); border-radius: 12px;
+            font-size: 13px; cursor: pointer; background: #fff; user-select: none;
+            transition: all 0.15s;
+        }
+        .rig-check.checked { border-color: var(--primary); background: rgba(79, 70, 229, 0.08); color: var(--primary-dark); font-weight: 600; }
+        .rig-check input { accent-color: var(--primary); margin: 0; }
+        .rig-hint { font-size: 12px; color: var(--muted); }
+
         .me-summary {
             width: 100%;
             font-size: 13px;
@@ -347,11 +358,15 @@
                     </div>
                 </div>
                 <div class="ctrl-group">
-                    <span class="ctrl-label">建筑加成(插件 + 堡垒)</span>
-                    <select id="rig-select"></select>
+                    <span class="ctrl-label">建筑(决定可安装的改装件规格)</span>
+                    <select id="structure-select"></select>
                 </div>
                 <div class="ctrl-group">
-                    <span class="ctrl-label">星系安全等级(影响插件效果)</span>
+                    <span class="ctrl-label">改装件(可多选,同一建筑最多 3 个)</span>
+                    <div class="rig-box" id="rig-box" style="display:none;"></div>
+                </div>
+                <div class="ctrl-group">
+                    <span class="ctrl-label">星系安全等级(影响改装件效果)</span>
                     <select id="sec-select"></select>
                 </div>
                 <div class="ctrl-group">
@@ -397,9 +412,10 @@
             <div class="verdict" id="verdict"></div>
 
             <div class="formula-note">
-                计算公式: 需求 = ⌈基础 × 数量 × (1 − 蓝图ME减免) × (1 − 插件减免) × (1 − 结构减免)⌉,每行向上取整,每种材料每轮至少 1 个。<br>
-                蓝图 ME = 每级 −1%,研究 10 级共 −10%(ME 0 即无减免);结构减免: 莱塔卢 / 阿兹贝尔 / 索迪约均提供 1% 材料减免;<br>
-                插件减免 = 基础值(T1 2.0% / T2 2.4%) × 星系系数(高安 ×1.0 / 低安 ×1.9 / 00 与虫洞 ×2.1,系数只放大插件、不放大结构 1%)。数值经晨曦 ESI dogma 属性核实(attributeEngRigMatBonus / hiSecModifier / strEngMatBonus)。
+                计算公式: 需求 = max(轮次, ⌈单轮用量 × 轮次 × (1 − 蓝图ME减免) × (1 − 改装件减免) × (1 − 结构减免)⌉),轮次 = ⌈数量 ÷ 每轮产出⌉,每种材料每轮至少 1 个。<br>
+                蓝图 ME = 每级 −1%,研究 10 级共 −10%(ME 0 即无减免);结构减免: 莱塔卢 / 阿兹贝尔 / 索迪约均提供 1% 材料减免(NPC 站无减免);<br>
+                改装件减免 = 已装适用改装件中的最高值(T1 2.0% / T2 2.4%,同类不叠加) × 星系系数(高安 ×1.0 / 低安 ×1.9 / 00 与虫洞 ×2.1,系数只放大改装件、不放大结构 1%)。
+                一座工程综合体最多同时安装 3 个改装件,不同类别(如"基础旗舰"与"高级组件")可同时生效。数值经晨曦 ESI dogma 属性核实(attributeEngRigMatBonus / hiSecModifier / strEngMatBonus)。
             </div>
         </div>
     </main>
@@ -472,40 +488,99 @@ async function loadCatalog() {
 document.getElementById('catalog-search').addEventListener('input', renderList);
 
 // ==========================================
-// 建筑加成数据(来源: 游戏 SDE)
+// 建筑加成数据(来源: 游戏 SDE,经晨曦 ESI dogma 核实)
 // ==========================================
-// rig 基础减免: T1=2.0%, T2=2.4%;scope 表示适用的组件分类
-const RIG_PRESETS = [
-    { id: 'none',    label: '无建筑加成',                              base: 0,    scope: ['旗舰基础组件', '旗舰高级组件', 'T2制造组件'] },
-    { id: 'L-adv1',  label: '屹立大型高级组件制造效率 I + 阿兹贝尔 (2.0%)',     base: 0.02, scope: ['旗舰高级组件', 'T2制造组件'] },
-    { id: 'L-adv2',  label: '屹立大型高级组件制造效率 II + 阿兹贝尔 (2.4%)',    base: 0.024, scope: ['旗舰高级组件', 'T2制造组件'] },
-    { id: 'L-cap1',  label: '屹立大型基础旗舰组件制造效率 I + 阿兹贝尔 (2.0%)',  base: 0.02, scope: ['旗舰基础组件'] },
-    { id: 'L-cap2',  label: '屹立大型基础旗舰组件制造效率 II + 阿兹贝尔 (2.4%)', base: 0.024, scope: ['旗舰基础组件'] },
-    { id: 'XL-1',    label: '屹立超大型建筑和组件制造效率 I + 索迪约 (2.0%)',       base: 0.02, scope: ['旗舰基础组件', '旗舰高级组件', 'T2制造组件'] },
-    { id: 'XL-2',    label: '屹立超大型建筑和组件制造效率 II + 索迪约 (2.4%)',      base: 0.024, scope: ['旗舰基础组件', '旗舰高级组件', 'T2制造组件'] },
-    { id: 'M-adv1',  label: '屹立中型高级组件制造材料效率 I + 莱塔卢 (2.0%)',       base: 0.02, scope: ['旗舰高级组件', 'T2制造组件'] },
-    { id: 'M-adv2',  label: '屹立中型高级组件制造材料效率 II + 莱塔卢 (2.4%)',      base: 0.024, scope: ['旗舰高级组件', 'T2制造组件'] },
-    { id: 'M-cap1',  label: '屹立中型基础旗舰组件制造材料效率 I + 莱塔卢 (2.0%)',    base: 0.02, scope: ['旗舰基础组件'] },
-    { id: 'M-cap2',  label: '屹立中型基础旗舰组件制造材料效率 II + 莱塔卢 (2.4%)',   base: 0.024, scope: ['旗舰基础组件'] },
+// 一座工程综合体最多 3 个改装件槽位;同类改装件不叠加,取最高减免
+const STRUCTURES = [
+    { id: 'station', label: 'NPC 站(无任何减免)',                size: null, structMe: 0 },
+    { id: 'norigs',  label: '工程综合体·未装改装件(仅结构 1%)',    size: null, structMe: 0.01 },
+    { id: 'raitaru', label: '莱塔卢(中型 EC,结构 1%)',            size: 'M',  structMe: 0.01 },
+    { id: 'azbel',   label: '阿兹贝尔(大型 EC,结构 1%)',          size: 'L',  structMe: 0.01 },
+    { id: 'sotiyo',  label: '索迪约(超大型 EC,结构 1%)',          size: 'XL', structMe: 0.01 },
 ];
 
-// 安等系数: 插件效果按星系类别放大 —— 高安 ×1.0 / 低安 ×1.9 / 00与虫洞 ×2.1(EVE 官方论坛确认的数值,仅作用于插件,不作用于结构固有 1%)
+// 改装件:base 为基础减免(T1=2.0%, T2=2.4%),scope 为适用的组件分类;size 须与建筑规格匹配
+const RIG_POOL = [
+    { id: 'M-adv1',  size: 'M',  label: '高级组件制造材料效率 I (2.0%)',     base: 0.02,  scope: ['旗舰高级组件', 'T2制造组件'] },
+    { id: 'M-adv2',  size: 'M',  label: '高级组件制造材料效率 II (2.4%)',    base: 0.024, scope: ['旗舰高级组件', 'T2制造组件'] },
+    { id: 'M-cap1',  size: 'M',  label: '基础旗舰组件制造材料效率 I (2.0%)',  base: 0.02,  scope: ['旗舰基础组件'] },
+    { id: 'M-cap2',  size: 'M',  label: '基础旗舰组件制造材料效率 II (2.4%)', base: 0.024, scope: ['旗舰基础组件'] },
+    { id: 'L-adv1',  size: 'L',  label: '高级组件制造效率 I (2.0%)',         base: 0.02,  scope: ['旗舰高级组件', 'T2制造组件'] },
+    { id: 'L-adv2',  size: 'L',  label: '高级组件制造效率 II (2.4%)',        base: 0.024, scope: ['旗舰高级组件', 'T2制造组件'] },
+    { id: 'L-cap1',  size: 'L',  label: '基础旗舰组件制造效率 I (2.0%)',     base: 0.02,  scope: ['旗舰基础组件'] },
+    { id: 'L-cap2',  size: 'L',  label: '基础旗舰组件制造效率 II (2.4%)',    base: 0.024, scope: ['旗舰基础组件'] },
+    { id: 'XL-1',    size: 'XL', label: '建筑和组件制造效率 I (2.0%)',       base: 0.02,  scope: ['旗舰基础组件', '旗舰高级组件', 'T2制造组件'] },
+    { id: 'XL-2',    size: 'XL', label: '建筑和组件制造效率 II (2.4%)',      base: 0.024, scope: ['旗舰基础组件', '旗舰高级组件', 'T2制造组件'] },
+];
+
+const MAX_RIG_SLOTS = 3;  // 工程综合体改装件槽位数
+
+// 安等系数: 改装件效果按星系类别放大 —— 高安 ×1.0 / 低安 ×1.9 / 00与虫洞 ×2.1(EVE 官方论坛确认的数值,仅作用于改装件,不作用于结构固有 1%)
 const SEC_PRESETS = [
-    { id: 'hisec',   label: '高安 (0.5 ~ 1.0) — 插件系数 ×1.0',        scale: 1.0 },
-    { id: 'lowsec',  label: '低安 (0.1 ~ 0.4) — 插件系数 ×1.9',        scale: 1.9 },
-    { id: 'nullsec', label: '00 / 虫洞 (-0.0 ~ -1.0) — 插件系数 ×2.1', scale: 2.1 },
+    { id: 'hisec',   label: '高安 (0.5 ~ 1.0) — 改装件系数 ×1.0',        scale: 1.0 },
+    { id: 'lowsec',  label: '低安 (0.1 ~ 0.4) — 改装件系数 ×1.9',        scale: 1.9 },
+    { id: 'nullsec', label: '00 / 虫洞 (-0.0 ~ -1.0) — 改装件系数 ×2.1', scale: 2.1 },
 ];
 
-const STRUCT_ME = 0.01;  // 莱塔卢/阿兹贝尔/索迪约固有 1% 材料减免
+function selectedRigs() {
+    return [...document.querySelectorAll('#rig-box input:checked')]
+        .map(cb => RIG_POOL.find(r => r.id === cb.value))
+        .filter(Boolean);
+}
+
+// 同类改装件不叠加:对指定分类取所有已装适用改装件中的最高基础减免,再乘安等系数
+function rigBonusFor(tier, rigs, scale) {
+    let best = 0;
+    rigs.forEach(r => { if (r.scope.includes(tier)) best = Math.max(best, r.base); });
+    return best * scale;
+}
+
+function buildRigBox() {
+    const st = STRUCTURES.find(s => s.id === document.getElementById('structure-select').value);
+    const box = document.getElementById('rig-box');
+    box.innerHTML = '';
+    if (!st || !st.size) { box.style.display = 'none'; return; }
+    box.style.display = 'flex';
+    RIG_POOL.filter(r => r.size === st.size).forEach(r => {
+        const lab = document.createElement('label');
+        lab.className = 'rig-check';
+        lab.innerHTML = `<input type="checkbox" value="${r.id}"> ${r.label}`;
+        const cb = lab.querySelector('input');
+        cb.addEventListener('change', e => {
+            if (document.querySelectorAll('#rig-box input:checked').length > MAX_RIG_SLOTS) {
+                e.target.checked = false;
+                lab.classList.remove('checked');
+                alert(`一座建筑最多同时安装 ${MAX_RIG_SLOTS} 个改装件`);
+                return;
+            }
+            lab.classList.toggle('checked', cb.checked);
+            updateRigHint();
+            recalc();
+        });
+        box.appendChild(lab);
+    });
+    const hint = document.createElement('span');
+    hint.className = 'rig-hint';
+    hint.id = 'rig-hint';
+    hint.textContent = `已选 0/${MAX_RIG_SLOTS}(同类不叠加,取最高)`;
+    box.appendChild(hint);
+}
+
+function updateRigHint() {
+    const n = document.querySelectorAll('#rig-box input:checked').length;
+    const hint = document.getElementById('rig-hint');
+    if (hint) hint.textContent = `已选 ${n}/${MAX_RIG_SLOTS}(同类不叠加,取最高)`;
+}
 
 function fillSelects() {
-    const rigSel = document.getElementById('rig-select');
-    RIG_PRESETS.forEach(p => {
+    const stSel = document.getElementById('structure-select');
+    STRUCTURES.forEach(s => {
         const o = document.createElement('option');
-        o.value = p.id;
-        o.textContent = p.label;
-        rigSel.appendChild(o);
+        o.value = s.id;
+        o.textContent = s.label;
+        stSel.appendChild(o);
     });
+    stSel.value = 'norigs';
     const secSel = document.getElementById('sec-select');
     SEC_PRESETS.forEach(s => {
         const o = document.createElement('option');
@@ -513,6 +588,7 @@ function fillSelects() {
         o.textContent = s.label;
         secSel.appendChild(o);
     });
+    buildRigBox();
 }
 
 // ==========================================
@@ -554,40 +630,42 @@ function getQty() {
 }
 
 function meParams() {
-    const rig = RIG_PRESETS.find(p => p.id === document.getElementById('rig-select').value) || RIG_PRESETS[0];
+    const structure = STRUCTURES.find(s => s.id === document.getElementById('structure-select').value) || STRUCTURES[1];
     const sec = SEC_PRESETS.find(s => s.id === document.getElementById('sec-select').value) || SEC_PRESETS[0];
     let meLevel = parseInt(document.getElementById('me-input').value, 10);
     if (!Number.isFinite(meLevel)) meLevel = 0;
     meLevel = Math.max(0, Math.min(10, meLevel));
-    return { rig, sec, meLevel };
+    return { structure, rigs: selectedRigs(), sec, meLevel };
 }
 
 function recalc() {
     if (!current) return;
     const { recipe } = current;
     const qty = getQty();
-    const { rig, sec, meLevel } = meParams();
+    const { structure, rigs, sec, meLevel } = meParams();
 
     const meFactor = 1 - 0.01 * meLevel;               // 蓝图 ME:每级 -1%,10 级共 -10%
-    const rigEff = rig.base * sec.scale;               // 插件实际减免
-    const factor = meFactor * (1 - rigEff) * (1 - STRUCT_ME);
+    const rigEff = rigBonusFor(recipe.tier, rigs, sec.scale);  // 已装适用改装件中的最高减免
+    const factor = meFactor * (1 - rigEff) * (1 - structure.structMe);
 
     // 加成摘要
     const sum = document.getElementById('me-summary');
-    const applies = rig.scope.includes(recipe.tier);
-    let html = `蓝图 ME −${meLevel}% × 插件减免 −${(rigEff * 100).toFixed(2)}% × 结构减免 −${(STRUCT_ME * 100).toFixed(0)}%`
+    let html = `蓝图 ME −${meLevel}% × 改装件减免 −${(rigEff * 100).toFixed(2)}% × 结构减免 −${(structure.structMe * 100).toFixed(0)}%`
         + ` ⇒ 材料系数 <b>${factor.toFixed(4)}</b>(约减免 ${((1 - factor) * 100).toFixed(1)}%)`;
-    if (!applies) {
-        html += ` <span class="warn">⚠️ 当前插件不适用于 ${recipe.tier},仅结构 1% 与蓝图 ME 生效</span>`;
+    if (structure.size && rigs.length && rigEff === 0) {
+        html += ` <span class="warn">⚠️ 已选改装件均不适用于 ${recipe.tier},仅结构 1% 与蓝图 ME 生效</span>`;
     }
     sum.innerHTML = html;
 
-    // 材料表(quantity=1 时 total_num 即单个所需;按行向上取整)
+    // 材料表(quantity=1 时 total_num 即单个所需)
     const tbody = document.getElementById('mat-tbody');
     tbody.innerHTML = '';
     let totalBuy = 0, totalSell = 0;
+    const oc = recipe.output_count || 1;                  // 每轮产出
+    const runs = Math.max(1, Math.ceil(qty / oc));        // 制造轮次
     (recipe.materials || []).forEach(m => {
-        const need = Math.ceil(m.total_num * qty * factor);
+        const count = Math.round((m.num_per_unit || m.total_num) * oc);   // 单轮用量
+        const need = Math.max(runs, Math.ceil(count * runs * factor - 1e-9));  // 每轮至少 1 个
         const subBuy = need * (m.buy_max || 0);
         const subSell = need * (m.sell_min || 0);
         totalBuy += subBuy;
@@ -640,7 +718,7 @@ document.getElementById('qty-plus').onclick = () => {
     recalc();
 };
 document.getElementById('qty-input').addEventListener('input', recalc);
-document.getElementById('rig-select').addEventListener('change', recalc);
+document.getElementById('structure-select').addEventListener('change', () => { buildRigBox(); recalc(); });
 document.getElementById('sec-select').addEventListener('change', recalc);
 document.getElementById('me-input').addEventListener('input', recalc);
 

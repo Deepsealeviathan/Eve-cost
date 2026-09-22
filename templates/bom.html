@@ -1,0 +1,717 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EVE 制造清单汇总器</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --primary: #4f46e5;
+            --primary-dark: #3730a3;
+            --accent: #06b6d4;
+            --success: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --bg: #0b0f19;
+            --card: rgba(255, 255, 255, 0.92);
+            --text: #1f2937;
+            --muted: #6b7280;
+            --border: rgba(0, 0, 0, 0.06);
+        }
+
+        body {
+            font-family: "Microsoft YaHei", "PingFang SC", Arial, sans-serif;
+            background:
+                radial-gradient(circle at 10% 20%, rgba(79, 70, 229, 0.18) 0%, transparent 35%),
+                radial-gradient(circle at 90% 80%, rgba(6, 182, 212, 0.14) 0%, transparent 35%),
+                linear-gradient(135deg, #0b0f19 0%, #111827 50%, #0b0f19 100%);
+            min-height: 100vh;
+            margin: 0;
+            padding: 40px 20px;
+            color: var(--text);
+        }
+
+        .page {
+            max-width: 1160px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .topbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .topbar h1 {
+            font-size: 22px;
+            color: #f9fafb;
+            text-shadow: 0 2px 12px rgba(0, 0, 0, 0.4);
+        }
+        .nav-links { display: flex; gap: 10px; }
+        .nav-link {
+            color: #c7d2fe;
+            text-decoration: none;
+            font-size: 14px;
+            background: rgba(79, 70, 229, 0.35);
+            padding: 8px 16px;
+            border-radius: 12px;
+            border: 1px solid rgba(199, 210, 254, 0.3);
+            transition: background 0.2s;
+        }
+        .nav-link:hover { background: rgba(79, 70, 229, 0.6); }
+
+        .card {
+            background: var(--card);
+            border-radius: 20px;
+            padding: 24px;
+            box-shadow:
+                0 20px 60px rgba(0, 0, 0, 0.25),
+                inset 0 1px 0 rgba(255, 255, 255, 0.6);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.45);
+        }
+
+        .card-title { font-size: 17px; font-weight: 700; margin-bottom: 12px; }
+        .card-hint { font-size: 13px; color: var(--muted); margin-bottom: 12px; line-height: 1.7; }
+
+        textarea.paste-box {
+            width: 100%;
+            min-height: 200px;
+            padding: 14px;
+            border: 2px solid var(--border);
+            border-radius: 14px;
+            font-size: 14px;
+            font-family: inherit;
+            line-height: 1.8;
+            outline: none;
+            resize: vertical;
+            background: #fff;
+        }
+        textarea.paste-box:focus { border-color: var(--primary); }
+
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 18px;
+            align-items: flex-end;
+            padding: 16px;
+            background: rgba(79, 70, 229, 0.05);
+            border-radius: 14px;
+            margin: 16px 0 0;
+        }
+        .ctrl-group { display: flex; flex-direction: column; gap: 6px; }
+        .ctrl-label { font-size: 13px; color: var(--muted); font-weight: 600; }
+
+        select, .me-input {
+            height: 38px;
+            padding: 0 12px;
+            border: 2px solid var(--border);
+            border-radius: 12px;
+            font-size: 14px;
+            background: #fff;
+            outline: none;
+            cursor: pointer;
+        }
+        select:focus, .me-input:focus { border-color: var(--primary); }
+        .me-input { width: 70px; cursor: text; }
+        select { max-width: 380px; }
+
+        .rig-box { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; max-width: 430px; }
+        .rig-check {
+            display: inline-flex; align-items: center; gap: 5px;
+            padding: 7px 12px; border: 2px solid var(--border); border-radius: 12px;
+            font-size: 13px; cursor: pointer; background: #fff; user-select: none;
+            transition: all 0.15s;
+        }
+        .rig-check.checked { border-color: var(--primary); background: rgba(79, 70, 229, 0.08); color: var(--primary-dark); font-weight: 600; }
+        .rig-check input { accent-color: var(--primary); margin: 0; }
+        .rig-hint { font-size: 12px; color: var(--muted); }
+
+        .parse-btn {
+            height: 38px;
+            padding: 0 26px;
+            border: none;
+            border-radius: 12px;
+            background: var(--primary);
+            color: #fff;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+        .parse-btn:hover { background: var(--primary-dark); }
+
+        .me-summary {
+            width: 100%;
+            font-size: 13px;
+            color: var(--primary-dark);
+            background: rgba(16, 185, 129, 0.10);
+            border: 1px dashed rgba(16, 185, 129, 0.5);
+            border-radius: 10px;
+            padding: 8px 12px;
+            line-height: 1.8;
+        }
+        .me-summary .warn { color: var(--warning); }
+
+        .warn-box {
+            background: rgba(239, 68, 68, 0.10);
+            border: 1px solid rgba(239, 68, 68, 0.35);
+            border-radius: 12px;
+            padding: 12px 16px;
+            font-size: 13px;
+            color: #b91c1c;
+            line-height: 1.8;
+            margin-bottom: 16px;
+        }
+        .warn-box b { display: block; margin-bottom: 4px; }
+        .warn-box code {
+            background: rgba(239, 68, 68, 0.12);
+            padding: 1px 6px;
+            border-radius: 6px;
+        }
+
+        table.mat-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+        .mat-table th, .mat-table td {
+            padding: 9px 10px;
+            text-align: right;
+            border-bottom: 1px solid var(--border);
+            white-space: nowrap;
+        }
+        .mat-table th:first-child, .mat-table td:first-child { text-align: left; }
+        .mat-table th { color: var(--muted); font-weight: 600; font-size: 12px; }
+        .mat-table tr:hover td { background: rgba(79, 70, 229, 0.05); }
+        .mat-table tfoot td {
+            font-weight: 700;
+            border-top: 2px solid var(--border);
+            border-bottom: none;
+            background: rgba(79, 70, 229, 0.06);
+        }
+        .tier-tag {
+            display: inline-block;
+            font-size: 11px;
+            font-weight: 500;
+            padding: 2px 8px;
+            border-radius: 8px;
+            background: rgba(79, 70, 229, 0.10);
+            color: var(--primary-dark);
+        }
+        .mini-warn { color: var(--warning); font-size: 12px; }
+
+        .compare {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 14px;
+            margin-top: 18px;
+        }
+        .compare-box { border-radius: 14px; padding: 16px; text-align: center; }
+        .compare-box .label { font-size: 13px; color: var(--muted); margin-bottom: 6px; }
+        .compare-box .value { font-size: 22px; font-weight: 800; }
+        .compare-box.buy { background: rgba(79, 70, 229, 0.10); }
+        .compare-box.buy .value { color: var(--primary-dark); }
+        .compare-box.sell { background: rgba(6, 182, 212, 0.10); }
+        .compare-box.sell .value { color: #0e7490; }
+
+        .formula-note { margin-top: 14px; font-size: 12px; color: var(--muted); line-height: 1.7; }
+
+        .section-gap { margin-top: 22px; }
+
+        @media (max-width: 900px) {
+            .compare { grid-template-columns: 1fr; }
+            select { max-width: 100%; }
+        }
+    </style>
+</head>
+<body>
+<div class="page">
+    <div class="topbar">
+        <h1>🧾 制造清单汇总器</h1>
+        <div class="nav-links">
+            <a class="nav-link" href="/components">🛠️ 组件计算器 →</a>
+            <a class="nav-link" href="/">← 返回成本查询</a>
+        </div>
+    </div>
+
+    <div class="card" id="input-card">
+        <div class="card-title">📋 粘贴制造清单</div>
+        <div class="card-hint">
+            每行一项,支持 <b>数量 x 物品名</b>(如 <code>5 x 旗舰推进引擎</code>)、<b>物品名 x 数量</b> 或首页同款的 <b>物品名 数量</b> 三种写法,数量支持千分位逗号(如 <code>3,200</code>)。
+            粘贴的制造类组件(旗舰基础/旗舰高级/T2制造组件)会递归展开所有制造工序并计入加成减免,
+            矿物、行星商品、反应物等原材料直接汇总到最终清单。
+        </div>
+        <textarea class="paste-box" id="paste-box" placeholder="5 x 旗舰推进引擎&#10;10 x 旗舰炮台挂点&#10;8 x S-R触发式神经链接回路&#10;400 x 自动修复储藏装置密封&#10;..."></textarea>
+
+        <div class="controls">
+            <div class="ctrl-group">
+                <span class="ctrl-label">建筑(决定可安装的改装件规格)</span>
+                <select id="structure-select"></select>
+            </div>
+            <div class="ctrl-group">
+                <span class="ctrl-label">改装件(可多选,同一建筑最多 3 个)</span>
+                <div class="rig-box" id="rig-box" style="display:none;"></div>
+            </div>
+            <div class="ctrl-group">
+                <span class="ctrl-label">星系安全等级(影响改装件效果)</span>
+                <select id="sec-select"></select>
+            </div>
+            <div class="ctrl-group">
+                <span class="ctrl-label">蓝图 ME 等级(0-10,每级 −1%)</span>
+                <input class="me-input" id="me-input" type="number" min="0" max="10" value="0">
+            </div>
+            <div class="ctrl-group">
+                <span class="ctrl-label">&nbsp;</span>
+                <button class="parse-btn" id="parse-btn">解析清单</button>
+            </div>
+            <div class="me-summary" id="me-summary" style="display:none;"></div>
+        </div>
+    </div>
+
+    <div class="card" id="result-card" style="display:none;">
+        <div class="warn-box" id="unknown-box" style="display:none;"></div>
+
+        <div class="card-title">🧱 清单明细(每项的制造轮次与材料系数)</div>
+        <table class="mat-table">
+            <thead>
+            <tr>
+                <th>物品</th>
+                <th>分类</th>
+                <th>数量</th>
+                <th>制造轮次</th>
+                <th>材料系数</th>
+                <th>备注</th>
+            </tr>
+            </thead>
+            <tbody id="items-tbody"></tbody>
+        </table>
+
+        <div class="section-gap"></div>
+        <div class="card-title">🪨 最终原材料汇总</div>
+        <table class="mat-table">
+            <thead>
+            <tr>
+                <th>材料</th>
+                <th>分类</th>
+                <th>总需求</th>
+                <th>单价(收)</th>
+                <th>小计(收)</th>
+                <th>单价(卖)</th>
+                <th>小计(卖)</th>
+            </tr>
+            </thead>
+            <tbody id="mat-tbody"></tbody>
+            <tfoot>
+            <tr>
+                <td colspan="4">合计</td>
+                <td id="total-buy">-</td>
+                <td></td>
+                <td id="total-sell">-</td>
+            </tr>
+            </tfoot>
+        </table>
+
+        <div class="compare">
+            <div class="compare-box buy">
+                <div class="label">全部材料成本(按收购价挂单)</div>
+                <div class="value" id="cost-buy">-</div>
+            </div>
+            <div class="compare-box sell">
+                <div class="label">全部材料成本(按出售价购买)</div>
+                <div class="value" id="cost-sell">-</div>
+            </div>
+        </div>
+
+        <div class="formula-note">
+            展开规则: 仅递归展开制造类组件(旗舰基础 / 旗舰高级 / T2制造组件,即受蓝图 ME 与建筑减免影响的工序);
+            矿物、行星商品(P1-P4)、反应物(合成物 / 分子锻造材料 / 混合聚合物等)、挖坟材料等视为外购原材料,直接汇总不再展开。<br>
+            计算公式: 每道制造工序 轮次 = ⌈数量 ÷ 每轮产出⌉;每种材料 需求 = max(轮次, ⌈单轮用量 × 轮次 × (1 − 蓝图ME减免) × (1 − 改装件减免) × (1 − 结构减免)⌉)。<br>
+            蓝图 ME = 每级 −1%,研究 10 级共 −10%(ME 0 即无减免);结构减免: 莱塔卢 / 阿兹贝尔 / 索迪约均 1%(NPC 站无减免);
+            改装件减免 = 已装适用改装件中的最高值(T1 2.0% / T2 2.4%,同类不叠加) × 星系系数(高安 ×1.0 / 低安 ×1.9 / 00 与虫洞 ×2.1)。
+            一座工程综合体最多同时安装 3 个改装件,不同类别(如"基础旗舰"与"高级组件")可同时生效、分别作用于对应工序。数值经晨曦 ESI dogma 属性核实(attributeEngRigMatBonus / hiSecModifier / strEngMatBonus)。
+        </div>
+    </div>
+</div>
+
+<script>
+// ==========================================
+// 数据加载(/recipes 配方索引 + /catalog 行情)
+// ==========================================
+const MANUF_TIERS = ['旗舰基础组件', '旗舰高级组件', 'T2制造组件'];   // 递归展开的制造类分类
+const MAX_DEPTH = 12;                                                 // 递归深度保护
+
+let RECIPES = {};       // name -> {id, tier, outputCount, inputs}
+let CAT_BY_ID = {};     // id   -> {name, buy_max, sell_min, tier}
+let CAT_BY_NAME = {};   // name -> {id, buy_max, sell_min, tier}
+let parsedItems = null; // 最近一次解析结果 {items: Map(name->qty), unknown: [{line, name}]}
+
+// 与组件制造计算器一致的建筑加成模型(来源: 游戏 SDE,经晨曦 ESI dogma 核实)
+// 一座工程综合体最多 3 个改装件槽位;同类改装件不叠加,取最高减免
+const STRUCTURES = [
+    { id: 'station', label: 'NPC 站(无任何减免)',                size: null, structMe: 0 },
+    { id: 'norigs',  label: '工程综合体·未装改装件(仅结构 1%)',    size: null, structMe: 0.01 },
+    { id: 'raitaru', label: '莱塔卢(中型 EC,结构 1%)',            size: 'M',  structMe: 0.01 },
+    { id: 'azbel',   label: '阿兹贝尔(大型 EC,结构 1%)',          size: 'L',  structMe: 0.01 },
+    { id: 'sotiyo',  label: '索迪约(超大型 EC,结构 1%)',          size: 'XL', structMe: 0.01 },
+];
+
+const RIG_POOL = [
+    { id: 'M-adv1',  size: 'M',  label: '高级组件制造材料效率 I (2.0%)',     base: 0.02,  scope: ['旗舰高级组件', 'T2制造组件'] },
+    { id: 'M-adv2',  size: 'M',  label: '高级组件制造材料效率 II (2.4%)',    base: 0.024, scope: ['旗舰高级组件', 'T2制造组件'] },
+    { id: 'M-cap1',  size: 'M',  label: '基础旗舰组件制造材料效率 I (2.0%)',  base: 0.02,  scope: ['旗舰基础组件'] },
+    { id: 'M-cap2',  size: 'M',  label: '基础旗舰组件制造材料效率 II (2.4%)', base: 0.024, scope: ['旗舰基础组件'] },
+    { id: 'L-adv1',  size: 'L',  label: '高级组件制造效率 I (2.0%)',         base: 0.02,  scope: ['旗舰高级组件', 'T2制造组件'] },
+    { id: 'L-adv2',  size: 'L',  label: '高级组件制造效率 II (2.4%)',        base: 0.024, scope: ['旗舰高级组件', 'T2制造组件'] },
+    { id: 'L-cap1',  size: 'L',  label: '基础旗舰组件制造效率 I (2.0%)',     base: 0.02,  scope: ['旗舰基础组件'] },
+    { id: 'L-cap2',  size: 'L',  label: '基础旗舰组件制造效率 II (2.4%)',    base: 0.024, scope: ['旗舰基础组件'] },
+    { id: 'XL-1',    size: 'XL', label: '建筑和组件制造效率 I (2.0%)',       base: 0.02,  scope: ['旗舰基础组件', '旗舰高级组件', 'T2制造组件'] },
+    { id: 'XL-2',    size: 'XL', label: '建筑和组件制造效率 II (2.4%)',      base: 0.024, scope: ['旗舰基础组件', '旗舰高级组件', 'T2制造组件'] },
+];
+
+const MAX_RIG_SLOTS = 3;  // 工程综合体改装件槽位数
+
+const SEC_PRESETS = [
+    { id: 'hisec',   label: '高安 (0.5 ~ 1.0) — 改装件系数 ×1.0',        scale: 1.0 },
+    { id: 'lowsec',  label: '低安 (0.1 ~ 0.4) — 改装件系数 ×1.9',        scale: 1.9 },
+    { id: 'nullsec', label: '00 / 虫洞 (-0.0 ~ -1.0) — 改装件系数 ×2.1', scale: 2.1 },
+];
+
+function selectedRigs() {
+    return [...document.querySelectorAll('#rig-box input:checked')]
+        .map(cb => RIG_POOL.find(r => r.id === cb.value))
+        .filter(Boolean);
+}
+
+// 同类改装件不叠加:对指定分类取所有已装适用改装件中的最高基础减免,再乘安等系数
+function rigBonusFor(tier, rigs, scale) {
+    let best = 0;
+    rigs.forEach(r => { if (r.scope.includes(tier)) best = Math.max(best, r.base); });
+    return best * scale;
+}
+
+function buildRigBox() {
+    const st = STRUCTURES.find(s => s.id === document.getElementById('structure-select').value);
+    const box = document.getElementById('rig-box');
+    box.innerHTML = '';
+    if (!st || !st.size) { box.style.display = 'none'; return; }
+    box.style.display = 'flex';
+    RIG_POOL.filter(r => r.size === st.size).forEach(r => {
+        const lab = document.createElement('label');
+        lab.className = 'rig-check';
+        lab.innerHTML = `<input type="checkbox" value="${r.id}"> ${r.label}`;
+        const cb = lab.querySelector('input');
+        cb.addEventListener('change', e => {
+            if (document.querySelectorAll('#rig-box input:checked').length > MAX_RIG_SLOTS) {
+                e.target.checked = false;
+                lab.classList.remove('checked');
+                alert(`一座建筑最多同时安装 ${MAX_RIG_SLOTS} 个改装件`);
+                return;
+            }
+            lab.classList.toggle('checked', cb.checked);
+            updateRigHint();
+            if (parsedItems) expandAll();
+        });
+        box.appendChild(lab);
+    });
+    const hint = document.createElement('span');
+    hint.className = 'rig-hint';
+    hint.id = 'rig-hint';
+    hint.textContent = `已选 0/${MAX_RIG_SLOTS}(同类不叠加,取最高)`;
+    box.appendChild(hint);
+}
+
+function updateRigHint() {
+    const n = document.querySelectorAll('#rig-box input:checked').length;
+    const hint = document.getElementById('rig-hint');
+    if (hint) hint.textContent = `已选 ${n}/${MAX_RIG_SLOTS}(同类不叠加,取最高)`;
+}
+
+function fillSelects() {
+    const stSel = document.getElementById('structure-select');
+    STRUCTURES.forEach(s => {
+        const o = document.createElement('option');
+        o.value = s.id;
+        o.textContent = s.label;
+        stSel.appendChild(o);
+    });
+    stSel.value = 'norigs';
+    const secSel = document.getElementById('sec-select');
+    SEC_PRESETS.forEach(s => {
+        const o = document.createElement('option');
+        o.value = s.id;
+        o.textContent = s.label;
+        secSel.appendChild(o);
+    });
+    buildRigBox();
+}
+
+async function loadData() {
+    const [rr, cr] = await Promise.all([
+        fetch('/recipes').then(r => r.json()),
+        fetch('/catalog').then(r => r.json())
+    ]);
+    if (rr.success) {
+        rr.data.forEach(r => { RECIPES[r.name] = r; });
+    }
+    if (cr.success) {
+        cr.data.forEach(c => {
+            CAT_BY_ID[c.id] = c;
+            CAT_BY_NAME[c.name] = c;
+        });
+    }
+}
+
+// ==========================================
+// 清单解析(数量 x 名称 / 名称 x 数量 / 纯名称)
+// ==========================================
+function parseList(text) {
+    const items = new Map();
+    const unknown = [];
+    const toQty = s => parseFloat(s.replace(/[,，]/g, ''));   // 千分位逗号(半角/全角)去分隔
+    for (const raw of text.split(/\r?\n/)) {
+        const line = raw.replace(/　/g, ' ').trim();
+        if (!line) continue;
+        let qty = null, name = null;
+        // 数量 x 物品名(数量支持千分位,如 3,200 x 自动修复储藏装置密封)
+        let m = line.match(/^(\d[\d,，]*(?:\.\d+)?)\s*[xX×ｘ*＊]\s*(.+)$/);
+        if (m) { qty = toQty(m[1]); name = m[2]; }
+        if (name === null) {
+            // 物品名 x 数量
+            m = line.match(/^(.+?)\s+[xX×ｘ*＊]\s*(\d[\d,，]*(?:\.\d+)?)$/);
+            if (m) { name = m[1]; qty = toQty(m[2]); }
+        }
+        if (name === null && !RECIPES[line] && !CAT_BY_NAME[line]) {
+            // 物品名 数量(首页批量粘贴同款格式);整行本身是物品名时不拆分
+            m = line.match(/^(.+?)\s+([\d,，]+(?:\.\d+)?)$/);
+            if (m && (RECIPES[m[1]] || CAT_BY_NAME[m[1]])) { name = m[1]; qty = toQty(m[2]); }
+        }
+        if (name === null) name = line;   // 纯物品名,数量按 1
+        name = name.replace(/\(/g, '（').replace(/\)/g, '）').trim();
+        if (!name) continue;
+        if (!RECIPES[name] && !CAT_BY_NAME[name]) {
+            unknown.push({ line: raw.trim(), name });
+            continue;
+        }
+        if (!Number.isFinite(qty) || qty <= 0) qty = 1;
+        items.set(name, (items.get(name) || 0) + qty);
+    }
+    return { items, unknown };
+}
+
+// ==========================================
+// 递归展开 + 加成计算
+// ==========================================
+function meParams() {
+    const structure = STRUCTURES.find(s => s.id === document.getElementById('structure-select').value) || STRUCTURES[1];
+    const sec = SEC_PRESETS.find(s => s.id === document.getElementById('sec-select').value) || SEC_PRESETS[0];
+    let meLevel = parseInt(document.getElementById('me-input').value, 10);
+    if (!Number.isFinite(meLevel)) meLevel = 0;
+    meLevel = Math.max(0, Math.min(10, meLevel));
+    return { structure, rigs: selectedRigs(), sec, meLevel };
+}
+
+function expandAll() {
+    const { structure, rigs, sec, meLevel } = meParams();
+    const meFactor = 1 - 0.01 * meLevel;
+
+    const raws = new Map();   // key -> {name, id, tier, qty}
+    const rows = [];          // 清单明细
+
+    const addRaw = (name, qty, rec) => {
+        const id = rec && rec.id != null ? rec.id : (CAT_BY_NAME[name] ? CAT_BY_NAME[name].id : null);
+        const key = id != null ? 'i' + id : 'n' + name;
+        let e = raws.get(key);
+        if (!e) {
+            const cat = id != null ? CAT_BY_ID[id] : CAT_BY_NAME[name];
+            e = {
+                name,
+                id,
+                tier: (rec && rec.tier) || (cat && cat.tier) || '其他',
+                qty: 0
+            };
+            raws.set(key, e);
+        }
+        e.qty += qty;
+    };
+
+    const expand = (name, qty, path, depth) => {
+        const rec = RECIPES[name];
+        const isManuf = rec && rec.inputs.length > 0 && MANUF_TIERS.includes(rec.tier);
+        if (!isManuf || depth > MAX_DEPTH || path.includes(name)) {
+            addRaw(name, qty, rec);
+            return null;
+        }
+        const oc = rec.outputCount || 1;
+        const runs = Math.max(1, Math.ceil(qty / oc));
+        const rigEff = rigBonusFor(rec.tier, rigs, sec.scale);   // 该工序分类的最高改装件减免
+        const factor = meFactor * (1 - rigEff) * (1 - structure.structMe);
+        for (const inp of rec.inputs) {
+            const need = Math.max(runs, Math.ceil(inp.count * runs * factor - 1e-9));
+            expand(inp.name, need, path.concat(name), depth + 1);
+        }
+        return { runs, oc, factor, rigEff };
+    };
+
+    for (const [name, qty] of parsedItems.items) {
+        const rec = RECIPES[name];
+        const info = expand(name, qty, [], 0);
+        rows.push({
+            name,
+            tier: (rec && rec.tier) || (CAT_BY_NAME[name] && CAT_BY_NAME[name].tier) || '其他',
+            qty,
+            runs: info ? info.runs : null,
+            oc: info ? info.oc : null,
+            factor: info ? info.factor : null,
+            rigEff: info ? info.rigEff : null
+        });
+    }
+
+    render(rows, raws);
+
+    const sum = document.getElementById('me-summary');
+    sum.style.display = 'block';
+    const tiersPresent = [...new Set(rows.map(r => r.tier).filter(t => MANUF_TIERS.includes(t)))];
+    const rigParts = tiersPresent.map(t => {
+        const eff = rigBonusFor(t, rigs, sec.scale);
+        return `${t} −${(eff * 100).toFixed(2)}%`;
+    }).join(' | ');
+    let html = `蓝图 ME −${meLevel}% × 结构减免 −${(structure.structMe * 100).toFixed(0)}% × 安等系数 ×${sec.scale}`
+        + (rigParts ? ` × 改装件减免[${rigParts}]` : '')
+        + `(改装件同类不叠加,取最高;按各工序组件分类分别生效)。`;
+    if (structure.size && rigs.length) {
+        const miss = [...new Set(rows.filter(r => r.rigEff === 0).map(r => r.tier))];
+        if (miss.length) html += ` <span class="warn">⚠️ 已选改装件均不适用于: ${miss.join('、')}(仅 ME + 结构 1%)</span>`;
+    }
+    sum.innerHTML = html;
+}
+
+// ==========================================
+// 渲染
+// ==========================================
+function render(rows, raws) {
+    document.getElementById('result-card').style.display = 'block';
+
+    // 未识别行
+    const ub = document.getElementById('unknown-box');
+    if (parsedItems.unknown.length) {
+        ub.style.display = 'block';
+        ub.innerHTML = '<b>⚠️ 以下行未在配方库与行情库中找到,已忽略:</b>'
+            + parsedItems.unknown.map(u => `<code>${u.line}</code>`).join(' ');
+    } else {
+        ub.style.display = 'none';
+    }
+
+    // 清单明细
+    const itb = document.getElementById('items-tbody');
+    itb.innerHTML = '';
+    const { structure, rigs } = meParams();
+    const rigsActive = structure.size && rigs.length > 0;
+    rows.forEach(r => {
+        const tr = document.createElement('tr');
+        const runsTxt = r.runs == null
+            ? '<span class="mini-warn">外购/原料</span>'
+            : (r.oc > 1 ? `${r.runs} 轮(每轮产 ${r.oc})` : `${r.runs} 轮`);
+        const factorTxt = r.factor == null ? '—' : r.factor.toFixed(4);
+        let note = '';
+        if (r.runs != null && rigsActive && r.rigEff === 0) {
+            note = '<span class="mini-warn">改装件不适用,仅 ME + 结构 1%</span>';
+        }
+        tr.innerHTML = `
+            <td>${r.name}</td>
+            <td><span class="tier-tag">${r.tier}</span></td>
+            <td><b>${fmtQty(r.qty)}</b></td>
+            <td>${runsTxt}</td>
+            <td>${factorTxt}</td>
+            <td>${note}</td>`;
+        itb.appendChild(tr);
+    });
+
+    // 原材料汇总(按卖单小计降序)
+    const list = [...raws.values()].sort((a, b) => {
+        const pa = a.id != null && CAT_BY_ID[a.id] ? (CAT_BY_ID[a.id].sell_min || 0) * a.qty : -1;
+        const pb = b.id != null && CAT_BY_ID[b.id] ? (CAT_BY_ID[b.id].sell_min || 0) * b.qty : -1;
+        return pb - pa;
+    });
+    const tb = document.getElementById('mat-tbody');
+    tb.innerHTML = '';
+    let totalBuy = 0, totalSell = 0, unpriced = 0;
+    list.forEach(m => {
+        const cat = m.id != null ? CAT_BY_ID[m.id] : CAT_BY_NAME[m.name];
+        const buy = cat ? (cat.buy_max || 0) : 0;
+        const sell = cat ? (cat.sell_min || 0) : 0;
+        const hasPrice = !!(cat && (cat.buy_max || cat.sell_min));
+        if (!hasPrice) unpriced++;
+        const subBuy = buy * m.qty, subSell = sell * m.qty;
+        totalBuy += subBuy;
+        totalSell += subSell;
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td>${m.name}${hasPrice ? '' : ' <span class="mini-warn">(无行情)</span>'}</td>
+            <td><span class="tier-tag">${m.tier}</span></td>
+            <td><b>${fmtQty(m.qty)}</b></td>
+            <td>${hasPrice ? fmt(buy) : '-'}</td>
+            <td>${hasPrice ? fmt(subBuy) : '-'}</td>
+            <td>${hasPrice ? fmt(sell) : '-'}</td>
+            <td>${hasPrice ? fmt(subSell) : '-'}</td>`;
+        tb.appendChild(tr);
+    });
+    document.getElementById('total-buy').textContent = fmt(totalBuy);
+    document.getElementById('total-sell').textContent = fmt(totalSell);
+    document.getElementById('cost-buy').textContent = fmt(totalBuy);
+    document.getElementById('cost-sell').textContent = fmt(totalSell);
+    if (unpriced > 0) {
+        const note = document.createElement('div');
+        note.className = 'mini-warn';
+        note.style.marginTop = '8px';
+        note.textContent = `⚠️ 有 ${unpriced} 种材料暂无行情数据(未计入合计),可先执行行情更新。`;
+        document.getElementById('mat-tbody').after(note);
+    }
+}
+
+// ==========================================
+// 工具函数
+// ==========================================
+function fmt(n) {
+    if (n === null || n === undefined || isNaN(n)) return '-';
+    if (n === 0) return '0';
+    if (Math.abs(n) >= 1e9) return (n / 1e9).toFixed(2) + ' B';
+    if (Math.abs(n) >= 1e6) return (n / 1e6).toFixed(2) + ' M';
+    if (Math.abs(n) >= 1e4) return (n / 1e3).toFixed(1) + ' K';
+    return n.toLocaleString('zh-CN', { maximumFractionDigits: 2 });
+}
+
+function fmtQty(n) {
+    return Number.isInteger(n) ? n.toLocaleString('zh-CN') : n.toLocaleString('zh-CN', { maximumFractionDigits: 2 });
+}
+
+// ==========================================
+// 事件绑定
+// ==========================================
+document.getElementById('parse-btn').onclick = () => {
+    const text = document.getElementById('paste-box').value;
+    if (!text.trim()) {
+        alert('请先粘贴制造清单');
+        return;
+    }
+    parsedItems = parseList(text);
+    if (!parsedItems.items.size) {
+        alert('没有可识别的物品,请检查格式(每行: 数量 x 物品名)');
+        return;
+    }
+    expandAll();
+};
+
+// 加成参数变化时,若已解析过清单则实时重算
+document.getElementById('structure-select').addEventListener('change', () => { buildRigBox(); if (parsedItems) expandAll(); });
+document.getElementById('sec-select').addEventListener('change', () => { if (parsedItems) expandAll(); });
+document.getElementById('me-input').addEventListener('input', () => { if (parsedItems) expandAll(); });
+
+fillSelects();
+loadData();
+</script>
+</body>
+</html>

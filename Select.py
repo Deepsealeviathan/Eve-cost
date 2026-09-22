@@ -341,3 +341,45 @@ def get_catalog():
     finally:
         if conn:
             conn.close()
+
+
+def get_recipes():
+    """
+    汇总全部配方 JSON 为轻量索引,供制造清单汇总页(/bom)前端递归展开使用。
+    同名物品保留先出现的(与 find_json_file 的多命中取首个行为一致)。
+    返回列表: [{name, id, tier, outputCount, inputs: [{id, name, count}]}],
+    无配方物品 outputCount 为 None、inputs 为空列表。
+    """
+    recipes = []
+    seen = set()
+    for root in SEARCH_ROOTS:
+        if not os.path.isdir(root):
+            continue
+        for path in sorted(Path(root).rglob('*.json')):
+            try:
+                data = _load_recipe_json(str(path))
+            except Exception:
+                continue
+            if not isinstance(data, dict) or not data.get('name'):
+                continue
+            name = data['name']
+            if name in seen:
+                continue
+            seen.add(name)
+            recipe = data.get('recipe') or {}
+            recipes.append({
+                'name': name,
+                'id': data.get('id'),
+                'tier': data.get('tier', '其他'),
+                'outputCount': recipe.get('outputCount', 1) if recipe else None,
+                'inputs': [
+                    {
+                        'id': inp.get('materialId'),
+                        'name': inp.get('materialname'),
+                        'count': inp.get('count', 0)
+                    }
+                    for inp in recipe.get('inputs', [])
+                    if inp.get('materialname')
+                ] if recipe else [],
+            })
+    return recipes
