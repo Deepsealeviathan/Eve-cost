@@ -26,7 +26,7 @@ DATASOURCE = "serenity"                          # 晨曦服务器
 REGION_ID = 10000002                             # 伏尔戈星域(The Forge)
 JITA_44 = 60003760                               # 吉他 IV - 卫星 4 - 加达里海军组装车间
 
-HEADERS = {"User-Agent": "eve-cost/0.5 (https://github.com/Deepsealeviathan/Eve-cost)"}
+HEADERS = {"User-Agent": "eve-cost/0.6 (https://github.com/Deepsealeviathan/Eve-cost)"}
 MAX_WORKERS = 8        # 并发拉取页数,出现大量连接错误时调小
 MAX_RETRIES = 4
 BATCH_SIZE = 100

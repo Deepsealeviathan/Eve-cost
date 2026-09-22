@@ -36,7 +36,7 @@ EVE Online(国服晨曦)制造成本估算工具:直连网易 ESI 镜像抓取�
 
 ## 环境准备
 
-- Python 3.8+
+- Python 3.9+(Flask 3.x 要求 3.9 及以上)
 - MySQL 5.7 / 8.0
 
 ```bash

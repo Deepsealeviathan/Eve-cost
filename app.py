@@ -185,8 +185,8 @@ def update_database():
         if result.returncode != 0:
             return jsonify({'success': False, 'error': result.stderr or '更新脚本执行失败'})
 
-        # 从输出中解析更新条数
-        match = re.search(r'导入完成，共更新 (\d+) 条记录', result.stdout)
+        # 从输出中解析更新条数(与 update_market.py 的打印保持一致的半角逗号)
+        match = re.search(r'导入完成,共更新 (\d+) 条记录', result.stdout)
         updated = int(match.group(1)) if match else None
 
         return jsonify({
@@ -211,7 +211,9 @@ def components_page():
 # 判断当前文件是否是直接运行（不是被其他文件导入）
 if __name__ == '__main__':
     # 启动 Flask 内置开发服务器
-    # debug=True: 开启调试模式，代码修改后自动重启，报错显示详细信息
     # host='0.0.0.0': 允许局域网内其他设备访问（不仅限于本机）
     # port=5000: 服务运行在 5000 端口
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    # debug 默认关闭:调试模式会向局域网暴露 Werkzeug 调试器(可执行任意代码),安全风险
+    # 本地开发需要自动重载时显式开启: EVE_COST_DEBUG=1 python app.py
+    debug = os.environ.get('EVE_COST_DEBUG', '0') == '1'
+    app.run(debug=debug, host='0.0.0.0', port=5000)
