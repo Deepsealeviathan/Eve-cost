@@ -1,0 +1,25 @@
+{
+  "id": 29095,
+  "name": "旗舰级雷达感应器组",
+  "tier": "旗舰高级组件",
+  "recipe": {
+    "outputCount": 1,
+    "inputs": [
+      {
+        "materialId": 16672,
+        "materialname": "碳化钨",
+        "count": 2222
+      },
+      {
+        "materialId": 16681,
+        "materialname": "纳米晶体管",
+        "count": 11
+      },
+      {
+        "materialId": 16682,
+        "materialname": "超级突触纤维",
+        "count": 22
+      }
+    ]
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "id": 11555,
+  "name": "偏阻护盾发射器",
+  "tier": "T2制造组件",
+  "recipe": {
+    "outputCount": 1,
+    "inputs": [
+      {
+        "materialId": 16673,
+        "materialname": "菲尔合金碳化物",
+        "count": 22
+      },
+      {
+        "materialId": 16683,
+        "materialname": "铁磁胶体",
+        "count": 1
+      },
+      {
+        "materialId": 16678,
+        "materialname": "多晶碳化硅纤维",
+        "count": 9
+      }
+    ]
+  }
+}

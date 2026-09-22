@@ -1,0 +1,30 @@
+{
+  "id": 30308,
+  "name": "金属富勒烯钪",
+  "tier": "混合聚合物",
+  "recipe": {
+    "outputCount": 160,
+    "inputs": [
+      {
+        "materialId": 39,
+        "materialname": "晶状石英核岩",
+        "count": 25
+      },
+      {
+        "materialId": 4247,
+        "materialname": "氦燃料块",
+        "count": 5
+      },
+      {
+        "materialId": 30373,
+        "materialname": "富勒体-C72",
+        "count": 100
+      },
+      {
+        "materialId": 30375,
+        "materialname": "富勒体-C28",
+        "count": 100
+      }
+    ]
+  }
+}

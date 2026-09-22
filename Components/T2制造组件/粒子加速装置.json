@@ -1,0 +1,25 @@
+{
+  "id": 11688,
+  "name": "粒子加速装置",
+  "tier": "T2制造组件",
+  "recipe": {
+    "outputCount": 1,
+    "inputs": [
+      {
+        "materialId": 16682,
+        "materialname": "超级突触纤维",
+        "count": 1
+      },
+      {
+        "materialId": 16670,
+        "materialname": "碳化晶体",
+        "count": 31
+      },
+      {
+        "materialId": 16679,
+        "materialname": "富勒化合物",
+        "count": 11
+      }
+    ]
+  }
+}

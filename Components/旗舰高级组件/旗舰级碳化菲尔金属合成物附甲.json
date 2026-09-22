@@ -1,0 +1,20 @@
+{
+  "id": 29049,
+  "name": "旗舰级碳化菲尔金属合成物附甲",
+  "tier": "旗舰高级组件",
+  "recipe": {
+    "outputCount": 1,
+    "inputs": [
+      {
+        "materialId": 16673,
+        "materialname": "菲尔合金碳化物",
+        "count": 2222
+      },
+      {
+        "materialId": 16678,
+        "materialname": "多晶碳化硅纤维",
+        "count": 1667
+      }
+    ]
+  }
+}

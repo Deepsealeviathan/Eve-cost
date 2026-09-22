@@ -1,0 +1,25 @@
+{
+  "id": 29105,
+  "name": "旗舰级热核反应击发装置",
+  "tier": "旗舰高级组件",
+  "recipe": {
+    "outputCount": 1,
+    "inputs": [
+      {
+        "materialId": 16673,
+        "materialname": "菲尔合金碳化物",
+        "count": 2556
+      },
+      {
+        "materialId": 16682,
+        "materialname": "超级突触纤维",
+        "count": 11
+      },
+      {
+        "materialId": 16679,
+        "materialname": "富勒化合物",
+        "count": 778
+      }
+    ]
+  }
+}

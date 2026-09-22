@@ -36,6 +36,10 @@ BASE_DIR = Path(__file__).resolve().parent
 # 配方 JSON 搜索目录(分类即目录名 P1~P4)
 RECIPE_ROOTS = [
     'Ore', 'MoonMaterials', 'Gas', 'Commodities',
+    'Reactions/混合聚合物', 'Reactions/中间产物', 'Reactions/合成物', 'Reactions/燃料块',
+    'Reactions/分子锻造材料',
+    'Components/旗舰基础组件', 'Components/旗舰高级组件', 'Components/T2制造组件',
+    'Components/基础材料',
     'Planetary_Commodities/P1', 'Planetary_Commodities/P2',
     'Planetary_Commodities/P3', 'Planetary_Commodities/P4',
 ]

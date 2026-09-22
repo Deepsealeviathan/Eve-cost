@@ -1,0 +1,25 @@
+{
+  "id": 57480,
+  "name": "可编程净化薄膜",
+  "tier": "T2制造组件",
+  "recipe": {
+    "outputCount": 1,
+    "inputs": [
+      {
+        "materialId": 2361,
+        "materialname": "密封薄膜",
+        "count": 100
+      },
+      {
+        "materialId": 2348,
+        "materialname": "凝胶基质生物胶",
+        "count": 300
+      },
+      {
+        "materialId": 11399,
+        "materialname": "莫尔石",
+        "count": 1500
+      }
+    ]
+  }
+}

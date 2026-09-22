@@ -1,0 +1,25 @@
+{
+  "id": 57478,
+  "name": "自动修复储藏装置密封",
+  "tier": "T2制造组件",
+  "recipe": {
+    "outputCount": 3,
+    "inputs": [
+      {
+        "materialId": 2312,
+        "materialname": "超张力塑料",
+        "count": 4
+      },
+      {
+        "materialId": 2463,
+        "materialname": "纳米体",
+        "count": 4
+      },
+      {
+        "materialId": 57457,
+        "materialname": "强化碳纤维",
+        "count": 10
+      }
+    ]
+  }
+}

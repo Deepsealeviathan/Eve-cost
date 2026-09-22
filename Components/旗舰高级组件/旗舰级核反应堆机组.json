@@ -1,0 +1,20 @@
+{
+  "id": 29079,
+  "name": "旗舰级核反应堆机组",
+  "tier": "旗舰高级组件",
+  "recipe": {
+    "outputCount": 1,
+    "inputs": [
+      {
+        "materialId": 16673,
+        "materialname": "菲尔合金碳化物",
+        "count": 889
+      },
+      {
+        "materialId": 17317,
+        "materialname": "费米子冷凝物",
+        "count": 22
+      }
+    ]
+  }
+}

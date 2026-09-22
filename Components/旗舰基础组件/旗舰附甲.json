@@ -1,0 +1,55 @@
+{
+  "id": 21017,
+  "name": "旗舰附甲",
+  "tier": "旗舰基础组件",
+  "recipe": {
+    "outputCount": 1,
+    "inputs": [
+      {
+        "materialId": 2870,
+        "materialname": "有机砂浆喷注器",
+        "count": 5
+      },
+      {
+        "materialId": 57457,
+        "materialname": "强化碳纤维",
+        "count": 100
+      },
+      {
+        "materialId": 40,
+        "materialname": "超噬矿",
+        "count": 308
+      },
+      {
+        "materialId": 39,
+        "materialname": "晶状石英核岩",
+        "count": 615
+      },
+      {
+        "materialId": 38,
+        "materialname": "超新星诺克石",
+        "count": 1200
+      },
+      {
+        "materialId": 37,
+        "materialname": "同位聚合体",
+        "count": 12000
+      },
+      {
+        "materialId": 34,
+        "materialname": "三钛合金",
+        "count": 45000
+      },
+      {
+        "materialId": 36,
+        "materialname": "类银超金属",
+        "count": 45000
+      },
+      {
+        "materialId": 35,
+        "materialname": "类晶体胶矿",
+        "count": 157500
+      }
+    ]
+  }
+}

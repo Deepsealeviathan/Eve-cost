@@ -1,0 +1,25 @@
+{
+  "id": 29077,
+  "name": "旗舰级核脉冲发生器",
+  "tier": "旗舰高级组件",
+  "recipe": {
+    "outputCount": 1,
+    "inputs": [
+      {
+        "materialId": 16680,
+        "materialname": "酚合成物",
+        "count": 67
+      },
+      {
+        "materialId": 16673,
+        "materialname": "菲尔合金碳化物",
+        "count": 2222
+      },
+      {
+        "materialId": 16681,
+        "materialname": "纳米晶体管",
+        "count": 22
+      }
+    ]
+  }
+}

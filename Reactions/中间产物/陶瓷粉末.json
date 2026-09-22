@@ -1,0 +1,25 @@
+{
+  "id": 16660,
+  "name": "陶瓷粉末",
+  "tier": "中间产物",
+  "recipe": {
+    "outputCount": 200,
+    "inputs": [
+      {
+        "materialId": 4246,
+        "materialname": "氢燃料块",
+        "count": 5
+      },
+      {
+        "materialId": 16635,
+        "materialname": "蒸发岩沉积物",
+        "count": 100
+      },
+      {
+        "materialId": 16636,
+        "materialname": "硅酸盐",
+        "count": 100
+      }
+    ]
+  }
+}

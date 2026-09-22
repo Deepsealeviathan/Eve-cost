@@ -1,0 +1,25 @@
+{
+  "id": 11534,
+  "name": "引力感应器组",
+  "tier": "T2制造组件",
+  "recipe": {
+    "outputCount": 1,
+    "inputs": [
+      {
+        "materialId": 16681,
+        "materialname": "纳米晶体管",
+        "count": 1
+      },
+      {
+        "materialId": 16682,
+        "materialname": "超级突触纤维",
+        "count": 2
+      },
+      {
+        "materialId": 16671,
+        "materialname": "碳化钛",
+        "count": 22
+      }
+    ]
+  }
+}

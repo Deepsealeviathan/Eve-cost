@@ -1,0 +1,30 @@
+{
+  "id": 29097,
+  "name": "旗舰级标量电容器单元",
+  "tier": "旗舰高级组件",
+  "recipe": {
+    "outputCount": 1,
+    "inputs": [
+      {
+        "materialId": 16681,
+        "materialname": "纳米晶体管",
+        "count": 11
+      },
+      {
+        "materialId": 33362,
+        "materialname": "非线性超材料",
+        "count": 22
+      },
+      {
+        "materialId": 16679,
+        "materialname": "富勒化合物",
+        "count": 1111
+      },
+      {
+        "materialId": 16671,
+        "materialname": "碳化钛",
+        "count": 2222
+      }
+    ]
+  }
+}

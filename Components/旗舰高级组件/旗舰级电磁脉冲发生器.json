@@ -1,0 +1,25 @@
+{
+  "id": 29047,
+  "name": "旗舰级电磁脉冲发生器",
+  "tier": "旗舰高级组件",
+  "recipe": {
+    "outputCount": 1,
+    "inputs": [
+      {
+        "materialId": 16672,
+        "materialname": "碳化钨",
+        "count": 2222
+      },
+      {
+        "materialId": 16680,
+        "materialname": "酚合成物",
+        "count": 67
+      },
+      {
+        "materialId": 16681,
+        "materialname": "纳米晶体管",
+        "count": 22
+      }
+    ]
+  }
+}

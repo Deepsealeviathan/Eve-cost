@@ -1,0 +1,30 @@
+{
+  "id": 57461,
+  "name": "感知神经链接增强器",
+  "tier": "分子锻造材料",
+  "recipe": {
+    "outputCount": 20,
+    "inputs": [
+      {
+        "materialId": 4312,
+        "materialname": "氧燃料块",
+        "count": 5
+      },
+      {
+        "materialId": 28696,
+        "materialname": "灰绿磷胶溶质",
+        "count": 40
+      },
+      {
+        "materialId": 28701,
+        "materialname": "鲜绿磷胶溶质",
+        "count": 40
+      },
+      {
+        "materialId": 57447,
+        "materialname": "CV复合分子冷凝器",
+        "count": 1
+      }
+    ]
+  }
+}

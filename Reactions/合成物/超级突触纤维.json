@@ -1,0 +1,30 @@
+{
+  "id": 16682,
+  "name": "超级突触纤维",
+  "tier": "合成物",
+  "recipe": {
+    "outputCount": 750,
+    "inputs": [
+      {
+        "materialId": 4312,
+        "materialname": "氧燃料块",
+        "count": 5
+      },
+      {
+        "materialId": 16664,
+        "materialname": "铯铬合金",
+        "count": 100
+      },
+      {
+        "materialId": 16668,
+        "materialname": "镝汞合金",
+        "count": 100
+      },
+      {
+        "materialId": 17959,
+        "materialname": "铪化钒",
+        "count": 100
+      }
+    ]
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "id": 29085,
+  "name": "旗舰级光子微处理器",
+  "tier": "旗舰高级组件",
+  "recipe": {
+    "outputCount": 1,
+    "inputs": [
+      {
+        "materialId": 16680,
+        "materialname": "酚合成物",
+        "count": 56
+      },
+      {
+        "materialId": 16681,
+        "materialname": "纳米晶体管",
+        "count": 22
+      },
+      {
+        "materialId": 16670,
+        "materialname": "碳化晶体",
+        "count": 1667
+      },
+      {
+        "materialId": 33359,
+        "materialname": "光子超材料",
+        "count": 22
+      }
+    ]
+  }
+}

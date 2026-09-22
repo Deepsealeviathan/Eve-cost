@@ -1,0 +1,25 @@
+{
+  "id": 16669,
+  "name": "铁磁流体",
+  "tier": "中间产物",
+  "recipe": {
+    "outputCount": 200,
+    "inputs": [
+      {
+        "materialId": 4246,
+        "materialname": "氢燃料块",
+        "count": 5
+      },
+      {
+        "materialId": 16648,
+        "materialname": "铪",
+        "count": 100
+      },
+      {
+        "materialId": 16650,
+        "materialname": "镝",
+        "count": 100
+      }
+    ]
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "id": 57486,
+  "name": "生命保障备份装置",
+  "tier": "T2制造组件",
+  "recipe": {
+    "outputCount": 3,
+    "inputs": [
+      {
+        "materialId": 2319,
+        "materialname": "培养基",
+        "count": 8
+      },
+      {
+        "materialId": 3775,
+        "materialname": "病原体",
+        "count": 8
+      },
+      {
+        "materialId": 57457,
+        "materialname": "强化碳纤维",
+        "count": 10
+      }
+    ]
+  }
+}

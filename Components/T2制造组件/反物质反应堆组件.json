@@ -1,0 +1,20 @@
+{
+  "id": 11549,
+  "name": "反物质反应堆组件",
+  "tier": "T2制造组件",
+  "recipe": {
+    "outputCount": 1,
+    "inputs": [
+      {
+        "materialId": 16672,
+        "materialname": "碳化钨",
+        "count": 9
+      },
+      {
+        "materialId": 17317,
+        "materialname": "费米子冷凝物",
+        "count": 2
+      }
+    ]
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "id": 29063,
+  "name": "旗舰级激光器定焦水晶",
+  "tier": "旗舰高级组件",
+  "recipe": {
+    "outputCount": 1,
+    "inputs": [
+      {
+        "materialId": 16672,
+        "materialname": "碳化钨",
+        "count": 2556
+      },
+      {
+        "materialId": 16682,
+        "materialname": "超级突触纤维",
+        "count": 11
+      },
+      {
+        "materialId": 16679,
+        "materialname": "富勒化合物",
+        "count": 778
+      }
+    ]
+  }
+}

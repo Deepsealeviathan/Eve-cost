@@ -1,0 +1,35 @@
+{
+  "id": 57465,
+  "name": "等向性新富勒烯伽玛-9",
+  "tier": "分子锻造材料",
+  "recipe": {
+    "outputCount": 20,
+    "inputs": [
+      {
+        "materialId": 34,
+        "materialname": "三钛合金",
+        "count": 10000
+      },
+      {
+        "materialId": 4051,
+        "materialname": "氮燃料块",
+        "count": 5
+      },
+      {
+        "materialId": 30370,
+        "materialname": "富勒体-C50",
+        "count": 500
+      },
+      {
+        "materialId": 30373,
+        "materialname": "富勒体-C72",
+        "count": 500
+      },
+      {
+        "materialId": 57452,
+        "materialname": "等向性沉积指南",
+        "count": 1
+      }
+    ]
+  }
+}

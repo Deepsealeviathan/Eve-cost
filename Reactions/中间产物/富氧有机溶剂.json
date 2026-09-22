@@ -1,0 +1,25 @@
+{
+  "id": 57454,
+  "name": "富氧有机溶剂",
+  "tier": "中间产物",
+  "recipe": {
+    "outputCount": 10,
+    "inputs": [
+      {
+        "materialId": 4312,
+        "materialname": "氧燃料块",
+        "count": 5
+      },
+      {
+        "materialId": 16633,
+        "materialname": "烃类",
+        "count": 2000
+      },
+      {
+        "materialId": 16634,
+        "materialname": "标准大气",
+        "count": 2000
+      }
+    ]
+  }
+}

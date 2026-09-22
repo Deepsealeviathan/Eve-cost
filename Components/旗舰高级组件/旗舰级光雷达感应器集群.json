@@ -1,0 +1,25 @@
+{
+  "id": 29065,
+  "name": "旗舰级光雷达感应器集群",
+  "tier": "旗舰高级组件",
+  "recipe": {
+    "outputCount": 1,
+    "inputs": [
+      {
+        "materialId": 16673,
+        "materialname": "菲尔合金碳化物",
+        "count": 2222
+      },
+      {
+        "materialId": 16682,
+        "materialname": "超级突触纤维",
+        "count": 22
+      },
+      {
+        "materialId": 16681,
+        "materialname": "纳米晶体管",
+        "count": 11
+      }
+    ]
+  }
+}

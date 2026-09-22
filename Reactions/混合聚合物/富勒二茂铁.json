@@ -1,0 +1,30 @@
+{
+  "id": 30303,
+  "name": "富勒二茂铁",
+  "tier": "混合聚合物",
+  "recipe": {
+    "outputCount": 1000,
+    "inputs": [
+      {
+        "materialId": 34,
+        "materialname": "三钛合金",
+        "count": 1000
+      },
+      {
+        "materialId": 4312,
+        "materialname": "氧燃料块",
+        "count": 5
+      },
+      {
+        "materialId": 30370,
+        "materialname": "富勒体-C50",
+        "count": 200
+      },
+      {
+        "materialId": 30371,
+        "materialname": "富勒体-C60",
+        "count": 100
+      }
+    ]
+  }
+}

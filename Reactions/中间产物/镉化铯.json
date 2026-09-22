@@ -1,0 +1,25 @@
+{
+  "id": 16663,
+  "name": "镉化铯",
+  "tier": "中间产物",
+  "recipe": {
+    "outputCount": 200,
+    "inputs": [
+      {
+        "materialId": 4312,
+        "materialname": "氧燃料块",
+        "count": 5
+      },
+      {
+        "materialId": 16643,
+        "materialname": "镉",
+        "count": 100
+      },
+      {
+        "materialId": 16647,
+        "materialname": "铯",
+        "count": 100
+      }
+    ]
+  }
+}

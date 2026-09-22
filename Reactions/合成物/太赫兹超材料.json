@@ -1,0 +1,25 @@
+{
+  "id": 33360,
+  "name": "太赫兹超材料",
+  "tier": "合成物",
+  "recipe": {
+    "outputCount": 300,
+    "inputs": [
+      {
+        "materialId": 4247,
+        "materialname": "氦燃料块",
+        "count": 5
+      },
+      {
+        "materialId": 16657,
+        "materialname": "轧制钨合金",
+        "count": 100
+      },
+      {
+        "materialId": 33337,
+        "materialname": "钷汞合金",
+        "count": 100
+      }
+    ]
+  }
+}

@@ -1,0 +1,40 @@
+{
+  "id": 57488,
+  "name": "神经链接防护单元",
+  "tier": "旗舰基础组件",
+  "recipe": {
+    "outputCount": 1,
+    "inputs": [
+      {
+        "materialId": 57450,
+        "materialname": "电子神经信号装置",
+        "count": 1
+      },
+      {
+        "materialId": 57483,
+        "materialname": "神经链接增强器存储装置",
+        "count": 1
+      },
+      {
+        "materialId": 57482,
+        "materialname": "基因保护过滤装置",
+        "count": 5
+      },
+      {
+        "materialId": 57458,
+        "materialname": "变换反应神经链接增强器",
+        "count": 10
+      },
+      {
+        "materialId": 9842,
+        "materialname": "微型电子元件",
+        "count": 75
+      },
+      {
+        "materialId": 2346,
+        "materialname": "合成神经键",
+        "count": 300
+      }
+    ]
+  }
+}

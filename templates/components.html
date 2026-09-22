@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EVE 组件制造计算器</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --primary: #4f46e5;
+            --primary-dark: #3730a3;
+            --accent: #06b6d4;
+            --success: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --bg: #0b0f19;
+            --card: rgba(255, 255, 255, 0.92);
+            --text: #1f2937;
+            --muted: #6b7280;
+            --border: rgba(0, 0, 0, 0.06);
+        }
+
+        body {
+            font-family: "Microsoft YaHei", "PingFang SC", Arial, sans-serif;
+            background:
+                radial-gradient(circle at 10% 20%, rgba(79, 70, 229, 0.18) 0%, transparent 35%),
+                radial-gradient(circle at 90% 80%, rgba(6, 182, 212, 0.14) 0%, transparent 35%),
+                linear-gradient(135deg, #0b0f19 0%, #111827 50%, #0b0f19 100%);
+            min-height: 100vh;
+            margin: 0;
+            padding: 40px 20px;
+            color: var(--text);
+        }
+
+        .page {
+            max-width: 1440px;
+            margin: 0 auto;
+            display: flex;
+            gap: 24px;
+            align-items: flex-start;
+            justify-content: center;
+        }
+
+        /* ===== 左侧目录 ===== */
+        .sidebar {
+            width: 280px;
+            flex-shrink: 0;
+            background: var(--card);
+            border-radius: 20px;
+            padding: 24px;
+            box-shadow:
+                0 20px 60px rgba(0, 0, 0, 0.25),
+                inset 0 1px 0 rgba(255, 255, 255, 0.6);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.45);
+            position: sticky;
+            top: 40px;
+            max-height: calc(100vh - 80px);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .sidebar-header { margin-bottom: 14px; }
+        .sidebar-title { font-size: 18px; font-weight: 700; margin-bottom: 10px; }
+
+        .catalog-search {
+            width: 100%;
+            padding: 10px 14px;
+            border: 2px solid var(--border);
+            border-radius: 12px;
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.2s;
+            background: #fff;
+        }
+        .catalog-search:focus { border-color: var(--primary); }
+
+        .catalog-cats { margin: 10px 0; }
+        .cat-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 7px 10px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 14px;
+            color: var(--muted);
+            transition: all 0.15s;
+        }
+        .cat-row:hover { background: rgba(79, 70, 229, 0.08); color: var(--text); }
+        .cat-row.active { background: var(--primary); color: #fff; }
+        .cat-num {
+            background: rgba(0, 0, 0, 0.08);
+            border-radius: 10px;
+            padding: 1px 8px;
+            font-size: 12px;
+        }
+        .cat-row.active .cat-num { background: rgba(255, 255, 255, 0.25); }
+
+        .catalog-list {
+            list-style: none;
+            overflow-y: auto;
+            flex: 1;
+            min-height: 120px;
+            border-top: 1px solid var(--border);
+            padding-top: 8px;
+        }
+        .catalog-list li {
+            padding: 7px 10px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: background 0.15s;
+        }
+        .catalog-list li:hover { background: rgba(79, 70, 229, 0.10); }
+        .catalog-list li.selected { background: var(--primary); color: #fff; }
+        .catalog-list .price-hint { font-size: 11px; color: var(--muted); }
+        .catalog-list li.selected .price-hint { color: rgba(255,255,255,0.75); }
+        .catalog-count { margin-top: 10px; font-size: 12px; color: var(--muted); }
+
+        /* ===== 主区 ===== */
+        .main {
+            flex: 1;
+            max-width: 900px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .topbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .topbar h1 {
+            font-size: 22px;
+            color: #f9fafb;
+            text-shadow: 0 2px 12px rgba(0, 0, 0, 0.4);
+        }
+        .nav-link {
+            color: #c7d2fe;
+            text-decoration: none;
+            font-size: 14px;
+            background: rgba(79, 70, 229, 0.35);
+            padding: 8px 16px;
+            border-radius: 12px;
+            border: 1px solid rgba(199, 210, 254, 0.3);
+            transition: background 0.2s;
+        }
+        .nav-link:hover { background: rgba(79, 70, 229, 0.6); }
+
+        .card {
+            background: var(--card);
+            border-radius: 20px;
+            padding: 24px;
+            box-shadow:
+                0 20px 60px rgba(0, 0, 0, 0.25),
+                inset 0 1px 0 rgba(255, 255, 255, 0.6);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.45);
+        }
+
+        .placeholder {
+            text-align: center;
+            color: var(--muted);
+            padding: 60px 20px;
+            font-size: 15px;
+        }
+
+        /* 选中组件头 */
+        .item-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-bottom: 18px;
+        }
+        .item-name { font-size: 22px; font-weight: 700; }
+        .item-tier {
+            display: inline-block;
+            margin-left: 10px;
+            font-size: 12px;
+            font-weight: 500;
+            padding: 3px 10px;
+            border-radius: 10px;
+            background: rgba(79, 70, 229, 0.12);
+            color: var(--primary-dark);
+            vertical-align: middle;
+        }
+        .item-market { text-align: right; font-size: 13px; color: var(--muted); line-height: 1.8; }
+        .item-market b { color: var(--text); }
+
+        /* 数量与加成控制 */
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 18px;
+            align-items: flex-end;
+            padding: 16px;
+            background: rgba(79, 70, 229, 0.05);
+            border-radius: 14px;
+            margin-bottom: 18px;
+        }
+        .ctrl-group { display: flex; flex-direction: column; gap: 6px; }
+        .ctrl-label { font-size: 13px; color: var(--muted); font-weight: 600; }
+
+        .qty-box { display: flex; align-items: center; gap: 8px; }
+        .qty-btn {
+            width: 38px;
+            height: 38px;
+            border: none;
+            border-radius: 12px;
+            background: var(--primary);
+            color: #fff;
+            font-size: 20px;
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+        .qty-btn:hover { background: var(--primary-dark); }
+        .qty-input {
+            width: 90px;
+            height: 38px;
+            text-align: center;
+            font-size: 16px;
+            font-weight: 700;
+            border: 2px solid var(--border);
+            border-radius: 12px;
+            outline: none;
+        }
+        .qty-input:focus { border-color: var(--primary); }
+
+        select, .me-input {
+            height: 38px;
+            padding: 0 12px;
+            border: 2px solid var(--border);
+            border-radius: 12px;
+            font-size: 14px;
+            background: #fff;
+            outline: none;
+            cursor: pointer;
+        }
+        select:focus, .me-input:focus { border-color: var(--primary); }
+        .me-input { width: 70px; cursor: text; }
+
+        .me-summary {
+            width: 100%;
+            font-size: 13px;
+            color: var(--primary-dark);
+            background: rgba(16, 185, 129, 0.10);
+            border: 1px dashed rgba(16, 185, 129, 0.5);
+            border-radius: 10px;
+            padding: 8px 12px;
+        }
+        .me-summary .warn { color: var(--warning); }
+
+        /* 材料表 */
+        table.mat-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+        .mat-table th, .mat-table td {
+            padding: 9px 10px;
+            text-align: right;
+            border-bottom: 1px solid var(--border);
+        }
+        .mat-table th:first-child, .mat-table td:first-child { text-align: left; }
+        .mat-table th { color: var(--muted); font-weight: 600; font-size: 12px; }
+        .mat-table tr:hover td { background: rgba(79, 70, 229, 0.05); }
+        .mat-table tfoot td { font-weight: 700; border-top: 2px solid var(--border); border-bottom: none; background: rgba(79, 70, 229, 0.06); }
+        .base-num { color: var(--muted); font-size: 12px; }
+
+        /* 对比卡 */
+        .compare {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 14px;
+            margin-top: 18px;
+        }
+        .compare-box {
+            border-radius: 14px;
+            padding: 16px;
+            text-align: center;
+        }
+        .compare-box .label { font-size: 13px; color: var(--muted); margin-bottom: 6px; }
+        .compare-box .value { font-size: 22px; font-weight: 800; }
+        .compare-box.craft { background: rgba(79, 70, 229, 0.10); }
+        .compare-box.craft .value { color: var(--primary-dark); }
+        .compare-box.market { background: rgba(6, 182, 212, 0.10); }
+        .compare-box.market .value { color: #0e7490; }
+        .verdict { margin-top: 14px; text-align: center; font-size: 15px; font-weight: 600; padding: 10px; border-radius: 12px; }
+        .verdict.profit { background: rgba(16, 185, 129, 0.15); color: #047857; }
+        .verdict.loss { background: rgba(239, 68, 68, 0.12); color: #b91c1c; }
+
+        .formula-note { margin-top: 14px; font-size: 12px; color: var(--muted); line-height: 1.7; }
+
+        @media (max-width: 900px) {
+            .page { flex-direction: column; }
+            .sidebar { width: 100%; position: static; max-height: 320px; }
+            .compare { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+<div class="page">
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            <div class="sidebar-title">📚 组件目录</div>
+            <input type="text" id="catalog-search" class="catalog-search" placeholder="🔍 搜索组件...">
+        </div>
+        <div class="catalog-cats" id="catalog-cats"></div>
+        <ul class="catalog-list" id="catalog-list"></ul>
+        <div class="catalog-count" id="catalog-count"></div>
+    </aside>
+
+    <main class="main">
+        <div class="topbar">
+            <h1>🛠️ 组件制造计算器</h1>
+            <a class="nav-link" href="/">← 返回成本查询</a>
+        </div>
+
+        <div class="card" id="workbench">
+            <div class="placeholder">👈 从左侧目录点击选择一个组件,<br>即可查看制造材料与建筑加成减免</div>
+        </div>
+
+        <div class="card" id="result-card" style="display:none;">
+            <div class="item-head">
+                <div>
+                    <span class="item-name" id="item-name"></span><span class="item-tier" id="item-tier"></span>
+                </div>
+                <div class="item-market">
+                    市场直购: 买 <b id="mkt-buy">-</b> / 卖 <b id="mkt-sell">-</b>(单个)<br>
+                    行情更新: <span id="mkt-time">-</span>
+                </div>
+            </div>
+
+            <div class="controls">
+                <div class="ctrl-group">
+                    <span class="ctrl-label">制造数量</span>
+                    <div class="qty-box">
+                        <button class="qty-btn" id="qty-minus">−</button>
+                        <input class="qty-input" id="qty-input" type="number" min="1" value="1">
+                        <button class="qty-btn" id="qty-plus">+</button>
+                    </div>
+                </div>
+                <div class="ctrl-group">
+                    <span class="ctrl-label">建筑加成(插件 + 堡垒)</span>
+                    <select id="rig-select"></select>
+                </div>
+                <div class="ctrl-group">
+                    <span class="ctrl-label">星系安全等级(影响插件效果)</span>
+                    <select id="sec-select"></select>
+                </div>
+                <div class="ctrl-group">
+                    <span class="ctrl-label">蓝图 ME 等级(0-10)</span>
+                    <input class="me-input" id="me-input" type="number" min="0" max="10" value="0">
+                </div>
+                <div class="me-summary" id="me-summary"></div>
+            </div>
+
+            <table class="mat-table">
+                <thead>
+                <tr>
+                    <th>材料</th>
+                    <th>单个基础</th>
+                    <th>需求数量</th>
+                    <th>单价(收)</th>
+                    <th>小计(收)</th>
+                    <th>单价(卖)</th>
+                    <th>小计(卖)</th>
+                </tr>
+                </thead>
+                <tbody id="mat-tbody"></tbody>
+                <tfoot>
+                <tr>
+                    <td colspan="4">合计</td>
+                    <td id="total-buy">-</td>
+                    <td></td>
+                    <td id="total-sell">-</td>
+                </tr>
+                </tfoot>
+            </table>
+
+            <div class="compare">
+                <div class="compare-box craft">
+                    <div class="label">制造总成本(按出售价计)</div>
+                    <div class="value" id="craft-total">-</div>
+                </div>
+                <div class="compare-box market">
+                    <div class="label">市场直购总价(出售价 × 数量)</div>
+                    <div class="value" id="market-total">-</div>
+                </div>
+            </div>
+            <div class="verdict" id="verdict"></div>
+
+            <div class="formula-note">
+                计算公式: 需求 = ⌈基础 × 数量 × (1 + 蓝图损耗) × (1 − 插件减免) × (1 − 结构减免)⌉,每行向上取整。<br>
+                蓝图损耗 = 10% × 0.9<sup>ME</sup>;结构减免: 莱塔鲁 / 阿兹贝尔 / 索蒂约均提供 1% 材料减免;<br>
+                插件减免 = 基础值 × 星系系数(高安 ×1.0 / 低安 ×1.9 / 00 与虫洞 ×2.1,系数只放大插件、不放大结构 1%)。数据来源: EVE 官方论坛 SDI 版。
+            </div>
+        </div>
+    </main>
+</div>
+
+<script>
+// ==========================================
+// 组件目录(侧边栏)
+// ==========================================
+const COMP_TIERS = ['旗舰基础组件', '旗舰高级组件', 'T2制造组件'];
+let catalogItems = [];
+let activeCat = 'all';
+let selectedName = null;
+
+const CAT_LABEL = {
+    'all': '📋 全部组件',
+    '旗舰基础组件': '🏗️ 旗舰基础组件',
+    '旗舰高级组件': '🏭 旗舰高级组件',
+    'T2制造组件': '⚙️ T2制造组件',
+};
+
+function buildCats() {
+    const box = document.getElementById('catalog-cats');
+    box.innerHTML = '';
+    Object.keys(CAT_LABEL).forEach(key => {
+        const div = document.createElement('div');
+        div.className = 'cat-row' + (activeCat === key ? ' active' : '');
+        const n = key === 'all' ? catalogItems.length : catalogItems.filter(i => i.tier === key).length;
+        div.innerHTML = `<span>${CAT_LABEL[key]}</span><span class="cat-num">${n}</span>`;
+        div.onclick = () => { activeCat = key; buildCats(); renderList(); };
+        box.appendChild(div);
+    });
+}
+
+function filteredItems() {
+    const kw = document.getElementById('catalog-search').value.trim();
+    let list = activeCat === 'all' ? catalogItems : catalogItems.filter(i => i.tier === activeCat);
+    if (kw) list = catalogItems.filter(i => i.name.includes(kw));
+    return list;
+}
+
+function renderList() {
+    const list = document.getElementById('catalog-list');
+    const items = filteredItems();
+    list.innerHTML = '';
+    if (!items.length) {
+        list.innerHTML = '<li style="color:#9ca3af; cursor:default;">没有匹配的组件</li>';
+    } else {
+        items.forEach(item => {
+            const li = document.createElement('li');
+            if (item.name === selectedName) li.className = 'selected';
+            const hint = item.sell_min ? `卖 ${fmt(item.sell_min)}` : '无行情';
+            li.innerHTML = `<span>${item.name}</span><span class="price-hint">${hint}</span>`;
+            li.onclick = () => selectItem(item.name);
+            list.appendChild(li);
+        });
+    }
+    document.getElementById('catalog-count').textContent = `显示 ${items.length} / 共 ${catalogItems.length} 条`;
+}
+
+async function loadCatalog() {
+    const res = await fetch('/catalog');
+    const json = await res.json();
+    if (!json.success) return;
+    catalogItems = (json.data || []).filter(i => COMP_TIERS.includes(i.tier));
+    buildCats();
+    renderList();
+}
+
+document.getElementById('catalog-search').addEventListener('input', renderList);
+
+// ==========================================
+// 建筑加成数据(来源: 游戏 SDE)
+// ==========================================
+// rig 基础减免: T1=2.0%, T2=2.4%;scope 表示适用的组件分类
+const RIG_PRESETS = [
+    { id: 'none',    label: '无建筑加成',                              base: 0,    scope: ['旗舰基础组件', '旗舰高级组件', 'T2制造组件'] },
+    { id: 'L-adv1',  label: '大型高级组件效率 I + 阿兹贝尔 (2.0%)',     base: 0.02, scope: ['旗舰高级组件', 'T2制造组件'] },
+    { id: 'L-adv2',  label: '大型高级组件效率 II + 阿兹贝尔 (2.4%)',    base: 0.024, scope: ['旗舰高级组件', 'T2制造组件'] },
+    { id: 'L-cap1',  label: '大型旗舰基础组件效率 I + 阿兹贝尔 (2.0%)',  base: 0.02, scope: ['旗舰基础组件'] },
+    { id: 'L-cap2',  label: '大型旗舰基础组件效率 II + 阿兹贝尔 (2.4%)', base: 0.024, scope: ['旗舰基础组件'] },
+    { id: 'XL-1',    label: '屹立超大组件效率 I + 索蒂约 (2.0%)',       base: 0.02, scope: ['旗舰基础组件', '旗舰高级组件', 'T2制造组件'] },
+    { id: 'XL-2',    label: '屹立超大组件效率 II + 索蒂约 (2.4%)',      base: 0.024, scope: ['旗舰基础组件', '旗舰高级组件', 'T2制造组件'] },
+    { id: 'M-adv1',  label: '中型高级组件效率 I + 莱塔鲁 (2.0%)',       base: 0.02, scope: ['旗舰高级组件', 'T2制造组件'] },
+    { id: 'M-adv2',  label: '中型高级组件效率 II + 莱塔鲁 (2.4%)',      base: 0.024, scope: ['旗舰高级组件', 'T2制造组件'] },
+    { id: 'M-cap1',  label: '中型旗舰基础组件效率 I + 莱塔鲁 (2.0%)',    base: 0.02, scope: ['旗舰基础组件'] },
+    { id: 'M-cap2',  label: '中型旗舰基础组件效率 II + 莱塔鲁 (2.4%)',   base: 0.024, scope: ['旗舰基础组件'] },
+];
+
+// 安等系数: 插件效果按星系类别放大 —— 高安 ×1.0 / 低安 ×1.9 / 00与虫洞 ×2.1(EVE 官方论坛确认的数值,仅作用于插件,不作用于结构固有 1%)
+const SEC_PRESETS = [
+    { id: 'hisec',   label: '高安 (0.5 ~ 1.0) — 插件系数 ×1.0',        scale: 1.0 },
+    { id: 'lowsec',  label: '低安 (0.1 ~ 0.4) — 插件系数 ×1.9',        scale: 1.9 },
+    { id: 'nullsec', label: '00 / 虫洞 (-0.0 ~ -1.0) — 插件系数 ×2.1', scale: 2.1 },
+];
+
+const STRUCT_ME = 0.01;  // 莱塔鲁/阿兹贝尔/索蒂约固有 1% 材料减免
+
+function fillSelects() {
+    const rigSel = document.getElementById('rig-select');
+    RIG_PRESETS.forEach(p => {
+        const o = document.createElement('option');
+        o.value = p.id;
+        o.textContent = p.label;
+        rigSel.appendChild(o);
+    });
+    const secSel = document.getElementById('sec-select');
+    SEC_PRESETS.forEach(s => {
+        const o = document.createElement('option');
+        o.value = s.id;
+        o.textContent = s.label;
+        secSel.appendChild(o);
+    });
+}
+
+// ==========================================
+// 组件选择与制造计算
+// ==========================================
+let current = null;   // { item, recipe }  recipe 来自 /query quantity=1
+
+async function selectItem(name) {
+    selectedName = name;
+    renderList();
+    const res = await fetch('/query', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, quantity: 1 }),
+    });
+    const json = await res.json();
+    if (!json.success) {
+        alert(json.error || '查询失败');
+        return;
+    }
+    const item = catalogItems.find(i => i.name === name);
+    current = { item, recipe: json.data };
+    document.getElementById('workbench').style.display = 'none';
+    document.getElementById('result-card').style.display = 'block';
+
+    document.getElementById('item-name').textContent = name;
+    document.getElementById('item-tier').textContent = json.data.tier || '';
+    document.getElementById('mkt-buy').textContent = fmt(json.data.market_buy);
+    document.getElementById('mkt-sell').textContent = fmt(json.data.market_sell);
+    document.getElementById('mkt-time').textContent = item && item.update_time ? item.update_time : '-';
+
+    recalc();
+}
+
+function getQty() {
+    let q = parseInt(document.getElementById('qty-input').value, 10);
+    if (!Number.isFinite(q) || q < 1) q = 1;
+    return Math.floor(q);
+}
+
+function meParams() {
+    const rig = RIG_PRESETS.find(p => p.id === document.getElementById('rig-select').value) || RIG_PRESETS[0];
+    const sec = SEC_PRESETS.find(s => s.id === document.getElementById('sec-select').value) || SEC_PRESETS[0];
+    let meLevel = parseInt(document.getElementById('me-input').value, 10);
+    if (!Number.isFinite(meLevel)) meLevel = 0;
+    meLevel = Math.max(0, Math.min(10, meLevel));
+    return { rig, sec, meLevel };
+}
+
+function recalc() {
+    if (!current) return;
+    const { recipe } = current;
+    const qty = getQty();
+    const { rig, sec, meLevel } = meParams();
+
+    const waste = 0.1 * Math.pow(0.9, meLevel);        // 蓝图损耗
+    const rigEff = rig.base * sec.scale;               // 插件实际减免
+    const factor = (1 + waste) * (1 - rigEff) * (1 - STRUCT_ME);
+
+    // 加成摘要
+    const sum = document.getElementById('me-summary');
+    const applies = rig.scope.includes(recipe.tier);
+    let html = `蓝图损耗 +${(waste * 100).toFixed(2)}% × 插件减免 −${(rigEff * 100).toFixed(2)}% × 结构减免 −${(STRUCT_ME * 100).toFixed(0)}%`
+        + ` ⇒ 材料系数 <b>${factor.toFixed(4)}</b>(约减免 ${((1 - factor) * 100).toFixed(1)}%)`;
+    if (!applies) {
+        html += ` <span class="warn">⚠️ 当前插件不适用于 ${recipe.tier},仅结构 1% 与蓝图 ME 生效</span>`;
+    }
+    sum.innerHTML = html;
+
+    // 材料表(quantity=1 时 total_num 即单个所需;按行向上取整)
+    const tbody = document.getElementById('mat-tbody');
+    tbody.innerHTML = '';
+    let totalBuy = 0, totalSell = 0;
+    (recipe.materials || []).forEach(m => {
+        const need = Math.ceil(m.total_num * qty * factor);
+        const subBuy = need * (m.buy_max || 0);
+        const subSell = need * (m.sell_min || 0);
+        totalBuy += subBuy;
+        totalSell += subSell;
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td>${m.name}</td>
+            <td class="base-num">${m.total_num}</td>
+            <td><b>${need}</b></td>
+            <td>${fmt(m.buy_max)}</td>
+            <td>${fmt(subBuy)}</td>
+            <td>${fmt(m.sell_min)}</td>
+            <td>${fmt(subSell)}</td>`;
+        tbody.appendChild(tr);
+    });
+    document.getElementById('total-buy').textContent = fmt(totalBuy);
+    document.getElementById('total-sell').textContent = fmt(totalSell);
+    document.getElementById('craft-total').textContent = fmt(totalSell);
+
+    // 市场对比
+    const marketTotal = (recipe.market_sell || 0) * qty;
+    document.getElementById('market-total').textContent = fmt(marketTotal);
+    const verdict = document.getElementById('verdict');
+    if (marketTotal > 0) {
+        const diff = marketTotal - totalSell;
+        if (diff > 0) {
+            verdict.className = 'verdict profit';
+            verdict.textContent = `✅ 制造更划算:比市场直购节省 ${fmt(diff)} ISK(差价 ${(diff / marketTotal * 100).toFixed(1)}%)`;
+        } else {
+            verdict.className = 'verdict loss';
+            verdict.textContent = `❌ 直购更划算:制造成本高出 ${fmt(-diff)} ISK`;
+        }
+    } else {
+        verdict.className = 'verdict';
+        verdict.style.background = 'rgba(107,114,128,0.12)';
+        verdict.style.color = 'var(--muted)';
+        verdict.textContent = '该组件当前无市场挂单价,无法对比';
+    }
+}
+
+// 数量加减
+document.getElementById('qty-minus').onclick = () => {
+    const el = document.getElementById('qty-input');
+    el.value = Math.max(1, getQty() - 1);
+    recalc();
+};
+document.getElementById('qty-plus').onclick = () => {
+    const el = document.getElementById('qty-input');
+    el.value = getQty() + 1;
+    recalc();
+};
+document.getElementById('qty-input').addEventListener('input', recalc);
+document.getElementById('rig-select').addEventListener('change', recalc);
+document.getElementById('sec-select').addEventListener('change', recalc);
+document.getElementById('me-input').addEventListener('input', recalc);
+
+// ==========================================
+// 工具函数
+// ==========================================
+function fmt(n) {
+    if (n === null || n === undefined || isNaN(n)) return '-';
+    if (n === 0) return '0';
+    if (Math.abs(n) >= 1e9) return (n / 1e9).toFixed(2) + ' B';
+    if (Math.abs(n) >= 1e6) return (n / 1e6).toFixed(2) + ' M';
+    if (Math.abs(n) >= 1e4) return (n / 1e3).toFixed(1) + ' K';
+    return n.toLocaleString('zh-CN', { maximumFractionDigits: 2 });
+}
+
+fillSelects();
+loadCatalog();
+</script>
+</body>
+</html>

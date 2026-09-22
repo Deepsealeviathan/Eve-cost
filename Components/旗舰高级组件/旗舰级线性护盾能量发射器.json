@@ -1,0 +1,25 @@
+{
+  "id": 29067,
+  "name": "旗舰级线性护盾能量发射器",
+  "tier": "旗舰高级组件",
+  "recipe": {
+    "outputCount": 1,
+    "inputs": [
+      {
+        "materialId": 16672,
+        "materialname": "碳化钨",
+        "count": 2222
+      },
+      {
+        "materialId": 16683,
+        "materialname": "铁磁胶体",
+        "count": 11
+      },
+      {
+        "materialId": 16678,
+        "materialname": "多晶碳化硅纤维",
+        "count": 889
+      }
+    ]
+  }
+}

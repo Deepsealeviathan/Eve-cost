@@ -1,0 +1,20 @@
+{
+  "id": 29039,
+  "name": "旗舰级反物质反应堆单元",
+  "tier": "旗舰高级组件",
+  "recipe": {
+    "outputCount": 1,
+    "inputs": [
+      {
+        "materialId": 16672,
+        "materialname": "碳化钨",
+        "count": 889
+      },
+      {
+        "materialId": 17317,
+        "materialname": "费米子冷凝物",
+        "count": 22
+      }
+    ]
+  }
+}

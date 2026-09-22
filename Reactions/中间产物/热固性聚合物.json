@@ -1,0 +1,25 @@
+{
+  "id": 57455,
+  "name": "热固性聚合物",
+  "tier": "中间产物",
+  "recipe": {
+    "outputCount": 200,
+    "inputs": [
+      {
+        "materialId": 4312,
+        "materialname": "氧燃料块",
+        "count": 5
+      },
+      {
+        "materialId": 16634,
+        "materialname": "标准大气",
+        "count": 100
+      },
+      {
+        "materialId": 16636,
+        "materialname": "硅酸盐",
+        "count": 100
+      }
+    ]
+  }
+}

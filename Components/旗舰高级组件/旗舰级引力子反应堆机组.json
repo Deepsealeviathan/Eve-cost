@@ -1,0 +1,20 @@
+{
+  "id": 29059,
+  "name": "旗舰级引力子反应堆机组",
+  "tier": "旗舰高级组件",
+  "recipe": {
+    "outputCount": 1,
+    "inputs": [
+      {
+        "materialId": 17317,
+        "materialname": "费米子冷凝物",
+        "count": 22
+      },
+      {
+        "materialId": 16671,
+        "materialname": "碳化钛",
+        "count": 889
+      }
+    ]
+  }
+}

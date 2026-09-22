@@ -1,0 +1,25 @@
+{
+  "id": 57456,
+  "name": "增压氧化剂",
+  "tier": "合成物",
+  "recipe": {
+    "outputCount": 200,
+    "inputs": [
+      {
+        "materialId": 16659,
+        "materialname": "碳聚合物",
+        "count": 200
+      },
+      {
+        "materialId": 16661,
+        "materialname": "硫酸",
+        "count": 200
+      },
+      {
+        "materialId": 57454,
+        "materialname": "富氧有机溶剂",
+        "count": 1
+      }
+    ]
+  }
+}

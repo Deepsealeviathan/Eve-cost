@@ -1,0 +1,25 @@
+{
+  "id": 16659,
+  "name": "碳聚合物",
+  "tier": "中间产物",
+  "recipe": {
+    "outputCount": 200,
+    "inputs": [
+      {
+        "materialId": 4247,
+        "materialname": "氦燃料块",
+        "count": 5
+      },
+      {
+        "materialId": 16633,
+        "materialname": "烃类",
+        "count": 100
+      },
+      {
+        "materialId": 16636,
+        "materialname": "硅酸盐",
+        "count": 100
+      }
+    ]
+  }
+}

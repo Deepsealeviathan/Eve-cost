@@ -1,0 +1,60 @@
+{
+  "id": 24547,
+  "name": "旗舰克隆舱",
+  "tier": "旗舰基础组件",
+  "recipe": {
+    "outputCount": 1,
+    "inputs": [
+      {
+        "materialId": 2868,
+        "materialname": "反破损快速反应无人机",
+        "count": 2
+      },
+      {
+        "materialId": 2875,
+        "materialname": "无菌管道",
+        "count": 2
+      },
+      {
+        "materialId": 57457,
+        "materialname": "强化碳纤维",
+        "count": 100
+      },
+      {
+        "materialId": 40,
+        "materialname": "超噬矿",
+        "count": 488
+      },
+      {
+        "materialId": 39,
+        "materialname": "晶状石英核岩",
+        "count": 956
+      },
+      {
+        "materialId": 38,
+        "materialname": "超新星诺克石",
+        "count": 1875
+      },
+      {
+        "materialId": 37,
+        "materialname": "同位聚合体",
+        "count": 16875
+      },
+      {
+        "materialId": 36,
+        "materialname": "类银超金属",
+        "count": 60750
+      },
+      {
+        "materialId": 34,
+        "materialname": "三钛合金",
+        "count": 67500
+      },
+      {
+        "materialId": 35,
+        "materialname": "类晶体胶矿",
+        "count": 243750
+      }
+    ]
+  }
+}

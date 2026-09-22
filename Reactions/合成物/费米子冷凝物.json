@@ -1,0 +1,35 @@
+{
+  "id": 17317,
+  "name": "费米子冷凝物",
+  "tier": "合成物",
+  "recipe": {
+    "outputCount": 200,
+    "inputs": [
+      {
+        "materialId": 4247,
+        "materialname": "氦燃料块",
+        "count": 5
+      },
+      {
+        "materialId": 16663,
+        "materialname": "镉化铯",
+        "count": 100
+      },
+      {
+        "materialId": 16668,
+        "materialname": "镝汞合金",
+        "count": 100
+      },
+      {
+        "materialId": 17769,
+        "materialname": "熔融冷凝物",
+        "count": 100
+      },
+      {
+        "materialId": 17960,
+        "materialname": "稀土钷",
+        "count": 100
+      }
+    ]
+  }
+}

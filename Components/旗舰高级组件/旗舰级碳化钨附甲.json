@@ -1,0 +1,20 @@
+{
+  "id": 29109,
+  "name": "旗舰级碳化钨附甲",
+  "tier": "旗舰高级组件",
+  "recipe": {
+    "outputCount": 1,
+    "inputs": [
+      {
+        "materialId": 16672,
+        "materialname": "碳化钨",
+        "count": 2222
+      },
+      {
+        "materialId": 16678,
+        "materialname": "多晶碳化硅纤维",
+        "count": 1667
+      }
+    ]
+  }
+}

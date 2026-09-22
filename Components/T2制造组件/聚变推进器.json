@@ -1,0 +1,25 @@
+{
+  "id": 11532,
+  "name": "聚变推进器",
+  "tier": "T2制造组件",
+  "recipe": {
+    "outputCount": 1,
+    "inputs": [
+      {
+        "materialId": 16672,
+        "materialname": "碳化钨",
+        "count": 13
+      },
+      {
+        "materialId": 16680,
+        "materialname": "酚合成物",
+        "count": 3
+      },
+      {
+        "materialId": 16683,
+        "materialname": "铁磁胶体",
+        "count": 1
+      }
+    ]
+  }
+}

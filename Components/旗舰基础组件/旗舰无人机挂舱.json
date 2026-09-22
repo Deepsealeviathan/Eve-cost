@@ -1,0 +1,55 @@
+{
+  "id": 21029,
+  "name": "旗舰无人机挂舱",
+  "tier": "旗舰基础组件",
+  "recipe": {
+    "outputCount": 1,
+    "inputs": [
+      {
+        "materialId": 2867,
+        "materialname": "广播节点",
+        "count": 1
+      },
+      {
+        "materialId": 57457,
+        "materialname": "强化碳纤维",
+        "count": 100
+      },
+      {
+        "materialId": 40,
+        "materialname": "超噬矿",
+        "count": 173
+      },
+      {
+        "materialId": 39,
+        "materialname": "晶状石英核岩",
+        "count": 338
+      },
+      {
+        "materialId": 38,
+        "materialname": "超新星诺克石",
+        "count": 675
+      },
+      {
+        "materialId": 37,
+        "materialname": "同位聚合体",
+        "count": 6750
+      },
+      {
+        "materialId": 34,
+        "materialname": "三钛合金",
+        "count": 24375
+      },
+      {
+        "materialId": 36,
+        "materialname": "类银超金属",
+        "count": 24375
+      },
+      {
+        "materialId": 35,
+        "materialname": "类晶体胶矿",
+        "count": 90000
+      }
+    ]
+  }
+}

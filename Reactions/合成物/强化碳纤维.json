@@ -1,0 +1,25 @@
+{
+  "id": 57457,
+  "name": "强化碳纤维",
+  "tier": "合成物",
+  "recipe": {
+    "outputCount": 200,
+    "inputs": [
+      {
+        "materialId": 57453,
+        "materialname": "碳纤维",
+        "count": 200
+      },
+      {
+        "materialId": 57454,
+        "materialname": "富氧有机溶剂",
+        "count": 1
+      },
+      {
+        "materialId": 57455,
+        "materialname": "热固性聚合物",
+        "count": 200
+      }
+    ]
+  }
+}

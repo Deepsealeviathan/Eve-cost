@@ -1,0 +1,30 @@
+{
+  "id": 57468,
+  "name": "承压式神经链接稳定器",
+  "tier": "分子锻造材料",
+  "recipe": {
+    "outputCount": 10,
+    "inputs": [
+      {
+        "materialId": 4312,
+        "materialname": "氧燃料块",
+        "count": 5
+      },
+      {
+        "materialId": 25274,
+        "materialname": "鲜绿丝胶溶质",
+        "count": 10
+      },
+      {
+        "materialId": 25275,
+        "materialname": "灰绿丝胶溶质",
+        "count": 10
+      },
+      {
+        "materialId": 57447,
+        "materialname": "CV复合分子冷凝器",
+        "count": 1
+      }
+    ]
+  }
+}

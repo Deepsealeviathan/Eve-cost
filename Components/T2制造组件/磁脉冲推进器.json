@@ -1,0 +1,25 @@
+{
+  "id": 11533,
+  "name": "磁脉冲推进器",
+  "tier": "T2制造组件",
+  "recipe": {
+    "outputCount": 1,
+    "inputs": [
+      {
+        "materialId": 16680,
+        "materialname": "酚合成物",
+        "count": 3
+      },
+      {
+        "materialId": 16683,
+        "materialname": "铁磁胶体",
+        "count": 1
+      },
+      {
+        "materialId": 16671,
+        "materialname": "碳化钛",
+        "count": 13
+      }
+    ]
+  }
+}

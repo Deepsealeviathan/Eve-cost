@@ -1,0 +1,30 @@
+{
+  "id": 57479,
+  "name": "核心温度调节器",
+  "tier": "T2制造组件",
+  "recipe": {
+    "outputCount": 1,
+    "inputs": [
+      {
+        "materialId": 2401,
+        "materialname": "手性结构",
+        "count": 100
+      },
+      {
+        "materialId": 3645,
+        "materialname": "水",
+        "count": 100
+      },
+      {
+        "materialId": 57456,
+        "materialname": "增压氧化剂",
+        "count": 500
+      },
+      {
+        "materialId": 57457,
+        "materialname": "强化碳纤维",
+        "count": 500
+      }
+    ]
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "id": 11540,
+  "name": "量子微处理器",
+  "tier": "T2制造组件",
+  "recipe": {
+    "outputCount": 1,
+    "inputs": [
+      {
+        "materialId": 16680,
+        "materialname": "酚合成物",
+        "count": 6
+      },
+      {
+        "materialId": 16681,
+        "materialname": "纳米晶体管",
+        "count": 2
+      },
+      {
+        "materialId": 33362,
+        "materialname": "非线性超材料",
+        "count": 2
+      },
+      {
+        "materialId": 16671,
+        "materialname": "碳化钛",
+        "count": 17
+      }
+    ]
+  }
+}

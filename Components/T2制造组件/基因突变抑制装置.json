@@ -1,0 +1,20 @@
+{
+  "id": 57485,
+  "name": "基因突变抑制装置",
+  "tier": "T2制造组件",
+  "recipe": {
+    "outputCount": 1,
+    "inputs": [
+      {
+        "materialId": 2319,
+        "materialname": "培养基",
+        "count": 5
+      },
+      {
+        "materialId": 57465,
+        "materialname": "等向性新富勒烯伽玛-9",
+        "count": 5
+      }
+    ]
+  }
+}

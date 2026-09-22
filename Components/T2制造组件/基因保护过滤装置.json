@@ -1,0 +1,25 @@
+{
+  "id": 57482,
+  "name": "基因保护过滤装置",
+  "tier": "T2制造组件",
+  "recipe": {
+    "outputCount": 1,
+    "inputs": [
+      {
+        "materialId": 57481,
+        "materialname": "基因锁储藏装置",
+        "count": 5
+      },
+      {
+        "materialId": 57484,
+        "materialname": "基因结构维修装置",
+        "count": 5
+      },
+      {
+        "materialId": 57485,
+        "materialname": "基因突变抑制装置",
+        "count": 5
+      }
+    ]
+  }
+}

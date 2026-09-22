@@ -1,0 +1,25 @@
+{
+  "id": 33359,
+  "name": "光子超材料",
+  "tier": "合成物",
+  "recipe": {
+    "outputCount": 300,
+    "inputs": [
+      {
+        "materialId": 4312,
+        "materialname": "氧燃料块",
+        "count": 5
+      },
+      {
+        "materialId": 16655,
+        "materialname": "微晶合金",
+        "count": 100
+      },
+      {
+        "materialId": 33336,
+        "materialname": "铥铪合金",
+        "count": 100
+      }
+    ]
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "id": 30309,
+  "name": "石墨烯纳米带",
+  "tier": "混合聚合物",
+  "recipe": {
+    "outputCount": 120,
+    "inputs": [
+      {
+        "materialId": 38,
+        "materialname": "超新星诺克石",
+        "count": 400
+      },
+      {
+        "materialId": 4051,
+        "materialname": "氮燃料块",
+        "count": 5
+      },
+      {
+        "materialId": 30375,
+        "materialname": "富勒体-C28",
+        "count": 100
+      },
+      {
+        "materialId": 30376,
+        "materialname": "富勒体-C32",
+        "count": 100
+      }
+    ]
+  }
+}

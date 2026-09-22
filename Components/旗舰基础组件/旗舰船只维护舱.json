@@ -1,0 +1,55 @@
+{
+  "id": 24558,
+  "name": "旗舰船只维护舱",
+  "tier": "旗舰基础组件",
+  "recipe": {
+    "outputCount": 1,
+    "inputs": [
+      {
+        "materialId": 2868,
+        "materialname": "反破损快速反应无人机",
+        "count": 1
+      },
+      {
+        "materialId": 57457,
+        "materialname": "强化碳纤维",
+        "count": 100
+      },
+      {
+        "materialId": 40,
+        "materialname": "超噬矿",
+        "count": 375
+      },
+      {
+        "materialId": 39,
+        "materialname": "晶状石英核岩",
+        "count": 750
+      },
+      {
+        "materialId": 38,
+        "materialname": "超新星诺克石",
+        "count": 1500
+      },
+      {
+        "materialId": 37,
+        "materialname": "同位聚合体",
+        "count": 15000
+      },
+      {
+        "materialId": 34,
+        "materialname": "三钛合金",
+        "count": 54000
+      },
+      {
+        "materialId": 36,
+        "materialname": "类银超金属",
+        "count": 54000
+      },
+      {
+        "materialId": 35,
+        "materialname": "类晶体胶矿",
+        "count": 192000
+      }
+    ]
+  }
+}

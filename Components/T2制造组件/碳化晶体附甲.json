@@ -1,0 +1,20 @@
+{
+  "id": 11545,
+  "name": "碳化晶体附甲",
+  "tier": "T2制造组件",
+  "recipe": {
+    "outputCount": 1,
+    "inputs": [
+      {
+        "materialId": 16678,
+        "materialname": "多晶碳化硅纤维",
+        "count": 11
+      },
+      {
+        "materialId": 16670,
+        "materialname": "碳化晶体",
+        "count": 44
+      }
+    ]
+  }
+}

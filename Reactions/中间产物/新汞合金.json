@@ -1,0 +1,25 @@
+{
+  "id": 16667,
+  "name": "新汞合金",
+  "tier": "中间产物",
+  "recipe": {
+    "outputCount": 200,
+    "inputs": [
+      {
+        "materialId": 4247,
+        "materialname": "氦燃料块",
+        "count": 5
+      },
+      {
+        "materialId": 16646,
+        "materialname": "汞",
+        "count": 100
+      },
+      {
+        "materialId": 16651,
+        "materialname": "钕",
+        "count": 100
+      }
+    ]
+  }
+}

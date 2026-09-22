@@ -1,0 +1,25 @@
+{
+  "id": 29071,
+  "name": "旗舰级磁脉冲推进器",
+  "tier": "旗舰高级组件",
+  "recipe": {
+    "outputCount": 1,
+    "inputs": [
+      {
+        "materialId": 16680,
+        "materialname": "酚合成物",
+        "count": 33
+      },
+      {
+        "materialId": 16683,
+        "materialname": "铁磁胶体",
+        "count": 11
+      },
+      {
+        "materialId": 16671,
+        "materialname": "碳化钛",
+        "count": 1333
+      }
+    ]
+  }
+}

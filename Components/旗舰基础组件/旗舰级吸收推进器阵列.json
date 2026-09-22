@@ -1,0 +1,70 @@
+{
+  "id": 53037,
+  "name": "旗舰级吸收推进器阵列",
+  "tier": "旗舰基础组件",
+  "recipe": {
+    "outputCount": 1,
+    "inputs": [
+      {
+        "materialId": 53289,
+        "materialname": "旗舰级零点力场操纵装置",
+        "count": 1
+      },
+      {
+        "materialId": 53290,
+        "materialname": "旗舰级三元态处理器",
+        "count": 1
+      },
+      {
+        "materialId": 53288,
+        "materialname": "旗舰级奇点辐射转化器",
+        "count": 10
+      },
+      {
+        "materialId": 47975,
+        "materialname": "晶体同位聚合体-10",
+        "count": 90
+      },
+      {
+        "materialId": 40,
+        "materialname": "超噬矿",
+        "count": 227
+      },
+      {
+        "materialId": 48112,
+        "materialname": "零度凝缩液",
+        "count": 270
+      },
+      {
+        "materialId": 39,
+        "materialname": "晶状石英核岩",
+        "count": 453
+      },
+      {
+        "materialId": 38,
+        "materialname": "超新星诺克石",
+        "count": 1583
+      },
+      {
+        "materialId": 37,
+        "materialname": "同位聚合体",
+        "count": 5204
+      },
+      {
+        "materialId": 36,
+        "materialname": "类银超金属",
+        "count": 31496
+      },
+      {
+        "materialId": 35,
+        "materialname": "类晶体胶矿",
+        "count": 82812
+      },
+      {
+        "materialId": 34,
+        "materialname": "三钛合金",
+        "count": 342788
+      }
+    ]
+  }
+}

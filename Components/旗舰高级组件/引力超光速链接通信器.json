@@ -1,0 +1,80 @@
+{
+  "id": 57475,
+  "name": "引力超光速链接通信器",
+  "tier": "旗舰高级组件",
+  "recipe": {
+    "outputCount": 1,
+    "inputs": [
+      {
+        "materialId": 2872,
+        "materialname": "自协调能源核心",
+        "count": 1
+      },
+      {
+        "materialId": 2876,
+        "materialname": "湿件主机",
+        "count": 1
+      },
+      {
+        "materialId": 2867,
+        "materialname": "广播节点",
+        "count": 2
+      },
+      {
+        "materialId": 17317,
+        "materialname": "费米子冷凝物",
+        "count": 40
+      },
+      {
+        "materialId": 30308,
+        "materialname": "金属富勒烯钪",
+        "count": 130
+      },
+      {
+        "materialId": 30304,
+        "materialname": "PPD富勒烯纤维",
+        "count": 190
+      },
+      {
+        "materialId": 30306,
+        "materialname": "亚甲基富勒烯",
+        "count": 190
+      },
+      {
+        "materialId": 30307,
+        "materialname": "金属富勒烯镧",
+        "count": 190
+      },
+      {
+        "materialId": 30311,
+        "materialname": "C3-FTM酸",
+        "count": 260
+      },
+      {
+        "materialId": 30310,
+        "materialname": "碳86环氧树脂",
+        "count": 380
+      },
+      {
+        "materialId": 30305,
+        "materialname": "富勒烯层间石墨",
+        "count": 390
+      },
+      {
+        "materialId": 30309,
+        "materialname": "石墨烯纳米带",
+        "count": 560
+      },
+      {
+        "materialId": 33362,
+        "materialname": "非线性超材料",
+        "count": 560
+      },
+      {
+        "materialId": 30303,
+        "materialname": "富勒二茂铁",
+        "count": 660
+      }
+    ]
+  }
+}

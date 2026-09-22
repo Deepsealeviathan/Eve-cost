@@ -1,0 +1,25 @@
+{
+  "id": 57453,
+  "name": "碳纤维",
+  "tier": "中间产物",
+  "recipe": {
+    "outputCount": 200,
+    "inputs": [
+      {
+        "materialId": 4246,
+        "materialname": "氢燃料块",
+        "count": 5
+      },
+      {
+        "materialId": 16633,
+        "materialname": "烃类",
+        "count": 100
+      },
+      {
+        "materialId": 16635,
+        "materialname": "蒸发岩沉积物",
+        "count": 100
+      }
+    ]
+  }
+}

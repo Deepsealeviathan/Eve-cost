@@ -1,0 +1,40 @@
+{
+  "id": 57458,
+  "name": "变换反应神经链接增强器",
+  "tier": "分子锻造材料",
+  "recipe": {
+    "outputCount": 20,
+    "inputs": [
+      {
+        "materialId": 57443,
+        "materialname": "分子变换合成器",
+        "count": 1
+      },
+      {
+        "materialId": 4246,
+        "materialname": "氢燃料块",
+        "count": 5
+      },
+      {
+        "materialId": 57459,
+        "materialname": "致幻神经链接增强器",
+        "count": 80
+      },
+      {
+        "materialId": 57460,
+        "materialname": "轴体神经链接增强器",
+        "count": 80
+      },
+      {
+        "materialId": 57461,
+        "materialname": "感知神经链接增强器",
+        "count": 80
+      },
+      {
+        "materialId": 57462,
+        "materialname": "启发神经链接增强器",
+        "count": 80
+      }
+    ]
+  }
+}

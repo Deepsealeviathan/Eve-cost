@@ -1,0 +1,30 @@
+{
+  "id": 57470,
+  "name": "U-C触发式神经链接回路",
+  "tier": "T2制造组件",
+  "recipe": {
+    "outputCount": 1,
+    "inputs": [
+      {
+        "materialId": 57456,
+        "materialname": "增压氧化剂",
+        "count": 10
+      },
+      {
+        "materialId": 57457,
+        "materialname": "强化碳纤维",
+        "count": 10
+      },
+      {
+        "materialId": 57459,
+        "materialname": "致幻神经链接增强器",
+        "count": 40
+      },
+      {
+        "materialId": 57466,
+        "materialname": "循环式神经链接稳定器",
+        "count": 1
+      }
+    ]
+  }
+}

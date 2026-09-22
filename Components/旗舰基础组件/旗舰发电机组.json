@@ -1,0 +1,55 @@
+{
+  "id": 21021,
+  "name": "旗舰发电机组",
+  "tier": "旗舰基础组件",
+  "recipe": {
+    "outputCount": 1,
+    "inputs": [
+      {
+        "materialId": 2872,
+        "materialname": "自协调能源核心",
+        "count": 1
+      },
+      {
+        "materialId": 57457,
+        "materialname": "强化碳纤维",
+        "count": 100
+      },
+      {
+        "materialId": 40,
+        "materialname": "超噬矿",
+        "count": 330
+      },
+      {
+        "materialId": 39,
+        "materialname": "晶状石英核岩",
+        "count": 660
+      },
+      {
+        "materialId": 38,
+        "materialname": "超新星诺克石",
+        "count": 1350
+      },
+      {
+        "materialId": 37,
+        "materialname": "同位聚合体",
+        "count": 13500
+      },
+      {
+        "materialId": 34,
+        "materialname": "三钛合金",
+        "count": 47250
+      },
+      {
+        "materialId": 36,
+        "materialname": "类银超金属",
+        "count": 47250
+      },
+      {
+        "materialId": 35,
+        "materialname": "类晶体胶矿",
+        "count": 168750
+      }
+    ]
+  }
+}

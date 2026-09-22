@@ -1,0 +1,35 @@
+{
+  "id": 16683,
+  "name": "铁磁胶体",
+  "tier": "合成物",
+  "recipe": {
+    "outputCount": 400,
+    "inputs": [
+      {
+        "materialId": 4246,
+        "materialname": "氢燃料块",
+        "count": 5
+      },
+      {
+        "materialId": 16665,
+        "materialname": "六元复合物",
+        "count": 100
+      },
+      {
+        "materialId": 16666,
+        "materialname": "超氟化物",
+        "count": 100
+      },
+      {
+        "materialId": 16669,
+        "materialname": "铁磁流体",
+        "count": 100
+      },
+      {
+        "materialId": 17960,
+        "materialname": "稀土钷",
+        "count": 100
+      }
+    ]
+  }
+}

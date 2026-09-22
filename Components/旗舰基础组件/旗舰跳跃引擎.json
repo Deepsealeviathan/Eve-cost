@@ -1,0 +1,55 @@
+{
+  "id": 21025,
+  "name": "旗舰跳跃引擎",
+  "tier": "旗舰基础组件",
+  "recipe": {
+    "outputCount": 1,
+    "inputs": [
+      {
+        "materialId": 2876,
+        "materialname": "湿件主机",
+        "count": 1
+      },
+      {
+        "materialId": 57457,
+        "materialname": "强化碳纤维",
+        "count": 100
+      },
+      {
+        "materialId": 40,
+        "materialname": "超噬矿",
+        "count": 420
+      },
+      {
+        "materialId": 39,
+        "materialname": "晶状石英核岩",
+        "count": 900
+      },
+      {
+        "materialId": 38,
+        "materialname": "超新星诺克石",
+        "count": 1688
+      },
+      {
+        "materialId": 37,
+        "materialname": "同位聚合体",
+        "count": 16875
+      },
+      {
+        "materialId": 34,
+        "materialname": "三钛合金",
+        "count": 60000
+      },
+      {
+        "materialId": 36,
+        "materialname": "类银超金属",
+        "count": 60000
+      },
+      {
+        "materialId": 35,
+        "materialname": "类晶体胶矿",
+        "count": 216000
+      }
+    ]
+  }
+}

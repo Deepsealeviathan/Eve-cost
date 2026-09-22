@@ -201,6 +201,13 @@ def update_database():
         return jsonify({'success': False, 'error': str(e)})
 
 
+# 组件制造计算器页面
+@app.route('/components')
+def components_page():
+    """组件制造计算页:目录选件 + 数量加减 + 建筑加成减免"""
+    return render_template('components.html')
+
+
 # 判断当前文件是否是直接运行（不是被其他文件导入）
 if __name__ == '__main__':
     # 启动 Flask 内置开发服务器

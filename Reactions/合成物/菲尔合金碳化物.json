@@ -1,0 +1,25 @@
+{
+  "id": 16673,
+  "name": "菲尔合金碳化物",
+  "tier": "合成物",
+  "recipe": {
+    "outputCount": 10000,
+    "inputs": [
+      {
+        "materialId": 4246,
+        "materialname": "氢燃料块",
+        "count": 5
+      },
+      {
+        "materialId": 16656,
+        "materialname": "菲尔合金",
+        "count": 100
+      },
+      {
+        "materialId": 16660,
+        "materialname": "陶瓷粉末",
+        "count": 100
+      }
+    ]
+  }
+}

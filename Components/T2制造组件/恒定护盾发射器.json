@@ -1,0 +1,25 @@
+{
+  "id": 11558,
+  "name": "恒定护盾发射器",
+  "tier": "T2制造组件",
+  "recipe": {
+    "outputCount": 1,
+    "inputs": [
+      {
+        "materialId": 16683,
+        "materialname": "铁磁胶体",
+        "count": 1
+      },
+      {
+        "materialId": 16678,
+        "materialname": "多晶碳化硅纤维",
+        "count": 9
+      },
+      {
+        "materialId": 16671,
+        "materialname": "碳化钛",
+        "count": 22
+      }
+    ]
+  }
+}

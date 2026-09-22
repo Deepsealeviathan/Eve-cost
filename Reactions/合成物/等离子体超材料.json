@@ -1,0 +1,25 @@
+{
+  "id": 33361,
+  "name": "等离子体超材料",
+  "tier": "合成物",
+  "recipe": {
+    "outputCount": 300,
+    "inputs": [
+      {
+        "materialId": 4246,
+        "materialname": "氢燃料块",
+        "count": 5
+      },
+      {
+        "materialId": 16656,
+        "materialname": "菲尔合金",
+        "count": 100
+      },
+      {
+        "materialId": 16667,
+        "materialname": "新汞合金",
+        "count": 100
+      }
+    ]
+  }
+}

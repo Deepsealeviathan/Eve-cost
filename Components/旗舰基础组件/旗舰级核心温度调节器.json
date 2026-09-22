@@ -1,0 +1,25 @@
+{
+  "id": 57487,
+  "name": "旗舰级核心温度调节器",
+  "tier": "旗舰基础组件",
+  "recipe": {
+    "outputCount": 1,
+    "inputs": [
+      {
+        "materialId": 2868,
+        "materialname": "反破损快速反应无人机",
+        "count": 20
+      },
+      {
+        "materialId": 2872,
+        "materialname": "自协调能源核心",
+        "count": 20
+      },
+      {
+        "materialId": 57479,
+        "materialname": "核心温度调节器",
+        "count": 35
+      }
+    ]
+  }
+}

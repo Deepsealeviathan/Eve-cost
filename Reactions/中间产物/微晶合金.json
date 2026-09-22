@@ -1,0 +1,25 @@
+{
+  "id": 16655,
+  "name": "微晶合金",
+  "tier": "中间产物",
+  "recipe": {
+    "outputCount": 200,
+    "inputs": [
+      {
+        "materialId": 4247,
+        "materialname": "氦燃料块",
+        "count": 5
+      },
+      {
+        "materialId": 16640,
+        "materialname": "钴",
+        "count": 100
+      },
+      {
+        "materialId": 16643,
+        "materialname": "镉",
+        "count": 100
+      }
+    ]
+  }
+}
