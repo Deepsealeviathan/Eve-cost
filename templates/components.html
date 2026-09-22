@@ -355,7 +355,7 @@
                     <select id="sec-select"></select>
                 </div>
                 <div class="ctrl-group">
-                    <span class="ctrl-label">蓝图 ME 等级(0-10)</span>
+                    <span class="ctrl-label">蓝图 ME 等级(0-10,每级 −1%)</span>
                     <input class="me-input" id="me-input" type="number" min="0" max="10" value="0">
                 </div>
                 <div class="me-summary" id="me-summary"></div>
@@ -397,9 +397,9 @@
             <div class="verdict" id="verdict"></div>
 
             <div class="formula-note">
-                计算公式: 需求 = ⌈基础 × 数量 × (1 + 蓝图损耗) × (1 − 插件减免) × (1 − 结构减免)⌉,每行向上取整。<br>
-                蓝图损耗 = 10% × 0.9<sup>ME</sup>;结构减免: 莱塔卢 / 阿兹贝尔 / 索迪约均提供 1% 材料减免;<br>
-                插件减免 = 基础值 × 星系系数(高安 ×1.0 / 低安 ×1.9 / 00 与虫洞 ×2.1,系数只放大插件、不放大结构 1%)。数据来源: EVE 官方论坛 SDI 版。
+                计算公式: 需求 = ⌈基础 × 数量 × (1 − 蓝图ME减免) × (1 − 插件减免) × (1 − 结构减免)⌉,每行向上取整,每种材料每轮至少 1 个。<br>
+                蓝图 ME = 每级 −1%,研究 10 级共 −10%(ME 0 即无减免);结构减免: 莱塔卢 / 阿兹贝尔 / 索迪约均提供 1% 材料减免;<br>
+                插件减免 = 基础值(T1 2.0% / T2 2.4%) × 星系系数(高安 ×1.0 / 低安 ×1.9 / 00 与虫洞 ×2.1,系数只放大插件、不放大结构 1%)。数值经晨曦 ESI dogma 属性核实(attributeEngRigMatBonus / hiSecModifier / strEngMatBonus)。
             </div>
         </div>
     </main>
@@ -568,14 +568,14 @@ function recalc() {
     const qty = getQty();
     const { rig, sec, meLevel } = meParams();
 
-    const waste = 0.1 * Math.pow(0.9, meLevel);        // 蓝图损耗
+    const meFactor = 1 - 0.01 * meLevel;               // 蓝图 ME:每级 -1%,10 级共 -10%
     const rigEff = rig.base * sec.scale;               // 插件实际减免
-    const factor = (1 + waste) * (1 - rigEff) * (1 - STRUCT_ME);
+    const factor = meFactor * (1 - rigEff) * (1 - STRUCT_ME);
 
     // 加成摘要
     const sum = document.getElementById('me-summary');
     const applies = rig.scope.includes(recipe.tier);
-    let html = `蓝图损耗 +${(waste * 100).toFixed(2)}% × 插件减免 −${(rigEff * 100).toFixed(2)}% × 结构减免 −${(STRUCT_ME * 100).toFixed(0)}%`
+    let html = `蓝图 ME −${meLevel}% × 插件减免 −${(rigEff * 100).toFixed(2)}% × 结构减免 −${(STRUCT_ME * 100).toFixed(0)}%`
         + ` ⇒ 材料系数 <b>${factor.toFixed(4)}</b>(约减免 ${((1 - factor) * 100).toFixed(1)}%)`;
     if (!applies) {
         html += ` <span class="warn">⚠️ 当前插件不适用于 ${recipe.tier},仅结构 1% 与蓝图 ME 生效</span>`;
