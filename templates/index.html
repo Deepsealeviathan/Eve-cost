@@ -56,7 +56,9 @@
             border: 1px solid rgba(255, 255, 255, 0.45);
             position: sticky;
             top: 40px;
-            max-height: calc(100vh - 80px);
+            /* 定高(而非 max-height):容器高度确定后 flex:1 的百分比基准才能正确解析,
+               物品列表才能占满剩余空间;窄屏媒体查询的 max-height:320px 仍会钳制本值 */
+            height: calc(100vh - 80px);
             display: flex;
             flex-direction: column;
             animation: slideIn 0.6s ease-out;
@@ -78,7 +80,10 @@
         .catalog-list {
             list-style: none;
             overflow-y: auto;
-            flex: 1;
+            /* basis 必须是明确的 0px:侧栏高度不定(auto+max-height)时,
+               百分比基准(flex:1)会退化为内容高度,导致分类区被内容挤压 */
+            flex: 1 1 0px;
+            min-height: 120px;
             padding-right: 4px;
         }
 
@@ -131,8 +136,13 @@
             box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.12);
         }
 
-        /* 目录分类：大类 / 小类 */
-        .catalog-cats { margin-bottom: 10px; }
+        /* 目录分类：大类 / 小类(分类按钮过多时内部滚动,不挤压下方物品列表) */
+        .catalog-cats {
+            margin-bottom: 10px;
+            max-height: 300px;
+            overflow-y: auto;
+            min-height: 0;
+        }
 
         .cat-row, .cat-sub {
             padding: 8px 12px;
@@ -315,7 +325,7 @@
             align-items: center;
         }
 
-        .btn-add, .btn-query, .btn-parse, .btn-update {
+        .btn-add, .btn-query, .btn-parse {
             border: none;
             padding: 12px 26px;
             border-radius: 12px;
@@ -327,21 +337,18 @@
             box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
         }
 
-        .btn-add:hover, .btn-query:hover, .btn-parse:hover, .btn-update:hover {
+        .btn-add:hover, .btn-query:hover, .btn-parse:hover {
             transform: translateY(-2px);
             box-shadow: 0 8px 22px rgba(0, 0, 0, 0.18);
         }
 
-        .btn-add:active, .btn-query:active, .btn-parse:active, .btn-update:active { transform: translateY(0); }
+        .btn-add:active, .btn-query:active, .btn-parse:active { transform: translateY(0); }
 
         .btn-add { background: linear-gradient(135deg, var(--success) 0%, #059669 100%); }
         .btn-query { background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%); }
         .btn-parse { background: linear-gradient(135deg, var(--accent) 0%, #0891b2 100%); }
-        .btn-update {
-            background: linear-gradient(135deg, var(--warning) 0%, #d97706 100%);
-        }
 
-        .btn-add:disabled, .btn-query:disabled, .btn-parse:disabled, .btn-update:disabled {
+        .btn-add:disabled, .btn-query:disabled, .btn-parse:disabled {
             opacity: 0.6;
             cursor: not-allowed;
             transform: none;
@@ -610,7 +617,6 @@
                     <button class="btn-parse" onclick="parsePaste()">解析粘贴内容</button>
                     <button class="btn-add" onclick="addQueryRow()">+ 手动添加物品</button>
                     <button class="btn-query" onclick="doBatchQuery()">批量查询</button>
-                    <button class="btn-update" id="btn-update" onclick="updateDatabase()">🔄 更新数据库</button>
                 </div>
             </div>
 
@@ -828,49 +834,6 @@
         function closeModal(event) {
             if (!event || event.target === modalOverlay || event.target.classList.contains('modal-close')) {
                 modalOverlay.classList.add('hidden');
-            }
-        }
-
-        // ==========================================
-        // 更新数据库
-        // ==========================================
-        async function updateDatabase() {
-            const btn = document.getElementById('btn-update');
-            const originalText = btn.textContent;
-
-            btn.disabled = true;
-            btn.textContent = '🔄 更新中...';
-            errorDiv.classList.add('hidden');
-            resultDiv.classList.add('hidden');
-
-            try {
-                const res = await fetch('/update_database', { method: 'POST' });
-                const json = await res.json();
-
-                if (!json.success) {
-                    errorDiv.textContent = json.error || '数据库更新失败';
-                    errorDiv.style.background = '#fef2f2';
-                    errorDiv.style.color = '#b91c1c';
-                    errorDiv.style.borderColor = '#fecaca';
-                    errorDiv.classList.remove('hidden');
-                } else {
-                    const count = json.updated !== null ? `（共更新 ${json.updated} 条记录）` : '';
-                    errorDiv.textContent = '数据库更新成功 ' + count;
-                    errorDiv.style.background = '#f0fdf4';
-                    errorDiv.style.color = '#166534';
-                    errorDiv.style.borderColor = '#bbf7d0';
-                    errorDiv.classList.remove('hidden');
-                    loadCatalog(); // 刷新左侧目录
-                }
-            } catch (err) {
-                errorDiv.textContent = '更新请求错误：' + err.message;
-                errorDiv.style.background = '#fef2f2';
-                errorDiv.style.color = '#b91c1c';
-                errorDiv.style.borderColor = '#fecaca';
-                errorDiv.classList.remove('hidden');
-            } finally {
-                btn.disabled = false;
-                btn.textContent = originalText;
             }
         }
 

@@ -46,6 +46,12 @@ pip install -r requirements.txt
 cp config.example.ini config.ini
 ```
 
+`config.ini` 共三个段:
+
+- `[database]`:MySQL 连接参数(必填)
+- `[security]`:`admin_password`(管理员登录密码)与 `secret_key`(会话签名密钥,可用 `python3 -c "import secrets; print(secrets.token_hex(32))"` 生成),部署到公网前务必修改
+- `[schedule]`:`update_interval_seconds`,行情自动更新间隔(秒,默认 7200 = 2 小时,最小 60)
+
 ## 数据库初始化
 
 ```bash
@@ -64,7 +70,19 @@ python update_market.py
 python app.py
 ```
 
-Web 页面支持:单个/批量成本查询、物品目录浏览(分类 + 搜索)、一键更新数据库(调用 `update_market.py`),以及组件制造计算器(访问 `/components`,目录选组件、数量加减、建筑加成减免)。
+Web 页面支持:单个/批量成本查询、物品目录浏览(分类 + 搜索)、组件制造计算器(访问 `/components`,目录选组件、数量加减、建筑加成减免)以及制造清单汇总(访问 `/bom`,粘贴购物单一键展开最终原材料)。
+
+### 游客模式与管理员
+
+面向公网部署设计,查询功能不需要登录:
+
+- **游客**:访问 `http://localhost:5000/` 即游客模式,可直接使用全部查询功能(单查/批量/目录/组件计算器/BOM 汇总),页面上没有任何管理员入口或更新按钮
+- **管理员**:单独访问 `http://localhost:5000/admin` 进入管理控制台,输入 `config.ini` 中 `[security].admin_password` 登录后可手动更新行情数据库(更新日志直接显示在页面上);密码错误 5 次锁定 60 秒;登录态经签名 Cookie 保存,浏览器关闭即失效
+- **定时自动更新**:服务启动 30 秒后执行首次行情更新,此后每 `update_interval_seconds`(默认 2 小时)自动执行一次,手动更新与定时更新互斥、同一时间只跑一个任务;更新进度与结果打印在服务日志中
+
+### 公网部署
+
+部署到公网服务器(Nginx 反向代理 + gunicorn + systemd + 自签 HTTPS)的完整路线见 **[Doc/部署指南.md](Doc/部署指南.md)**,含架构说明、资源测算、全部配置文件、验收清单与常见坑速查。
 
 ### 跟踪物品与分类规则
 
