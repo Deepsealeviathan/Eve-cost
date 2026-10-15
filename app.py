@@ -30,6 +30,9 @@ from Select import query_by_name, get_catalog, get_recipes
 # 配置加载:数据库连接 / 管理员密钥 / 定时任务参数
 from db_config import load_db_config, load_security_config, load_schedule_config
 
+# 反代部署时还原访客真实 IP 的中间件(werkzeug 随 Flask 一同安装)
+from werkzeug.middleware.proxy_fix import ProxyFix
+
 # 创建一个 Flask 应用实例
 # __name__ 是当前模块名，Flask 用它来确定资源路径
 app = Flask(__name__)
@@ -37,8 +40,18 @@ app = Flask(__name__)
 # 会话签名密钥与管理员密码:启动时强制读取,缺失/为空直接报错提示
 _security = load_security_config()
 app.secret_key = _security['secret_key']
-# Cookie 属性:SameSite=Lax 拦截跨站 POST 伪造(CSRF);部署到 HTTPS 后可再加 SESSION_COOKIE_SECURE
+# Cookie 属性:SameSite=Lax 拦截跨站 POST 伪造(CSRF)
 app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+
+# HTTPS 部署时给会话 Cookie 加 Secure 标记(仅经 HTTPS 传输);本地 HTTP 开发不开
+if os.environ.get('EVE_COST_HTTPS') == '1':
+    app.config['SESSION_COOKIE_SECURE'] = True
+
+# 反向代理部署(Nginx 等):从 X-Forwarded-For/X-Forwarded-Proto 还原访客真实 IP 与协议,
+# 否则 Flask 看到的来源全是 127.0.0.1,登录失败锁定会把所有访客当成同一个人。
+# 本地直跑不开;服务器 systemd 里设 EVE_COST_BEHIND_PROXY=1
+if os.environ.get('EVE_COST_BEHIND_PROXY') == '1':
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1)
 
 # 更新任务互斥锁:手动更新(网页按钮)与定时更新(后台线程)同一时间只允许一个执行
 _update_lock = threading.Lock()
@@ -353,6 +366,18 @@ def _auto_update_loop(interval_seconds):
         time.sleep(interval_seconds)
 
 
+# 定时行情更新线程:模块级启动,`python3 app.py` 直跑与 gunicorn `import app` 均会生效。
+# 放在 __main__ 里 gunicorn 不会执行(它是 import 方式启动);单 worker 保证只启动一份。
+# EVE_COST_DISABLE_AUTO_UPDATE=1 可关闭(如改用 systemd timer 单独跑更新脚本的部署)。
+if os.environ.get('EVE_COST_DISABLE_AUTO_UPDATE') != '1':
+    _interval = max(AUTO_UPDATE_MIN_INTERVAL, load_schedule_config()['update_interval_seconds'])
+    threading.Thread(
+        target=_auto_update_loop, args=(_interval,),
+        daemon=True, name='auto-update',
+    ).start()
+    print(f'定时行情更新已启用:启动 {AUTO_UPDATE_STARTUP_DELAY}s 后首次执行,此后每 {_interval}s 一次', flush=True)
+
+
 # 判断当前文件是否是直接运行（不是被其他文件导入）
 if __name__ == '__main__':
     # 启动 Flask 内置开发服务器
@@ -361,13 +386,5 @@ if __name__ == '__main__':
     # debug 默认关闭:调试模式会向局域网暴露 Werkzeug 调试器(可执行任意代码),安全风险
     # 本地开发需要自动重载时显式开启: EVE_COST_DEBUG=1 python app.py
     debug = os.environ.get('EVE_COST_DEBUG', '0') == '1'
-
-    # 定时行情更新:启动 30 秒后首次执行,此后按 config.ini [schedule] 间隔(默认 2 小时)
-    interval = max(AUTO_UPDATE_MIN_INTERVAL, load_schedule_config()['update_interval_seconds'])
-    threading.Thread(
-        target=_auto_update_loop, args=(interval,),
-        daemon=True, name='auto-update',
-    ).start()
-    print(f'定时行情更新已启用:启动 {AUTO_UPDATE_STARTUP_DELAY}s 后首次执行,此后每 {interval}s 一次', flush=True)
 
     app.run(debug=debug, host='0.0.0.0', port=5000)
