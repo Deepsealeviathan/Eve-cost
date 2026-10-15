@@ -54,6 +54,15 @@ AUTO_UPDATE_STARTUP_DELAY = 30
 AUTO_UPDATE_MIN_INTERVAL = 60   # 间隔下限,防止误配成过小值刷爆 ESI
 
 
+def _api_error(e, hint='服务器开小差了,请稍后重试'):
+    """接口意外异常的统一出口:细节打印到服务端日志排查用,前端只收到友好提示。
+
+    避免把原始报错文本(如网络层的 "[Errno 32] Broken pipe")直接弹给用户。
+    """
+    print(f"[接口异常] {request.path}: {e!r}", flush=True)
+    return jsonify({'success': False, 'error': hint})
+
+
 # ================== 管理员登录态 ==================
 @app.route('/admin', methods=['GET'])
 def admin_page():
@@ -126,9 +135,8 @@ def index():
 def query():
     # 开始异常捕获块，防止程序出错时直接崩溃
     try:
-        # 从 HTTP 请求体中解析 JSON 数据
-        # 前端通过 fetch 发送的 {"name":"氧", "quantity":8} 会在这里被提取
-        data = request.get_json()
+        # 从 HTTP 请求体解析 JSON;silent=True 时格式非法不抛错而是返回 None
+        data = request.get_json(silent=True) or {}
 
         # 从 JSON 中取出 name 字段的值
         # data.get('name', '') 表示如果 name 不存在则返回空字符串
@@ -136,8 +144,12 @@ def query():
         name = data.get('name', '').strip()
 
         # 从 JSON 中取出 quantity 字段的值，默认给 1
-        # int() 将字符串或数字转成整数，比如 "8" → 8
-        quantity = int(data.get('quantity', 1))
+        # 先校验再转换,非法输入返回友好提示而不是内部报错文本
+        raw_quantity = data.get('quantity', 1)
+        try:
+            quantity = int(raw_quantity)
+        except (TypeError, ValueError):
+            return jsonify({'success': False, 'error': '数量必须是数字'})
 
         # 判断 name 是否为空字符串
         if not name:
@@ -146,7 +158,6 @@ def query():
             return jsonify({'success': False, 'error': '物品名称不能为空'})
         # 判断数量是否小于 1
         if quantity < 1:
-            # 返回 JSON 错误提示给前端
             return jsonify({'success': False, 'error': '数量必须大于0'})
 
         # 调用查询函数，传入物品名和制作数量
@@ -162,11 +173,9 @@ def query():
         # data: result 把查询到的明细数据传给前端
         return jsonify({'success': True, 'data': result})
 
-    # 捕获 try 块中发生的任何异常
-    # e 是异常对象，包含错误信息
+    # 意外异常:细节只进服务端日志,用户看到友好提示(不弹 "[Errno 32]" 之类原始报错)
     except Exception as e:
-        # 将异常信息转成字符串，作为错误返回给前端
-        return jsonify({'success': False, 'error': str(e)})
+        return _api_error(e, '查询失败,请稍后重试')
 
 
 # 装饰器：注册 /query_batch 路由，只接受 HTTP POST 请求
@@ -177,10 +186,9 @@ def query_batch():
     """批量查询接口：支持同时查多个物品"""
     # 开始异常捕获块，防止代码出错时 Flask 直接返回 500 错误页面
     try:
-        # 从 HTTP 请求体中解析 JSON 数据
-        data = request.get_json()
+        # 从 HTTP 请求体解析 JSON;silent=True 时格式非法不抛错而是返回 None
+        data = request.get_json(silent=True) or {}
         # 前端 fetch 发送的 {"items": [{"name":"氧","quantity":2}, ...]} 在这里被提取
-        # 从解析后的字典中取出 'items' 字段的值
         # data.get('items', []) 表示如果 items 不存在，默认返回空列表 []
         items = data.get('items', [])
         # 判断 items 是否为空列表
@@ -203,8 +211,11 @@ def query_batch():
             # .strip() 去掉首尾空格，防止用户误输入空格
             name = item.get('name', '').strip()
             # 从当前物品字典中取出 quantity 字段的值，默认给 1
-            # int() 将字符串转成整数，比如 "3" → 3
-            quantity = int(item.get('quantity', 1))
+            # 单个物品数量非法时给出明确提示,而不是整批报内部错误
+            try:
+                quantity = int(item.get('quantity', 1))
+            except (TypeError, ValueError):
+                return jsonify({'success': False, 'error': f'物品「{name or "(未命名)"}」的数量必须是数字'})
 
 
             # 判断 name 是否为空字符串（用户可能只填了数量没填名称）
@@ -239,8 +250,9 @@ def query_batch():
             }
         })
 
+    # 意外异常:细节只进服务端日志,用户看到友好提示
     except Exception as e:
-        return jsonify({'success': False, 'error': str(e)})
+        return _api_error(e, '批量查询失败,请稍后重试')
 
 # 0628 /catalog 接口返回所有物品的 name、buy_max、sell_min
 @app.route('/catalog', methods=['GET'])
@@ -250,7 +262,7 @@ def catalog():
         items = get_catalog()
         return jsonify({'success': True, 'data': items})
     except Exception as e:
-        return jsonify({'success': False, 'error': str(e)})
+        return _api_error(e, '目录加载失败,请稍后刷新重试')
 
 # 0704
 @app.route('/update_database', methods=['POST'])
@@ -316,7 +328,7 @@ def recipes():
     try:
         return jsonify({'success': True, 'data': get_recipes()})
     except Exception as e:
-        return jsonify({'success': False, 'error': str(e)})
+        return _api_error(e, '配方加载失败,请稍后刷新重试')
 
 
 # ================== 定时行情更新(后台线程) ==================

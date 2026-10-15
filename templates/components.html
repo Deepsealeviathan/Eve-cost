@@ -595,16 +595,33 @@ function fillSelects() {
 // 组件选择与制造计算
 // ==========================================
 let current = null;   // { item, recipe }  recipe 来自 /query quantity=1
+let querySeq = 0;     // 选择序号:快速连点时只应用最新一次的查询结果
+let lastAbort = null; // 中断上一次还在途的查询,避免请求堆积
 
 async function selectItem(name) {
     selectedName = name;
     renderList();
-    const res = await fetch('/query', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, quantity: 1 }),
-    });
-    const json = await res.json();
+    const seq = ++querySeq;
+    if (lastAbort) lastAbort.abort();
+    lastAbort = new AbortController();
+
+    let json;
+    try {
+        const res = await fetch('/query', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name, quantity: 1 }),
+            signal: lastAbort.signal,
+        });
+        json = await res.json();
+    } catch (e) {
+        // 被更新的点击取代的请求:静默忽略;真异常才提示,且不弹原始报错文本
+        if (e.name === 'AbortError' || seq !== querySeq) return;
+        console.error('查询失败:', e);
+        alert('网络开小差了,请稍后重试');
+        return;
+    }
+    if (seq !== querySeq) return;  // 过期响应(期间又点了别的物品),丢弃防止串台
     if (!json.success) {
         alert(json.error || '查询失败');
         return;

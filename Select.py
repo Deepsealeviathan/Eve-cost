@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import os
 import json
+import time
 import pymysql
 from pathlib import Path
 
@@ -100,7 +101,16 @@ class _QueryContext:
 
     def get_conn(self):
         if self.conn is None:
-            self.conn = pymysql.connect(**load_db_config())
+            # 连接建立可能被网络转发层偶发中断(如 WSL 端口转发抖动),自动重试一次
+            last_err = None
+            for _ in range(2):
+                try:
+                    self.conn = pymysql.connect(**load_db_config())
+                    return self.conn
+                except (pymysql.Error, OSError) as e:
+                    last_err = e
+                    time.sleep(0.1)
+            raise last_err
         return self.conn
 
     def close(self):
@@ -123,22 +133,27 @@ def _query_price_map(ids, ctx):
             missing.append(tid)
 
     if missing:
-        try:
-            conn = ctx.get_conn()
-            with conn.cursor() as cursor:
-                placeholders = ','.join(['%s'] * len(missing))
-                sql = (f"SELECT type_id, buy_max, sell_min FROM market_prices "
-                       f"WHERE region_id = %s AND type_id IN ({placeholders})")
-                cursor.execute(sql, [REGION_ID, *missing])
-                rows = {row[0]: (row[1], row[2]) for row in cursor.fetchall()}
-            for tid in missing:
-                pair = rows.get(tid, (0, 0))
-                ctx.price_cache[tid] = pair
-                result[tid] = pair
-        except pymysql.Error as e:
-            print(f"数据库错误: {e}")
-            for tid in missing:
-                result.setdefault(tid, (0, 0))
+        # 查询中连接偶发中断(转发层抖动)时丢弃旧连接、换新连接重试一次;仍失败才降级为 0 价
+        for attempt in (0, 1):
+            try:
+                conn = ctx.get_conn()
+                with conn.cursor() as cursor:
+                    placeholders = ','.join(['%s'] * len(missing))
+                    sql = (f"SELECT type_id, buy_max, sell_min FROM market_prices "
+                           f"WHERE region_id = %s AND type_id IN ({placeholders})")
+                    cursor.execute(sql, [REGION_ID, *missing])
+                    rows = {row[0]: (row[1], row[2]) for row in cursor.fetchall()}
+                for tid in missing:
+                    pair = rows.get(tid, (0, 0))
+                    ctx.price_cache[tid] = pair
+                    result[tid] = pair
+                break
+            except (pymysql.Error, OSError) as e:
+                ctx.close()
+                if attempt == 1:
+                    print(f"数据库错误: {e}")
+                    for tid in missing:
+                        result.setdefault(tid, (0, 0))
 
     return result
 
@@ -313,17 +328,19 @@ def get_catalog():
     返回列表,形如 [{'id':34,'name':'三钛合金','buy_max':9.58,'sell_min':10,'tier':'其他'}, ...]
     """
     conn = None
-    try:
-        conn = pymysql.connect(**load_db_config())
-        with conn.cursor() as cursor:
-            cursor.execute("""
-                SELECT i.type_id, i.name, p.buy_max, p.sell_min, p.updated_at, i.category
-                FROM items i
-                LEFT JOIN market_prices p
-                    ON p.type_id = i.type_id AND p.region_id = %s
-                ORDER BY i.name ASC
-            """, (REGION_ID,))
-            rows = cursor.fetchall()
+    # 连接偶发中断(转发层抖动)时自动重试一次
+    for attempt in (0, 1):
+        try:
+            conn = pymysql.connect(**load_db_config())
+            with conn.cursor() as cursor:
+                cursor.execute("""
+                    SELECT i.type_id, i.name, p.buy_max, p.sell_min, p.updated_at, i.category
+                    FROM items i
+                    LEFT JOIN market_prices p
+                        ON p.type_id = i.type_id AND p.region_id = %s
+                    ORDER BY i.name ASC
+                """, (REGION_ID,))
+                rows = cursor.fetchall()
             return [
                 {
                     'id': row[0],
@@ -335,12 +352,15 @@ def get_catalog():
                 }
                 for row in rows
             ]
-    except pymysql.Error as e:
-        print(f"读取目录失败: {e}")
-        return []
-    finally:
-        if conn:
-            conn.close()
+        except (pymysql.Error, OSError) as e:
+            if attempt == 1:
+                print(f"读取目录失败: {e}")
+                return []
+            time.sleep(0.1)
+        finally:
+            if conn:
+                conn.close()
+                conn = None
 
 
 def get_recipes():
