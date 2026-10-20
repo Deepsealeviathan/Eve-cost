@@ -132,6 +132,27 @@
             gap: 20px;
         }
 
+        /* ===== 顶部统一导航 ===== */
+        .top-nav{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 16px}
+        .top-nav a{padding:7px 16px;border-radius:999px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);color:#e8eef7;text-decoration:none;font-size:13px;transition:background .15s}
+        .top-nav a:hover{background:rgba(255,255,255,.18)}
+        .top-nav a.active{background:rgba(86,156,255,.28);border-color:rgba(86,156,255,.55);color:#fff}
+
+        /* ===== 全局提示条(替代原生 alert) ===== */
+        .toast{position:fixed;top:20px;left:50%;transform:translateX(-50%);z-index:999;display:none;padding:10px 20px;border-radius:10px;background:rgba(28,36,48,.96);border:1px solid rgba(255,255,255,.18);color:#e8eef7;font-size:14px;box-shadow:0 8px 28px rgba(0,0,0,.4)}
+        .toast.err{border-color:rgba(255,110,110,.65);color:#ffb4b4}
+
+        /* ===== 数据加载失败横幅 ===== */
+        .load-error {
+            background: rgba(239, 68, 68, 0.12);
+            border: 1px solid rgba(239, 68, 68, 0.45);
+            border-radius: 12px;
+            padding: 12px 16px;
+            font-size: 14px;
+            font-weight: 600;
+            color: #b91c1c;
+        }
+
         .topbar {
             display: flex;
             justify-content: space-between;
@@ -142,17 +163,6 @@
             color: #f9fafb;
             text-shadow: 0 2px 12px rgba(0, 0, 0, 0.4);
         }
-        .nav-link {
-            color: #c7d2fe;
-            text-decoration: none;
-            font-size: 14px;
-            background: rgba(79, 70, 229, 0.35);
-            padding: 8px 16px;
-            border-radius: 12px;
-            border: 1px solid rgba(199, 210, 254, 0.3);
-            transition: background 0.2s;
-        }
-        .nav-link:hover { background: rgba(79, 70, 229, 0.6); }
 
         .card {
             background: var(--card);
@@ -171,6 +181,19 @@
             color: var(--muted);
             padding: 60px 20px;
             font-size: 15px;
+        }
+
+        /* 查询中状态(结果面板顶部) */
+        .query-status {
+            margin-bottom: 14px;
+            padding: 10px 14px;
+            border-radius: 10px;
+            background: rgba(79, 70, 229, 0.08);
+            border: 1px dashed rgba(79, 70, 229, 0.4);
+            color: var(--primary-dark);
+            font-size: 14px;
+            font-weight: 600;
+            text-align: center;
         }
 
         /* 选中组件头 */
@@ -328,16 +351,24 @@
     </aside>
 
     <main class="main">
+        <nav class="top-nav">
+          <a href="/">📦 成本查询</a>
+          <a href="/components" class="active">🛠️ 组件计算器</a>
+          <a href="/bom">🧾 清单汇总</a>
+          <a href="/profit">💰 利润排行</a>
+        </nav>
         <div class="topbar">
             <h1>🛠️ 组件制造计算器</h1>
-            <a class="nav-link" href="/">← 返回成本查询</a>
         </div>
+
+        <div class="load-error" id="catalog-error" style="display:none;">目录加载失败,请刷新重试</div>
 
         <div class="card" id="workbench">
             <div class="placeholder">👈 从左侧目录点击选择一个组件,<br>即可查看制造材料与建筑加成减免</div>
         </div>
 
         <div class="card" id="result-card" style="display:none;">
+            <div class="query-status" id="query-status" style="display:none;">⏳ 查询中...</div>
             <div class="item-head">
                 <div>
                     <span class="item-name" id="item-name"></span><span class="item-tier" id="item-tier"></span>
@@ -427,6 +458,7 @@
 // ==========================================
 const COMP_TIERS = ['旗舰基础组件', '旗舰高级组件', 'T2制造组件'];
 let catalogItems = [];
+let catalogReady = false;   // 目录是否加载成功;失败后点击目录不再响应
 let activeCat = 'all';
 let selectedName = null;
 
@@ -445,7 +477,7 @@ function buildCats() {
         div.className = 'cat-row' + (activeCat === key ? ' active' : '');
         const n = key === 'all' ? catalogItems.length : catalogItems.filter(i => i.tier === key).length;
         div.innerHTML = `<span>${CAT_LABEL[key]}</span><span class="cat-num">${n}</span>`;
-        div.onclick = () => { activeCat = key; buildCats(); renderList(); };
+        div.onclick = () => { if (!catalogReady) return; activeCat = key; buildCats(); renderList(); };
         box.appendChild(div);
     });
 }
@@ -477,10 +509,20 @@ function renderList() {
 }
 
 async function loadCatalog() {
-    const res = await fetch('/catalog');
-    const json = await res.json();
-    if (!json.success) return;
+    let json;
+    try {
+        const res = await fetch('/catalog');
+        json = await res.json();
+        if (!json.success) throw new Error(json.error || '目录数据异常');
+    } catch (e) {
+        // 加载失败:内容区顶部红色横幅 + 错误提示条,后续点击目录不再响应
+        console.error('目录加载失败:', e);
+        document.getElementById('catalog-error').style.display = 'block';
+        toast('目录加载失败,请刷新重试', true);
+        return;
+    }
     catalogItems = (json.data || []).filter(i => COMP_TIERS.includes(i.tier));
+    catalogReady = true;
     buildCats();
     renderList();
 }
@@ -550,7 +592,7 @@ function buildRigBox() {
             if (document.querySelectorAll('#rig-box input:checked').length > MAX_RIG_SLOTS) {
                 e.target.checked = false;
                 lab.classList.remove('checked');
-                alert(`一座建筑最多同时安装 ${MAX_RIG_SLOTS} 个改装件`);
+                toast(`一座建筑最多同时安装 ${MAX_RIG_SLOTS} 个改装件`, true);
                 return;
             }
             lab.classList.toggle('checked', cb.checked);
@@ -599,13 +641,22 @@ let querySeq = 0;     // 选择序号:快速连点时只应用最新一次的查
 let lastAbort = null; // 中断上一次还在途的查询,避免请求堆积
 
 async function selectItem(name) {
+    if (!catalogReady) return;   // 目录未加载成功,点击不响应
     selectedName = name;
     renderList();
     const seq = ++querySeq;
     if (lastAbort) lastAbort.abort();
     lastAbort = new AbortController();
 
+    // 查询中状态:结果面板顶部提示,请求结束(成功或失败)后隐藏
+    const hadResult = !!current;
+    const status = document.getElementById('query-status');
+    status.style.display = 'block';
+    document.getElementById('workbench').style.display = 'none';
+    document.getElementById('result-card').style.display = 'block';
+
     let json;
+    let errMsg = null;   // 网络异常时的提示文案(与接口报错区分)
     try {
         const res = await fetch('/query', {
             method: 'POST',
@@ -618,12 +669,17 @@ async function selectItem(name) {
         // 被更新的点击取代的请求:静默忽略;真异常才提示,且不弹原始报错文本
         if (e.name === 'AbortError' || seq !== querySeq) return;
         console.error('查询失败:', e);
-        alert('网络开小差了,请稍后重试');
-        return;
+        errMsg = '网络开小差了,请稍后重试';
     }
     if (seq !== querySeq) return;  // 过期响应(期间又点了别的物品),丢弃防止串台
-    if (!json.success) {
-        alert(json.error || '查询失败');
+    status.style.display = 'none';
+    if (errMsg || !json || !json.success) {
+        // 查询失败:已有结果则保留旧结果展示,否则退回占位提示
+        if (!hadResult) {
+            document.getElementById('result-card').style.display = 'none';
+            document.getElementById('workbench').style.display = 'block';
+        }
+        toast(errMsg || (json && json.error) || '查询失败', true);
         return;
     }
     const item = catalogItems.find(i => i.name === name);
@@ -742,13 +798,22 @@ document.getElementById('me-input').addEventListener('input', recalc);
 // ==========================================
 // 工具函数
 // ==========================================
+// 统一金额格式化:千分位分隔,最多保留两位小数
 function fmt(n) {
-    if (n === null || n === undefined || isNaN(n)) return '-';
-    if (n === 0) return '0';
-    if (Math.abs(n) >= 1e9) return (n / 1e9).toFixed(2) + ' B';
-    if (Math.abs(n) >= 1e6) return (n / 1e6).toFixed(2) + ' M';
-    if (Math.abs(n) >= 1e4) return (n / 1e3).toFixed(1) + ' K';
-    return n.toLocaleString('zh-CN', { maximumFractionDigits: 2 });
+  if (n === null || n === undefined || isNaN(n)) return '-';
+  return Number(n).toLocaleString('zh-CN', { maximumFractionDigits: 2 });
+}
+
+// 全局提示条:错误场景传 isErr = true
+let _toastTimer = null;
+function toast(msg, isErr) {
+  let el = document.getElementById('page-toast');
+  if (!el) { el = document.createElement('div'); el.id = 'page-toast'; document.body.appendChild(el); }
+  el.textContent = msg;
+  el.className = 'toast' + (isErr ? ' err' : '');
+  el.style.display = 'block';
+  clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(() => { el.style.display = 'none'; }, 3200);
 }
 
 fillSelects();

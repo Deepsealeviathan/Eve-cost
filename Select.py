@@ -301,8 +301,6 @@ def query_by_name(name, quantity=1, _ctx=None):
             print(f"错误：未找到 {name}.json（已搜索全部配方目录）")
             return None
 
-        print(f"找到文件: {json_path}")
-
         try:
             data = _load_recipe_json(json_path)
         except Exception as e:
@@ -403,3 +401,141 @@ def get_recipes():
                 ] if recipe else [],
             })
     return recipes
+
+
+def _has_missing_material(materials):
+    """材料树中任意层级是否存在缺失/无价的材料(missing 标志)。"""
+    for m in materials or []:
+        if m.get('missing'):
+            return True
+        if _has_missing_material(m.get('sub_materials')):
+            return True
+    return False
+
+
+def compute_profit_rows():
+    """
+    遍历全部"可制造物品"(有配方且有输入),计算单件合成成本与市场价。
+    供 update_market.py 在行情更新后预计算利润快照使用。
+
+    全程共享一个 _QueryContext:数据库连接与价格缓存只建一份,
+    250+ 个物品的递归展开实际只打一次数据库批量查询。
+    返回行列表: [{type_id, name, category, unit_cost_instant, unit_cost_buyorder,
+                  market_sell_min, market_buy_max, complete}]
+    """
+    rows = []
+    ctx = _QueryContext()
+    try:
+        for r in get_recipes():
+            if not r['outputCount'] or not r['inputs'] or r['id'] is None:
+                continue
+            result = query_by_name(r['name'], 1, _ctx=ctx)
+            if result is None:
+                continue
+            cost_instant = result.get('total_sell') or 0
+            cost_buyorder = result.get('total_buy') or 0
+            # 材料树有缺价材料、或成本为 0(全部材料无价)时,快照标记为不可信
+            complete = 0 if (_has_missing_material(result.get('materials')) or cost_instant <= 0) else 1
+            rows.append({
+                'type_id': r['id'],
+                'name': r['name'],
+                'category': r['tier'],
+                'unit_cost_instant': cost_instant,
+                'unit_cost_buyorder': cost_buyorder,
+                'market_sell_min': result.get('market_sell') or 0,
+                'market_buy_max': result.get('market_buy') or 0,
+                'complete': complete,
+            })
+    finally:
+        ctx.close()
+    return rows
+
+
+def get_profit_snapshot():
+    """
+    读取利润快照表(利润排行页数据源)。
+    表尚不存在(未跑过更新流水线 / 未升级 schema)时返回空结果而不是报错,
+    前端据此提示"快照尚未生成"。
+    """
+    conn = None
+    for attempt in (0, 1):
+        try:
+            conn = pymysql.connect(**load_db_config())
+            with conn.cursor() as cursor:
+                cursor.execute("SELECT MAX(updated_at) FROM profit_snapshot")
+                updated_at = cursor.fetchone()[0]
+                cursor.execute("""
+                    SELECT type_id, name, category, unit_cost_instant, unit_cost_buyorder,
+                           market_sell_min, market_buy_max, complete
+                    FROM profit_snapshot
+                """)
+                rows = cursor.fetchall()
+            return {
+                'updated_at': str(updated_at) if updated_at else None,
+                'items': [
+                    {
+                        'type_id': row[0],
+                        'name': row[1],
+                        'category': row[2],
+                        'unit_cost_instant': row[3],
+                        'unit_cost_buyorder': row[4],
+                        'market_sell_min': row[5],
+                        'market_buy_max': row[6],
+                        'complete': row[7],
+                    }
+                    for row in rows
+                ],
+            }
+        except (pymysql.Error, OSError) as e:
+            # 1146 = 表不存在:尚未生成过快照,按空数据返回
+            if getattr(e, 'args', [None])[0] == 1146:
+                return {'updated_at': None, 'items': []}
+            if attempt == 1:
+                print(f"读取利润快照失败: {e}")
+                return {'updated_at': None, 'items': []}
+            time.sleep(0.1)
+        finally:
+            if conn:
+                conn.close()
+                conn = None
+
+
+def get_price_history(type_id):
+    """
+    读取单个物品的历史日线(近 90 天,由 update_market.py 增量维护),供趋势图使用。
+    表不存在或无数据时返回空列表。
+    """
+    conn = None
+    for attempt in (0, 1):
+        try:
+            conn = pymysql.connect(**load_db_config())
+            with conn.cursor() as cursor:
+                cursor.execute("""
+                    SELECT date, average, highest, lowest, volume, order_count
+                    FROM price_history
+                    WHERE type_id = %s
+                    ORDER BY date ASC
+                """, (type_id,))
+                rows = cursor.fetchall()
+            return [
+                {
+                    'date': str(row[0]),
+                    'average': row[1],
+                    'highest': row[2],
+                    'lowest': row[3],
+                    'volume': row[4],
+                    'order_count': row[5],
+                }
+                for row in rows
+            ]
+        except (pymysql.Error, OSError) as e:
+            if getattr(e, 'args', [None])[0] == 1146:
+                return []
+            if attempt == 1:
+                print(f"读取历史行情失败: {e}")
+                return []
+            time.sleep(0.1)
+        finally:
+            if conn:
+                conn.close()
+                conn = None

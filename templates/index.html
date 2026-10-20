@@ -21,6 +21,14 @@
             --border: rgba(0, 0, 0, 0.06);
         }
 
+        /* 顶部统一导航(四页风格一致,放在深色背景上) */
+        .top-nav{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 16px}
+        .top-nav a{padding:7px 16px;border-radius:999px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);color:#e8eef7;text-decoration:none;font-size:13px;transition:background .15s}
+        .top-nav a:hover{background:rgba(255,255,255,.18)}
+        .top-nav a.active{background:rgba(86,156,255,.28);border-color:rgba(86,156,255,.55);color:#fff}
+        /* 导航与 .page 内容列同宽居中,避免宽屏下与内容脱节 */
+        body > .top-nav { max-width: 1440px; margin-left: auto; margin-right: auto; }
+
         body {
             font-family: "Microsoft YaHei", "PingFang SC", Arial, sans-serif;
             background:
@@ -134,6 +142,21 @@
             border-color: var(--primary);
             background: #fff;
             box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.12);
+        }
+
+        /* 行情更新时间小字:数据超过 6 小时未更新时整行变警示黄 */
+        .catalog-freshness {
+            font-size: 12px;
+            color: var(--muted);
+            margin: 0 0 10px;
+        }
+
+        .catalog-freshness.stale-warn {
+            color: #8a5a00;
+            background: rgba(255, 212, 121, 0.4);
+            border-radius: 8px;
+            padding: 5px 10px;
+            font-weight: 600;
         }
 
         /* 目录分类：大类 / 小类(分类按钮过多时内部滚动,不挤压下方物品列表) */
@@ -325,7 +348,7 @@
             align-items: center;
         }
 
-        .btn-add, .btn-query, .btn-parse {
+        .btn-add, .btn-query, .btn-parse, .btn-copy {
             border: none;
             padding: 12px 26px;
             border-radius: 12px;
@@ -337,18 +360,21 @@
             box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
         }
 
-        .btn-add:hover, .btn-query:hover, .btn-parse:hover {
+        .btn-add:hover, .btn-query:hover, .btn-parse:hover, .btn-copy:hover {
             transform: translateY(-2px);
             box-shadow: 0 8px 22px rgba(0, 0, 0, 0.18);
         }
 
-        .btn-add:active, .btn-query:active, .btn-parse:active { transform: translateY(0); }
+        .btn-add:active, .btn-query:active, .btn-parse:active, .btn-copy:active { transform: translateY(0); }
 
         .btn-add { background: linear-gradient(135deg, var(--success) 0%, #059669 100%); }
         .btn-query { background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%); }
         .btn-parse { background: linear-gradient(135deg, var(--accent) 0%, #0891b2 100%); }
 
-        .btn-add:disabled, .btn-query:disabled, .btn-parse:disabled {
+        /* 次要操作按钮(复制链接 / 导出 CSV 等):白底描边,与主按钮区分 */
+        .btn-copy { background: #fff; color: var(--primary); border: 1px solid var(--primary); }
+
+        .btn-add:disabled, .btn-query:disabled, .btn-parse:disabled, .btn-copy:disabled {
             opacity: 0.6;
             cursor: not-allowed;
             transform: none;
@@ -362,6 +388,20 @@
             border-radius: 12px;
             margin-top: 18px;
             border: 1px solid #fecaca;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* 未找到物品的黄色警示条(结果区上方) */
+        .warn {
+            color: #92400e;
+            background: #fffbeb;
+            padding: 14px 18px;
+            border-radius: 12px;
+            margin-top: 18px;
+            border: 1px solid #fde68a;
             font-size: 14px;
             display: flex;
             align-items: center;
@@ -566,7 +606,41 @@
         .modal-value.buy { color: var(--success); }
         .modal-value.sell { color: #d97706; }
 
+        /* 弹窗内「近 90 天走势」区块 */
+        .modal-section-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #374151;
+            margin: 18px 0 10px;
+        }
+
+        .modal-chart {
+            height: 140px;
+            background: #f8fafc;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        .modal-chart svg { width: 100%; height: 140px; display: block; }
+
+        .chart-empty { color: #9ca3af; font-size: 13px; }
+
+        /* 弹窗底部操作区(加入批量查询) */
+        .modal-actions {
+            margin-top: 18px;
+            display: flex;
+            justify-content: center;
+        }
+
         .hidden { display: none; }
+
+        /* 全局提示条(四页统一 toast) */
+        .toast{position:fixed;top:20px;left:50%;transform:translateX(-50%);z-index:999;display:none;padding:10px 20px;border-radius:10px;background:rgba(28,36,48,.96);border:1px solid rgba(255,255,255,.18);color:#e8eef7;font-size:14px;box-shadow:0 8px 28px rgba(0,0,0,.4)}
+        .toast.err{border-color:rgba(255,110,110,.65);color:#ffb4b4}
 
         @media (max-width: 900px) {
             .page { flex-direction: column; align-items: stretch; }
@@ -590,12 +664,19 @@
     </style>
 </head>
 <body>
+    <nav class="top-nav">
+        <a href="/" class="active">📦 成本查询</a>
+        <a href="/components">🛠️ 组件计算器</a>
+        <a href="/bom">🧾 清单汇总</a>
+        <a href="/profit">💰 利润排行</a>
+    </nav>
     <div class="page">
         <aside class="sidebar">
             <div class="sidebar-header">
                 <div class="sidebar-title">📚 物品目录</div>
             </div>
             <input type="text" id="catalog-search" class="catalog-search" placeholder="🔍 搜索物品...">
+            <div class="catalog-freshness" id="catalog-freshness"></div>
             <div class="catalog-cats" id="catalog-cats"></div>
             <ul class="catalog-list" id="catalog-list">
                 <li style="color:#9ca3af; cursor:default;">加载中...</li>
@@ -604,7 +685,7 @@
         </aside>
 
         <main class="container">
-            <h2>🔧 EVE 批量制作成本查询 <a href="/components" style="font-size:13px; font-weight:normal; margin-left:12px; color:#c7d2fe; text-decoration:none; background:rgba(79,70,229,0.35); padding:6px 14px; border-radius:10px; border:1px solid rgba(199,210,254,0.3); vertical-align:middle;">🛠️ 组件制造计算器 →</a><a href="/bom" style="font-size:13px; font-weight:normal; margin-left:8px; color:#c7d2fe; text-decoration:none; background:rgba(79,70,229,0.35); padding:6px 14px; border-radius:10px; border:1px solid rgba(199,210,254,0.3); vertical-align:middle;">🧾 制造清单汇总 →</a></h2>
+            <h2>🔧 EVE 批量制作成本查询</h2>
 
             <div class="paste-section">
                 <div class="section-label">📋 批量粘贴区</div>
@@ -616,7 +697,8 @@
                 <div class="actions" style="margin-top: 14px;">
                     <button class="btn-parse" onclick="parsePaste()">解析粘贴内容</button>
                     <button class="btn-add" onclick="addQueryRow()">+ 手动添加物品</button>
-                    <button class="btn-query" onclick="doBatchQuery()">批量查询</button>
+                    <button class="btn-query" id="btn-query" onclick="doBatchQuery()">批量查询</button>
+                    <button class="btn-copy" onclick="copyShareLink()">🔗 复制链接</button>
                 </div>
             </div>
 
@@ -630,6 +712,7 @@
             </div>
 
             <div id="error" class="error hidden"></div>
+            <div id="not-found" class="warn hidden"></div>
 
             <div id="result" class="hidden">
                 <h3 id="result-title"></h3>
@@ -665,6 +748,10 @@
                         <span><span id="total-sell" class="value"></span> ISK</span>
                     </div>
                 </div>
+                <div class="actions" style="margin-top: 18px;">
+                    <button class="btn-copy" onclick="exportCsv()">⬇️ 导出 CSV</button>
+                    <button class="btn-copy" onclick="copyCsvData()">📋 复制数据</button>
+                </div>
             </div>
         </main>
     </div>
@@ -685,6 +772,11 @@
                 <span class="modal-label">更新时间</span>
                 <span class="modal-value" id="modal-update-time" style="color:#374151;"></span>
             </div>
+            <div class="modal-section-title">📈 近 90 天走势</div>
+            <div class="modal-chart" id="modal-chart"></div>
+            <div class="modal-actions">
+                <button class="btn-copy" onclick="addToQueryFromModal()">➕ 加入批量查询</button>
+            </div>
         </div>
     </div>
 
@@ -692,6 +784,32 @@
         const errorDiv = document.getElementById('error');
         const resultDiv = document.getElementById('result');
         const modalOverlay = document.getElementById('modal-overlay');
+
+        // ==========================================
+        // 公共工具:提示条 / 相对时间
+        // ==========================================
+        let _toastTimer = null;
+        function toast(msg, isErr) {
+            let el = document.getElementById('page-toast');
+            if (!el) { el = document.createElement('div'); el.id = 'page-toast'; document.body.appendChild(el); }
+            el.textContent = msg;
+            el.className = 'toast' + (isErr ? ' err' : '');
+            el.style.display = 'block';
+            clearTimeout(_toastTimer);
+            _toastTimer = setTimeout(() => { el.style.display = 'none'; }, 3200);
+        }
+
+        function relTime(iso) {
+            if (!iso || iso === '-') return '';
+            const t = new Date(iso.replace(' ', 'T'));
+            if (isNaN(t)) return '';
+            const mins = Math.floor((Date.now() - t.getTime()) / 60000);
+            if (mins < 1) return '刚刚';
+            if (mins < 60) return mins + ' 分钟前';
+            const hours = Math.floor(mins / 60);
+            if (hours < 24) return hours + ' 小时前';
+            return Math.floor(hours / 24) + ' 天前';
+        }
 
         // ==========================================
         // 物品目录（搜索 + 分类）
@@ -711,7 +829,12 @@
         ];
 
         // 新分类的显示顺序与图标；未列出的分类自动排在已知名分类之后、「其他」固定在最后
-        const CAT_ORDER = ['矿物', '卫星原料', '气云', '燃料', '混合聚合物', '中间产物', '合成物', '挖坟材料'];
+        // 覆盖 categories.json 全部 14 个分类:原材料在前、反应中间产物次之、组件类靠后
+        const CAT_ORDER = [
+            '矿物', '卫星原料', '气云', '燃料', '混合聚合物', '中间产物', '合成物',
+            '分子锻造材料', '挖坟材料', '旗舰基础组件', '旗舰高级组件', 'T2制造组件',
+            '深渊材料', '旗舰组件材料',
+        ];
         const CAT_META = {
             '矿物':     { icon: '⛏️' },
             '卫星原料': { icon: '🌙' },
@@ -721,6 +844,12 @@
             '中间产物': { icon: '⚗️' },
             '合成物':   { icon: '🧪' },
             '挖坟材料': { icon: '🏺' },
+            '分子锻造材料': { icon: '⚛️' },
+            '旗舰基础组件': { icon: '🧱' },
+            '旗舰高级组件': { icon: '🛠️' },
+            'T2制造组件': { icon: '⚙️' },
+            '深渊材料': { icon: '🌀' },
+            '旗舰组件材料': { icon: '🔩' },
         };
 
         // 从当前物品数据中动态构建完整分类列表
@@ -751,11 +880,12 @@
             return catalogItems.filter(i => itemTier(i) === key).length;
         }
 
-        // 当前筛选结果：搜索时全局匹配名称（忽略分类），空搜索按所选分类过滤
+        // 当前筛选结果：搜索时全局匹配名称（忽略分类、不区分大小写），空搜索按所选分类过滤
         function filteredItems() {
             const kw = document.getElementById('catalog-search').value.trim();
             if (kw) {
-                return catalogItems.filter(i => i.name.includes(kw));
+                const kwLower = kw.toLowerCase();
+                return catalogItems.filter(i => i.name.toLowerCase().includes(kwLower));
             }
             if (activeCat === 'all') return catalogItems;
             if (activeCat === '行星商品') {
@@ -777,7 +907,7 @@
                     const li = document.createElement('li');
                     li.textContent = item.name;
                     li.title = `点击查看 ${item.name} 的价格`;
-                    li.onclick = () => openModal(item.name, item.buy_max, item.sell_min, item.update_time);
+                    li.onclick = () => openModal(item.name, item.buy_max, item.sell_min, item.update_time, item.id);
                     list.appendChild(li);
                 });
             }
@@ -796,6 +926,28 @@
             });
         }
 
+        // 行情新鲜度:取目录全部物品 update_time 的最大值,超过 6 小时整行警示
+        function renderFreshness() {
+            const el = document.getElementById('catalog-freshness');
+            let maxTs = 0, maxIso = '';
+            catalogItems.forEach(i => {
+                const iso = String(i.update_time || '');
+                const ts = new Date(iso.replace(' ', 'T')).getTime();
+                if (!isNaN(ts) && ts > maxTs) { maxTs = ts; maxIso = iso; }
+            });
+            if (!maxTs) {
+                el.textContent = '行情更新:-';
+                el.classList.remove('stale-warn');
+                return;
+            }
+            el.textContent = '行情更新:' + relTime(maxIso);
+            if (Date.now() - maxTs > 6 * 60 * 60 * 1000) {
+                el.classList.add('stale-warn');
+            } else {
+                el.classList.remove('stale-warn');
+            }
+        }
+
         async function loadCatalog() {
             const list = document.getElementById('catalog-list');
 
@@ -811,6 +963,7 @@
                 catalogItems = json.data || [];
                 renderCats();
                 renderCatalog();
+                renderFreshness();
             } catch (err) {
                 list.innerHTML = '<li style="color:#b91c1c; cursor:default;">网络错误，无法加载目录</li>';
                 console.error(err);
@@ -823,17 +976,58 @@
         // ==========================================
         // 弹窗控制
         // ==========================================
-        function openModal(name, buyMax, sellMin, updateTime) {
+        let modalItemName = '';      // 当前弹窗展示的物品名,供「加入批量查询」使用
+        let modalHistoryToken = 0;  // 走势图请求令牌:弹窗切换后丢弃过期响应
+
+        function openModal(name, buyMax, sellMin, updateTime, typeId) {
+            modalItemName = name || '';
             document.getElementById('modal-title').textContent = name;
             document.getElementById('modal-buy').textContent = fmt(buyMax);
             document.getElementById('modal-sell').textContent = fmt(sellMin);
             document.getElementById('modal-update-time').textContent = updateTime || '-';
             modalOverlay.classList.remove('hidden');
+            // 异步加载近 90 天走势,不阻塞弹窗展示
+            loadModalHistory(typeId);
         }
 
         function closeModal(event) {
             if (!event || event.target === modalOverlay || event.target.classList.contains('modal-close')) {
                 modalOverlay.classList.add('hidden');
+            }
+        }
+
+        // ESC 关闭弹窗(仅弹窗打开时响应)
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && !modalOverlay.classList.contains('hidden')) {
+                closeModal();
+            }
+        });
+
+        // 弹窗「加入批量查询」:复用加行逻辑追加一行(物品名 + 数量 1)
+        function addToQueryFromModal() {
+            addQueryRow(modalItemName, 1);
+            closeModal();
+            toast('已加入查询列表');
+        }
+
+        // 拉取单个物品近 90 天历史日线并绘制走势图;无 id / 空数据显示「暂无历史数据」
+        async function loadModalHistory(typeId) {
+            const chartBox = document.getElementById('modal-chart');
+            const token = ++modalHistoryToken;
+            if (!typeId) {
+                chartBox.innerHTML = '<div class="chart-empty">暂无历史数据</div>';
+                return;
+            }
+            chartBox.innerHTML = '<div class="chart-empty">加载中...</div>';
+            try {
+                const res = await fetch('/api/history?type_id=' + encodeURIComponent(typeId));
+                const json = await res.json();
+                if (token !== modalHistoryToken) return;  // 弹窗已切换,丢弃过期响应
+                const rows = (json.success && json.data && json.data.rows) ? json.data.rows : [];
+                drawHistoryChart(chartBox, rows);
+            } catch (err) {
+                if (token !== modalHistoryToken) return;
+                chartBox.innerHTML = '<div class="chart-empty">暂无历史数据</div>';
             }
         }
 
@@ -887,27 +1081,33 @@
                 `;
                 container.appendChild(row);
             });
+
+            // 行列表整体被替换,同步进 URL
+            syncListToUrl();
         }
 
         function escapeHtml(text) {
             const div = document.createElement('div');
             div.textContent = text;
-            return div.innerHTML;
+            // 补转义引号:结果会拼进 value="..." 属性,URL 预填的名称可能带引号
+            return div.innerHTML.replace(/"/g, '&quot;');
         }
 
         // ==========================================
         // 添加/删除输入行
         // ==========================================
-        function addQueryRow() {
+        function addQueryRow(name, quantity) {
             const container = document.getElementById('query-list');
             const row = document.createElement('div');
             row.className = 'query-row';
             row.innerHTML = `
-                <input type="text" class="item-name" placeholder="物品名称">
-                <input type="number" class="item-quantity" value="1" min="1">
+                <input type="text" class="item-name" value="${name ? escapeHtml(name) : ''}" placeholder="物品名称">
+                <input type="number" class="item-quantity" value="${quantity || 1}" min="1">
                 <button class="btn-remove" onclick="removeRow(this)">-</button>
             `;
             container.appendChild(row);
+            // 行列表有增改,同步进 URL
+            syncListToUrl();
         }
 
         function removeRow(btn) {
@@ -921,12 +1121,19 @@
                 if (nameInput) nameInput.value = '';
                 if (qtyInput) qtyInput.value = '1';
             }
+            // 行列表有删改,同步进 URL
+            syncListToUrl();
         }
 
         // ==========================================
         // 批量查询
         // ==========================================
+        let batchQuerying = false;  // 查询执行中标志,防止重复提交
+
         async function doBatchQuery() {
+            // 上一次查询还在执行中,直接忽略本次点击
+            if (batchQuerying) return;
+
             const rows = document.querySelectorAll('.query-row');
             const items = [];
 
@@ -944,12 +1151,19 @@
 
             errorDiv.classList.add('hidden');
             resultDiv.classList.add('hidden');
+            document.getElementById('not-found').classList.add('hidden');
 
             if (items.length === 0) {
                 errorDiv.textContent = '请至少输入一个物品';
                 errorDiv.classList.remove('hidden');
                 return;
             }
+
+            // fetch 期间禁用按钮并切换文案,结束后恢复
+            const queryBtn = document.getElementById('btn-query');
+            batchQuerying = true;
+            queryBtn.disabled = true;
+            queryBtn.textContent = '查询中...';
 
             try {
                 const res = await fetch('/query_batch', {
@@ -967,9 +1181,24 @@
                 }
 
                 renderBatchResult(json.data);
+
+                // 部分物品未找到:结果区上方黄条提示 + toast
+                if (json.data.not_found && json.data.not_found.length > 0) {
+                    const nfDiv = document.getElementById('not-found');
+                    nfDiv.textContent = `未找到:${json.data.not_found.join('、')}(已跳过)`;
+                    nfDiv.classList.remove('hidden');
+                    toast('部分物品未找到', true);
+                }
+
+                // 查询成功后把当前行列表(含手动输入/修改)同步进 URL,便于分享
+                syncListToUrl();
             } catch (err) {
                 errorDiv.textContent = '网络请求错误：' + err.message;
                 errorDiv.classList.remove('hidden');
+            } finally {
+                batchQuerying = false;
+                queryBtn.disabled = false;
+                queryBtn.textContent = '批量查询';
             }
         }
 
@@ -1047,6 +1276,7 @@
         // 渲染结果
         // ==========================================
         function renderBatchResult(data) {
+            lastQueryData = data;  // 记录最近一次成功结果,供 CSV 导出/复制使用
             document.getElementById('result-title').textContent = '批量成本估算';
             document.getElementById('total-items').textContent = data.items.length;
             document.getElementById('total-buy').textContent = fmt(data.grand_total_buy);
@@ -1146,12 +1376,196 @@
             btn.textContent = isExpanded ? '▶' : '▼';
         }
 
-        function fmt(num) {
-            if (num === null || num === undefined) return '-';
-            return num.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        // ==========================================
+        // URL 分享(?list= 参数与查询行双向同步)
+        // ==========================================
+        function getQueryRows() {
+            // 读取当前查询行,返回 [{name, qty}, ...],跳过未填名称的行
+            const rows = [];
+            document.querySelectorAll('.query-row').forEach(row => {
+                const nameInput = row.querySelector('.item-name');
+                const qtyInput = row.querySelector('.item-quantity');
+                if (!nameInput || !qtyInput) return;
+                const name = nameInput.value.trim();
+                if (name) rows.push({ name: name, qty: parseInt(qtyInput.value) || 1 });
+            });
+            return rows;
         }
 
-        document.addEventListener('DOMContentLoaded', loadCatalog);
+        function syncListToUrl() {
+            // 把当前查询行编码进 URL;replaceState 不产生历史记录
+            try {
+                const url = new URL(window.location.href);
+                const rows = getQueryRows();
+                if (rows.length > 0) {
+                    url.searchParams.set('list', btoa(unescape(encodeURIComponent(JSON.stringify(rows)))));
+                } else {
+                    url.searchParams.delete('list');
+                }
+                history.replaceState(null, '', url);
+            } catch (err) {
+                // 编码失败不影响主流程
+            }
+        }
+
+        function applyListFromUrl() {
+            // 页面加载时解析 ?list= 参数(base64 的 JSON 数组),坏参数静默忽略
+            try {
+                const b64 = new URLSearchParams(window.location.search).get('list');
+                if (!b64) return;
+                const rows = JSON.parse(decodeURIComponent(escape(atob(b64))));
+                if (!Array.isArray(rows)) return;
+                const valid = rows.filter(r => r && typeof r.name === 'string' && r.name.trim());
+                if (valid.length === 0) return;
+                const container = document.getElementById('query-list');
+                container.innerHTML = '';
+                valid.forEach(r => addQueryRow(r.name.trim(), parseInt(r.qty) || 1));
+            } catch (err) {
+                // 坏参数静默忽略,保持默认查询行
+            }
+        }
+
+        function copyShareLink() {
+            // 复制当前查询行对应的完整分享链接(含 list 参数)
+            try {
+                const url = new URL(window.location.href);
+                const rows = getQueryRows();
+                if (rows.length > 0) {
+                    url.searchParams.set('list', btoa(unescape(encodeURIComponent(JSON.stringify(rows)))));
+                } else {
+                    url.searchParams.delete('list');
+                }
+                copyText(url.toString(), () => toast('链接已复制'));
+            } catch (err) {
+                toast('复制失败', true);
+            }
+        }
+
+        // 复制文本到剪贴板;剪贴板 API 不可用/失败时降级 textarea + execCommand
+        function copyText(text, onSuccess) {
+            const fallback = () => {
+                const ta = document.createElement('textarea');
+                ta.value = text;
+                ta.style.position = 'fixed';
+                ta.style.opacity = '0';
+                document.body.appendChild(ta);
+                ta.select();
+                let ok = false;
+                try { ok = document.execCommand('copy'); } catch (err) { ok = false; }
+                document.body.removeChild(ta);
+                if (ok) {
+                    onSuccess();
+                } else {
+                    toast('复制失败', true);
+                }
+            };
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(text).then(onSuccess, fallback);
+            } else {
+                fallback();
+            }
+        }
+
+        // ==========================================
+        // CSV 导出 / 复制(批量查询成功后可用)
+        // ==========================================
+        let lastQueryData = null;  // 最近一次成功的批量查询结果
+
+        function csvCell(v) {
+            // 含逗号/引号/换行的字段按 CSV 规范加引号转义
+            const s = String(v);
+            if (/[",\n\r]/.test(s)) return '"' + s.replace(/"/g, '""') + '"';
+            return s;
+        }
+
+        function round2(n) {
+            return Math.round((Number(n) || 0) * 100) / 100;
+        }
+
+        function buildCsv(data) {
+            // 列:物品,数量,单件成本(卖单价采购),总成本(卖单价采购),总成本(买单价采购);末行仅合计两个总成本
+            const lines = [['物品', '数量', '单件成本(卖单价采购)', '总成本(卖单价采购)', '总成本(买单价采购)'].join(',')];
+            data.items.forEach(item => {
+                const qty = item.quantity || 1;
+                const unitSell = qty ? item.total_sell / qty : 0;
+                lines.push([csvCell(item.name), qty, round2(unitSell), round2(item.total_sell), round2(item.total_buy)].join(','));
+            });
+            lines.push([csvCell('合计'), '', '', round2(data.grand_total_sell), round2(data.grand_total_buy)].join(','));
+            return lines.join('\r\n');
+        }
+
+        function exportCsv() {
+            if (!lastQueryData) return;
+            // 带 BOM 保证 Excel 正确识别 UTF-8 中文
+            const blob = new Blob(['\ufeff' + buildCsv(lastQueryData)], { type: 'text/csv;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'eve-cost.csv';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        function copyCsvData() {
+            if (!lastQueryData) return;
+            copyText(buildCsv(lastQueryData), () => toast('数据已复制'));
+        }
+
+        // ==========================================
+        // 近 90 天走势图(内联 SVG 手绘,无外部库)
+        // ==========================================
+        function drawHistoryChart(container, rows) {
+            if (!container) return;
+            if (!rows || rows.length < 2) {
+                container.innerHTML = '<div class="chart-empty">暂无历史数据</div>';
+                return;
+            }
+
+            const W = 320, H = 140;        // 与 viewBox 一致
+            const left = 10, right = 310;  // 折线横向范围
+            const top = 24, bottom = 116;  // 折线纵向范围:上方留价格标注,下方留日期
+
+            const values = rows.map(r => { const v = Number(r.average); return isNaN(v) ? 0 : v; });
+            const vMax = Math.max(...values);
+            const vMin = Math.min(...values);
+            // 所有点相同则人为撑开区间,避免 y 轴映射除零
+            let scaleMax = vMax, scaleMin = vMin;
+            if (scaleMax === scaleMin) { scaleMax = vMax + 1; scaleMin = vMin - 1; }
+
+            const xStep = (right - left) / (rows.length - 1);
+            const y = v => bottom - (v - scaleMin) / (scaleMax - scaleMin) * (bottom - top);
+
+            const pts = rows.map((r, i) => `${(left + i * xStep).toFixed(1)},${y(values[i]).toFixed(1)}`);
+            const linePoints = pts.join(' ');
+            // 折线同一路径向下闭合,形成面积填充
+            const areaPoints = `${left},${bottom} ${linePoints} ${right},${bottom}`;
+            const lastX = left + (rows.length - 1) * xStep;
+            const lastY = y(values[values.length - 1]);
+
+            container.innerHTML = `
+                <svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
+                    <polygon points="${areaPoints}" fill="rgba(90,169,255,.12)"></polygon>
+                    <polyline points="${linePoints}" fill="none" stroke="#5aa9ff" stroke-width="1.5"></polyline>
+                    <circle cx="${lastX.toFixed(1)}" cy="${lastY.toFixed(1)}" r="3" fill="#5aa9ff"></circle>
+                    <text x="${left}" y="12" font-size="11" fill="#9db3cc">最高 ${fmt(vMax)}</text>
+                    <text x="${right}" y="12" font-size="11" fill="#9db3cc" text-anchor="end">最低 ${fmt(vMin)}</text>
+                    <text x="${left}" y="${H - 6}" font-size="10" fill="#7d93ad">${rows[0].date}</text>
+                    <text x="${right}" y="${H - 6}" font-size="10" fill="#7d93ad" text-anchor="end">${rows[rows.length - 1].date}</text>
+                </svg>`;
+        }
+
+        function fmt(n) {
+            if (n === null || n === undefined || isNaN(n)) return '-';
+            return Number(n).toLocaleString('zh-CN', { maximumFractionDigits: 2 });
+        }
+
+        // 页面加载:先恢复 URL 中的查询行,再加载物品目录
+        document.addEventListener('DOMContentLoaded', () => {
+            applyListFromUrl();
+            loadCatalog();
+        });
     </script>
 </body>
 </html>

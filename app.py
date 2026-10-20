@@ -25,7 +25,7 @@ import update_market
 # query_by_name: 读取 JSON 制作清单并查询数据库计算成本
 # get_catalog: 物品目录
 # get_recipes: 全部配方轻量索引
-from Select import query_by_name, get_catalog, get_recipes
+from Select import query_by_name, get_catalog, get_recipes, get_profit_snapshot, get_price_history
 
 # 配置加载:数据库连接 / 管理员密钥 / 定时任务参数
 from db_config import load_db_config, load_security_config, load_schedule_config
@@ -213,6 +213,8 @@ def query_batch():
 
         # 初始化空列表，用于存放每个物品查询成功的结果
         results = []
+        # 收集查询失败(无配方文件/格式错误)的物品名,返回给前端提示而不是静默丢弃
+        not_found = []
         # 初始化数字 0，用于累加所有物品的收购价总成本
         grand_total_buy = 0
         # 初始化数字 0，用于累加所有物品的出售价总成本
@@ -247,6 +249,9 @@ def query_batch():
                 grand_total_buy += result['total_buy']
                 # 将该物品的出售总成本累加到全局出售价总价
                 grand_total_sell += result['total_sell']
+            else:
+                # 查询失败的物品记入未找到清单,前端据此明确提示,而不是静默少算
+                not_found.append(name)
 
         # 所有物品处理完毕，构造 JSON 响应返回给前端
         return jsonify({
@@ -259,7 +264,9 @@ def query_batch():
                 # grand_total_buy: 所有物品收购价的总和
                 'grand_total_buy': grand_total_buy,
                 # grand_total_sell: 所有物品出售价的总和
-                'grand_total_sell': grand_total_sell
+                'grand_total_sell': grand_total_sell,
+                # not_found: 查询失败的物品名列表(无配方文件/格式错误)
+                'not_found': not_found
             }
         })
 
@@ -342,6 +349,37 @@ def recipes():
         return jsonify({'success': True, 'data': get_recipes()})
     except Exception as e:
         return _api_error(e, '配方加载失败,请稍后刷新重试')
+
+
+# ================== 利润排行与历史行情(0.8.0,游客可用) ==================
+@app.route('/profit')
+def profit_page():
+    """利润排行页:读取行情更新后预计算的利润快照,按利润/利润率排序浏览"""
+    return render_template('profit.html')
+
+
+@app.route('/api/profit', methods=['GET'])
+def api_profit():
+    """返回利润快照:全部可制造物品的单件成本与市场价(利润由前端按税率现算)"""
+    try:
+        return jsonify({'success': True, 'data': get_profit_snapshot()})
+    except Exception as e:
+        return _api_error(e, '利润数据加载失败,请稍后刷新重试')
+
+
+@app.route('/api/history', methods=['GET'])
+def api_history():
+    """返回单个物品的历史日线(近 90 天),供趋势图使用"""
+    try:
+        raw = request.args.get('type_id', '')
+        try:
+            type_id = int(raw)
+        except (TypeError, ValueError):
+            return jsonify({'success': False, 'error': '参数 type_id 必须是数字'}), 400
+        return jsonify({'success': True,
+                        'data': {'type_id': type_id, 'rows': get_price_history(type_id)}})
+    except Exception as e:
+        return _api_error(e, '历史行情加载失败,请稍后重试')
 
 
 # ================== 定时行情更新(后台线程) ==================

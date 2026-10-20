@@ -1,0 +1,782 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EVE 制造利润排行</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --primary: #4f46e5;
+            --primary-dark: #3730a3;
+            --accent: #06b6d4;
+            --success: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --bg: #0b0f19;
+            --card: rgba(255, 255, 255, 0.92);
+            --text: #1f2937;
+            --muted: #6b7280;
+            --border: rgba(0, 0, 0, 0.06);
+        }
+
+        body {
+            font-family: "Microsoft YaHei", "PingFang SC", Arial, sans-serif;
+            background:
+                radial-gradient(circle at 10% 20%, rgba(79, 70, 229, 0.18) 0%, transparent 35%),
+                radial-gradient(circle at 90% 80%, rgba(6, 182, 212, 0.14) 0%, transparent 35%),
+                linear-gradient(135deg, #0b0f19 0%, #111827 50%, #0b0f19 100%);
+            min-height: 100vh;
+            margin: 0;
+            padding: 40px 20px;
+            color: var(--text);
+        }
+
+        .page { max-width: 1240px; margin: 0 auto; }
+
+        /* 统一导航(四页公共) */
+        .top-nav{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 16px}
+        .top-nav a{padding:7px 16px;border-radius:999px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);color:#e8eef7;text-decoration:none;font-size:13px;transition:background .15s}
+        .top-nav a:hover{background:rgba(255,255,255,.18)}
+        .top-nav a.active{background:rgba(86,156,255,.28);border-color:rgba(86,156,255,.55);color:#fff}
+
+        .container {
+            background: var(--card);
+            padding: 44px 52px;
+            border-radius: 24px;
+            box-shadow:
+                0 32px 80px rgba(0, 0, 0, 0.35),
+                inset 0 1px 0 rgba(255, 255, 255, 0.6);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border: 1px solid rgba(255, 255, 255, 0.45);
+            animation: slideIn 0.6s ease-out;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        h2 {
+            font-size: 32px;
+            font-weight: 700;
+            padding-bottom: 16px;
+            border-bottom: 1px solid var(--border);
+            background: linear-gradient(90deg, var(--primary) 0%, var(--accent) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .page-desc {
+            font-size: 14px;
+            color: var(--muted);
+            margin: 12px 0 26px;
+        }
+
+        /* ---------- 工具栏 ---------- */
+        .toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 14px 24px;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.55);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 16px 20px;
+            margin-bottom: 14px;
+        }
+
+        .tool-group { display: flex; align-items: center; gap: 10px; }
+        .tool-label { font-size: 12px; font-weight: 600; color: #4b5563; white-space: nowrap; }
+
+        .mode-group {
+            display: inline-flex;
+            border: 1px solid #e5e7eb;
+            border-radius: 999px;
+            overflow: hidden;
+            background: #fff;
+        }
+        .mode-group label { cursor: pointer; }
+        .mode-group label + label { border-left: 1px solid #e5e7eb; }
+        .mode-group input { display: none; }
+        .mode-group span {
+            display: block;
+            padding: 7px 16px;
+            font-size: 13px;
+            color: #6b7280;
+            transition: all 0.15s;
+        }
+        .mode-group input:checked + span {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: #fff;
+        }
+
+        .tool-input, .tool-select {
+            padding: 7px 14px;
+            border: 1px solid #e5e7eb;
+            border-radius: 999px;
+            font-size: 13px;
+            font-family: inherit;
+            background: #fff;
+            color: var(--text);
+            outline: none;
+            transition: border-color 0.15s, box-shadow 0.15s;
+        }
+        .tool-input:focus, .tool-select:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.12);
+        }
+        .tool-input::placeholder { color: #9ca3af; }
+
+        #search-box { width: 180px; }
+
+        .suffix-wrap { position: relative; display: inline-flex; align-items: center; }
+        .suffix-wrap input { width: 92px; padding-right: 30px; }
+        .suffix { position: absolute; right: 12px; font-size: 13px; color: #9ca3af; pointer-events: none; }
+
+        .check-label {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            font-size: 13px;
+            color: #374151;
+            cursor: pointer;
+            user-select: none;
+            white-space: nowrap;
+        }
+        .check-label input { width: 16px; height: 16px; accent-color: var(--primary); cursor: pointer; }
+
+        .stat-line { font-size: 13px; color: var(--muted); margin: 0 2px; }
+
+        /* ---------- 利润表 ---------- */
+        .table-wrapper {
+            width: 100%;
+            overflow-x: auto;
+            border-radius: 16px;
+            border: 1px solid var(--border);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+            margin-top: 16px;
+        }
+
+        table {
+            width: 100%;
+            min-width: 720px;
+            border-collapse: collapse;
+            font-size: 14px;
+            background: #fff;
+        }
+
+        th, td {
+            padding: 12px 14px;
+            text-align: center;
+            border-bottom: 1px solid var(--border);
+            white-space: nowrap;
+        }
+
+        th {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: #fff;
+            font-weight: 600;
+            position: sticky;
+            top: 0;
+        }
+
+        th.sortable { cursor: pointer; user-select: none; }
+        th.sortable:hover { filter: brightness(1.15); }
+        .arrow { display: inline-block; width: 14px; font-size: 11px; margin-left: 2px; }
+
+        tbody tr { transition: background 0.15s; }
+        tbody tr:nth-child(even) { background: #f8fafc; }
+        tbody tr:hover { background: #eef2ff; }
+
+        .cell-name { text-align: left; font-weight: 600; }
+
+        .badge-warn {
+            display: inline-block;
+            margin-left: 8px;
+            padding: 1px 8px;
+            border-radius: 8px;
+            font-size: 11px;
+            font-weight: 600;
+            background: rgba(245, 158, 11, 0.12);
+            border: 1px solid rgba(245, 158, 11, 0.5);
+            color: #b45309;
+            vertical-align: 1px;
+        }
+
+        .pos { color: #5dd39e; font-weight: 700; }
+        .neg { color: #ff8a8a; font-weight: 700; }
+        .zero { color: #6b7280; }
+        .muted { color: #9ca3af; }
+
+        .trend-btn {
+            background: #fff;
+            border: 1px solid #e5e7eb;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 15px;
+            line-height: 1;
+            padding: 6px 10px;
+            transition: all 0.15s;
+        }
+        .trend-btn:hover { background: #eef2ff; border-color: #c7d2fe; transform: translateY(-1px); }
+
+        .empty-row { padding: 42px 16px; color: #9ca3af; font-size: 14px; }
+
+        /* ---------- 状态提示 ---------- */
+        .error-banner {
+            color: #b91c1c;
+            background: #fef2f2;
+            padding: 14px 18px;
+            border-radius: 12px;
+            margin-top: 18px;
+            border: 1px solid #fecaca;
+            font-size: 14px;
+        }
+
+        .empty-snapshot {
+            text-align: center;
+            color: #6b7280;
+            font-size: 17px;
+            line-height: 1.8;
+            padding: 64px 20px;
+        }
+
+        /* ---------- 历史走势模态框 ---------- */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.45);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.2s, visibility 0.2s;
+        }
+        .modal-overlay:not(.hidden) { opacity: 1; visibility: visible; }
+
+        .modal {
+            background: rgba(255, 255, 255, 0.96);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border: 1px solid rgba(255, 255, 255, 0.45);
+            padding: 26px;
+            border-radius: 20px;
+            width: 90%;
+            max-width: 380px;
+            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.3);
+            position: relative;
+            transform: scale(0.95);
+            transition: transform 0.2s;
+        }
+        .modal-overlay:not(.hidden) .modal { transform: scale(1); }
+
+        .modal-close {
+            position: absolute;
+            top: 12px;
+            right: 16px;
+            background: none;
+            border: none;
+            font-size: 24px;
+            color: #9ca3af;
+            cursor: pointer;
+            line-height: 1;
+        }
+        .modal-close:hover { color: #374151; }
+
+        .modal-title {
+            font-size: 19px;
+            font-weight: 700;
+            margin-bottom: 16px;
+            color: #111827;
+            padding-right: 28px;
+        }
+
+        .chart-panel {
+            background: linear-gradient(135deg, #0b0f19 0%, #151e33 100%);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 14px;
+            padding: 12px;
+        }
+        .chart-box { height: 140px; }
+        .chart-box svg { display: block; width: 100%; height: 100%; }
+        .chart-empty {
+            height: 140px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #9db3cc;
+            font-size: 13px;
+        }
+
+        /* toast(公共) */
+        .toast{position:fixed;top:20px;left:50%;transform:translateX(-50%);z-index:999;display:none;padding:10px 20px;border-radius:10px;background:rgba(28,36,48,.96);border:1px solid rgba(255,255,255,.18);color:#e8eef7;font-size:14px;box-shadow:0 8px 28px rgba(0,0,0,.4)}
+        .toast.err{border-color:rgba(255,110,110,.65);color:#ffb4b4}
+
+        .hidden { display: none !important; }
+
+        @media (max-width: 900px) {
+            body { padding: 24px 14px; }
+            .container { padding: 30px 24px; }
+            .toolbar { gap: 12px 16px; padding: 14px 16px; }
+        }
+
+        @media (max-width: 768px) {
+            h2 { font-size: 24px; }
+            .container { padding: 26px 18px; }
+            .tool-group { flex-wrap: wrap; }
+        }
+    </style>
+</head>
+<body>
+    <div class="page">
+        <nav class="top-nav">
+            <a href="/">📦 成本查询</a>
+            <a href="/components">🛠️ 组件计算器</a>
+            <a href="/bom">🧾 清单汇总</a>
+            <a href="/profit" class="active">💰 利润排行</a>
+        </nav>
+
+        <main class="container">
+            <h2>💰 利润排行</h2>
+            <p class="page-desc">合成成本对比吉他市场价,数据每次行情更新后自动重算</p>
+
+            <div class="toolbar" id="toolbar">
+                <div class="tool-group">
+                    <span class="tool-label">卖出口径</span>
+                    <div class="mode-group">
+                        <label><input type="radio" name="sell-mode" value="sell" checked><span>挂单卖出</span></label>
+                        <label><input type="radio" name="sell-mode" value="buy"><span>即时卖出</span></label>
+                    </div>
+                </div>
+                <div class="tool-group">
+                    <span class="tool-label">交易税率</span>
+                    <span class="suffix-wrap">
+                        <input type="number" id="tax-rate" class="tool-input" min="0" max="10" step="0.1" value="0" title="卖出时按成交价收取的税率">
+                        <span class="suffix">%</span>
+                    </span>
+                </div>
+                <div class="tool-group">
+                    <input type="text" id="search-box" class="tool-input" placeholder="搜索物品名">
+                </div>
+                <div class="tool-group">
+                    <select id="cat-select" class="tool-select">
+                        <option value="">全部分类</option>
+                    </select>
+                </div>
+                <div class="tool-group">
+                    <label class="check-label"><input type="checkbox" id="only-positive" checked>只看正利润</label>
+                </div>
+            </div>
+
+            <div class="stat-line" id="stat-line"></div>
+
+            <div id="error-banner" class="error-banner hidden">利润数据加载失败,请刷新重试</div>
+
+            <div id="empty-snapshot" class="empty-snapshot hidden">利润快照尚未生成:请等待行情更新完成(或联系管理员手动更新一次)</div>
+
+            <div class="table-wrapper" id="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th class="sortable" data-key="name">物品<span class="arrow"></span></th>
+                            <th class="sortable" data-key="category">分类<span class="arrow"></span></th>
+                            <th class="sortable" data-key="cost">单件成本<span class="arrow"></span></th>
+                            <th class="sortable" data-key="market"><span id="th-market-text">市场卖价(最低)</span><span class="arrow"></span></th>
+                            <th class="sortable" data-key="profit">每件利润<span class="arrow"></span></th>
+                            <th class="sortable" data-key="margin">利润率<span class="arrow"></span></th>
+                            <th>走势</th>
+                        </tr>
+                    </thead>
+                    <tbody id="profit-body">
+                        <tr><td colspan="7" class="empty-row">加载中...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </main>
+    </div>
+
+    <div id="history-overlay" class="modal-overlay hidden" onclick="closeHistory(event)">
+        <div class="modal" onclick="event.stopPropagation()">
+            <button class="modal-close" onclick="closeHistory()">×</button>
+            <div class="modal-title" id="history-title">物品名称</div>
+            <div class="chart-panel" id="history-chart"></div>
+        </div>
+    </div>
+
+    <script>
+        // ==========================================
+        // 公共工具:fmt / toast / relTime / escapeHtml
+        // ==========================================
+        function fmt(n) {
+            if (n === null || n === undefined || isNaN(n)) return '-';
+            return Number(n).toLocaleString('zh-CN', { maximumFractionDigits: 2 });
+        }
+
+        let _toastTimer = null;
+        function toast(msg, isErr) {
+            let el = document.getElementById('page-toast');
+            if (!el) { el = document.createElement('div'); el.id = 'page-toast'; document.body.appendChild(el); }
+            el.textContent = msg;
+            el.className = 'toast' + (isErr ? ' err' : '');
+            el.style.display = 'block';
+            clearTimeout(_toastTimer);
+            _toastTimer = setTimeout(() => { el.style.display = 'none'; }, 3200);
+        }
+
+        function relTime(iso) {
+            if (!iso || iso === '-') return '';
+            const t = new Date(iso.replace(' ', 'T'));
+            if (isNaN(t)) return '';
+            const mins = Math.floor((Date.now() - t.getTime()) / 60000);
+            if (mins < 1) return '刚刚';
+            if (mins < 60) return mins + ' 分钟前';
+            const hours = Math.floor(mins / 60);
+            if (hours < 24) return hours + ' 小时前';
+            return Math.floor(hours / 24) + ' 天前';
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = (text === null || text === undefined) ? '' : String(text);
+            return div.innerHTML.replace(/"/g, '&quot;');
+        }
+
+        // ==========================================
+        // 历史走势图(公共:内联 SVG,viewBox 320x140)
+        // ==========================================
+        function drawHistoryChart(container, rows) {
+            if (!container) return;
+            const valid = (rows || []).filter(r => r && r.average !== null && r.average !== undefined && !isNaN(Number(r.average)));
+            if (valid.length < 2) {
+                container.innerHTML = '<div class="chart-empty">暂无历史数据</div>';
+                return;
+            }
+            const W = 320, H = 140, padL = 6, padR = 6, padT = 20, padB = 18;
+            const avgs = valid.map(r => Number(r.average));
+            const highs = valid.map(r => Number(r.highest)).filter(v => !isNaN(v));
+            const lows = valid.map(r => Number(r.lowest)).filter(v => !isNaN(v));
+            const maxAvg = Math.max(...avgs), minAvg = Math.min(...avgs);
+            const hi = highs.length ? Math.max(...highs) : maxAvg;
+            const lo = lows.length ? Math.min(...lows) : minAvg;
+            let yMax = Math.max(hi, maxAvg), yMin = Math.min(lo, minAvg);
+            if (yMax === yMin) {
+                const pad = Math.max(Math.abs(yMax) * 0.1, 1);
+                yMax += pad;
+                yMin -= pad;
+            }
+            const plotW = W - padL - padR, plotH = H - padT - padB;
+            const x = i => padL + (plotW * i) / (valid.length - 1);
+            const y = v => padT + plotH - ((v - yMin) / (yMax - yMin)) * plotH;
+            const pts = avgs.map((v, i) => x(i).toFixed(2) + ',' + y(v).toFixed(2));
+            const baseline = (padT + plotH).toFixed(2);
+            const fillPath = 'M' + pts.join(' L') +
+                ' L' + x(valid.length - 1).toFixed(2) + ',' + baseline +
+                ' L' + x(0).toFixed(2) + ',' + baseline + ' Z';
+            container.innerHTML =
+                '<div class="chart-box">' +
+                    '<svg viewBox="0 0 320 140" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">' +
+                        '<path d="' + fillPath + '" fill="rgba(90,169,255,0.12)"></path>' +
+                        '<polyline points="' + pts.join(' ') + '" fill="none" stroke="#5aa9ff" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"></polyline>' +
+                        '<circle cx="' + x(valid.length - 1).toFixed(2) + '" cy="' + y(avgs[avgs.length - 1]).toFixed(2) + '" r="2.5" fill="#5aa9ff"></circle>' +
+                        '<text x="' + padL + '" y="12" font-size="11" fill="#9db3cc">最高 ' + fmt(hi) + '</text>' +
+                        '<text x="' + (W - padR) + '" y="12" font-size="11" fill="#9db3cc" text-anchor="end">最低 ' + fmt(lo) + '</text>' +
+                        '<text x="' + padL + '" y="' + (H - 5) + '" font-size="10" fill="#7d93ad">' + escapeHtml(String(valid[0].date || '')) + '</text>' +
+                        '<text x="' + (W - padR) + '" y="' + (H - 5) + '" font-size="10" fill="#7d93ad" text-anchor="end">' + escapeHtml(String(valid[valid.length - 1].date || '')) + '</text>' +
+                    '</svg>' +
+                '</div>';
+        }
+
+        // ==========================================
+        // 页面状态(口径/税率/筛选/排序,变化均在客户端重算)
+        // ==========================================
+        let snapshot = null;
+        const state = {
+            mode: 'sell',          // sell=挂单卖出(参考 market_sell_min) / buy=即时卖出(参考 market_buy_max)
+            tax: 0,                // 交易税率(%)
+            search: '',
+            category: '',
+            onlyPositive: true,
+            sortKey: 'profit',
+            sortDir: 'desc'
+        };
+
+        const SORT_DEFAULT_DIR = { name: 'asc', category: 'asc', cost: 'desc', market: 'desc', profit: 'desc', margin: 'desc' };
+        const TEXT_KEYS = { name: true, category: true };
+
+        // ==========================================
+        // 数据加载
+        // ==========================================
+        async function loadProfit() {
+            try {
+                const res = await fetch('/api/profit');
+                const json = await res.json();
+                if (!json.success) throw new Error(json.error || '利润数据加载失败');
+                const data = json.data || {};
+                snapshot = {
+                    updated_at: data.updated_at || null,
+                    items: Array.isArray(data.items) ? data.items : []
+                };
+                const hasData = snapshot.items.length > 0;
+                document.getElementById('error-banner').classList.add('hidden');
+                document.getElementById('empty-snapshot').classList.toggle('hidden', hasData);
+                document.getElementById('toolbar').classList.toggle('hidden', !hasData);
+                document.getElementById('stat-line').classList.toggle('hidden', !hasData);
+                document.getElementById('table-wrapper').classList.toggle('hidden', !hasData);
+                if (!hasData) return;
+                buildCategoryOptions();
+                render();
+            } catch (err) {
+                console.error(err);
+                document.getElementById('toolbar').classList.add('hidden');
+                document.getElementById('stat-line').classList.add('hidden');
+                document.getElementById('table-wrapper').classList.add('hidden');
+                document.getElementById('empty-snapshot').classList.add('hidden');
+                document.getElementById('error-banner').classList.remove('hidden');
+                toast('利润数据加载失败,请刷新重试', true);
+            }
+        }
+
+        function buildCategoryOptions() {
+            const sel = document.getElementById('cat-select');
+            const cats = Array.from(new Set(snapshot.items.map(it => it.category || '其他')))
+                .sort((a, b) => a.localeCompare(b, 'zh'));
+            sel.innerHTML = '<option value="">全部分类</option>' +
+                cats.map(c => '<option value="' + escapeHtml(c) + '">' + escapeHtml(c) + '</option>').join('');
+        }
+
+        // ==========================================
+        // 利润计算与筛选排序
+        // ==========================================
+        function numOrNull(v) {
+            if (v === null || v === undefined || v === '') return null;
+            const n = Number(v);
+            return isNaN(n) ? null : n;
+        }
+
+        function computeRows() {
+            return snapshot.items.map(it => {
+                const cost = numOrNull(it.unit_cost_instant);
+                const market = state.mode === 'sell' ? numOrNull(it.market_sell_min) : numOrNull(it.market_buy_max);
+                const noQuote = market === null || market <= 0;
+                let profit = null, margin = null;
+                if (!noQuote && cost !== null) {
+                    profit = market * (1 - state.tax / 100) - cost;
+                    margin = cost > 0 ? (profit / cost) * 100 : null;
+                }
+                return {
+                    typeId: it.type_id,
+                    name: it.name || '',
+                    category: it.category || '其他',
+                    cost: cost,
+                    market: market,
+                    noQuote: noQuote,
+                    profit: profit,
+                    margin: margin,
+                    incomplete: it.complete === 0 || it.complete === false || it.complete === '0',
+                    buyCost: it.unit_cost_buyorder
+                };
+            });
+        }
+
+        function applyFilters(rows) {
+            const kw = state.search.toLowerCase();
+            return rows.filter(r => {
+                if (kw && r.name.toLowerCase().indexOf(kw) === -1) return false;
+                if (state.category && r.category !== state.category) return false;
+                if (state.onlyPositive && !(r.profit !== null && r.profit > 0)) return false;
+                return true;
+            });
+        }
+
+        function sortRows(rows) {
+            const key = state.sortKey;
+            const dir = state.sortDir === 'desc' ? -1 : 1;
+            const isText = !!TEXT_KEYS[key];
+            const value = r => {
+                const v = r[key];
+                if (isText) return String(v || '');
+                return (v === null || v === undefined || isNaN(v)) ? -Infinity : v;
+            };
+            const cmp = (a, b) => {
+                const va = value(a), vb = value(b);
+                return isText ? va.localeCompare(vb, 'zh') * dir : (va - vb) * dir;
+            };
+            // 无卖单/无买单的行无论按哪列排序都固定排在最后
+            const normal = rows.filter(r => !r.noQuote).sort(cmp);
+            const noQuote = rows.filter(r => r.noQuote).sort(cmp);
+            return normal.concat(noQuote);
+        }
+
+        // ==========================================
+        // 渲染
+        // ==========================================
+        function profitClass(v) {
+            if (v === null || v === 0) return 'zero';
+            return v > 0 ? 'pos' : 'neg';
+        }
+
+        function renderHeaders() {
+            document.getElementById('th-market-text').textContent = state.mode === 'sell' ? '市场卖价(最低)' : '市场买价(最高)';
+            document.querySelectorAll('th.sortable').forEach(th => {
+                const arrow = th.querySelector('.arrow');
+                if (!arrow) return;
+                arrow.textContent = th.getAttribute('data-key') === state.sortKey
+                    ? (state.sortDir === 'desc' ? '▼' : '▲')
+                    : '';
+            });
+        }
+
+        function renderStats(rows) {
+            const updated = snapshot.updated_at;
+            const rel = relTime(updated);
+            const updatedText = updated ? updated + (rel ? '(' + rel + ')' : '') : '-';
+            const positive = rows.filter(r => r.profit !== null && r.profit > 0).length;
+            document.getElementById('stat-line').textContent =
+                '利润快照:' + updatedText + '· 共 ' + rows.length + ' 个物品 · 正利润 ' + positive + ' 个(按当前口径)';
+        }
+
+        function buildRow(r) {
+            const noQuoteText = state.mode === 'sell' ? '无卖单' : '无买单';
+            const badge = r.incomplete
+                ? '<span class="badge-warn" title="配方含无价材料,成本不可信">⚠ 配方缺价</span>'
+                : '';
+            let marketHtml, profitHtml, marginHtml;
+            if (r.noQuote) {
+                marketHtml = '<td class="muted">' + noQuoteText + '</td>';
+                profitHtml = marketHtml;
+                marginHtml = marketHtml;
+            } else {
+                marketHtml = '<td>' + fmt(r.market) + '</td>';
+                profitHtml = '<td><span class="' + profitClass(r.profit) + '">' + fmt(r.profit) + '</span></td>';
+                marginHtml = r.margin === null
+                    ? '<td><span class="zero">-</span></td>'
+                    : '<td><span class="' + profitClass(r.profit) + '">' + fmt(r.margin) + '%</span></td>';
+            }
+            return '<tr>' +
+                '<td class="cell-name">' + escapeHtml(r.name) + badge + '</td>' +
+                '<td>' + escapeHtml(r.category) + '</td>' +
+                '<td title="挂单收购材料成本:' + escapeHtml(fmt(r.buyCost)) + '">' + fmt(r.cost) + '</td>' +
+                marketHtml + profitHtml + marginHtml +
+                '<td><button type="button" class="trend-btn" data-tid="' + Number(r.typeId) + '" data-name="' + escapeHtml(r.name) + '" title="查看历史走势">📈</button></td>' +
+                '</tr>';
+        }
+
+        function render() {
+            if (!snapshot) return;
+            const all = computeRows();
+            renderStats(all);
+            renderHeaders();
+            const rows = sortRows(applyFilters(all));
+            const tbody = document.getElementById('profit-body');
+            if (rows.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" class="empty-row">没有匹配的物品</td></tr>';
+                return;
+            }
+            tbody.innerHTML = rows.map(buildRow).join('');
+        }
+
+        // ==========================================
+        // 历史走势模态框
+        // ==========================================
+        const historyOverlay = document.getElementById('history-overlay');
+        let historySeq = 0;
+
+        async function openHistory(typeId, name) {
+            const seq = ++historySeq;
+            document.getElementById('history-title').textContent = name;
+            const panel = document.getElementById('history-chart');
+            panel.innerHTML = '<div class="chart-empty">加载中...</div>';
+            historyOverlay.classList.remove('hidden');
+            try {
+                const res = await fetch('/api/history?type_id=' + encodeURIComponent(typeId));
+                const json = await res.json();
+                if (seq !== historySeq) return;
+                if (!json.success) throw new Error(json.error || '历史行情加载失败');
+                drawHistoryChart(panel, (json.data && json.data.rows) || []);
+            } catch (err) {
+                if (seq !== historySeq) return;
+                console.error(err);
+                panel.innerHTML = '<div class="chart-empty">历史行情加载失败,请关闭后重试</div>';
+            }
+        }
+
+        function closeHistory(event) {
+            if (!event || event.target === historyOverlay || event.target.classList.contains('modal-close')) {
+                historyOverlay.classList.add('hidden');
+            }
+        }
+
+        document.addEventListener('keydown', e => {
+            if (e.key === 'Escape') closeHistory();
+        });
+
+        // ==========================================
+        // 工具栏与表头事件(全部客户端重算,不发请求)
+        // ==========================================
+        document.querySelectorAll('input[name="sell-mode"]').forEach(radio => {
+            radio.addEventListener('change', () => {
+                if (radio.checked) { state.mode = radio.value; render(); }
+            });
+        });
+
+        const taxInput = document.getElementById('tax-rate');
+        taxInput.addEventListener('input', () => {
+            const v = parseFloat(taxInput.value);
+            state.tax = isNaN(v) ? 0 : Math.min(10, Math.max(0, v));
+            render();
+        });
+        taxInput.addEventListener('change', () => { taxInput.value = state.tax; });
+
+        document.getElementById('search-box').addEventListener('input', e => {
+            state.search = e.target.value.trim();
+            render();
+        });
+
+        document.getElementById('cat-select').addEventListener('change', e => {
+            state.category = e.target.value;
+            render();
+        });
+
+        document.getElementById('only-positive').addEventListener('change', e => {
+            state.onlyPositive = e.target.checked;
+            render();
+        });
+
+        document.querySelectorAll('th.sortable').forEach(th => {
+            th.addEventListener('click', () => onSort(th.getAttribute('data-key')));
+        });
+
+        function onSort(key) {
+            if (state.sortKey === key) {
+                state.sortDir = state.sortDir === 'desc' ? 'asc' : 'desc';
+            } else {
+                state.sortKey = key;
+                state.sortDir = SORT_DEFAULT_DIR[key] || 'desc';
+            }
+            render();
+        }
+
+        document.getElementById('profit-body').addEventListener('click', e => {
+            const btn = e.target.closest('.trend-btn');
+            if (!btn) return;
+            openHistory(parseInt(btn.getAttribute('data-tid'), 10), btn.getAttribute('data-name'));
+        });
+
+        // ==========================================
+        // 启动
+        // ==========================================
+        renderHeaders();
+        document.addEventListener('DOMContentLoaded', loadProfit);
+    </script>
+</body>
+</html>

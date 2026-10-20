@@ -19,6 +19,7 @@ import pymysql
 import requests
 
 from db_config import load_db_config
+from Select import compute_profit_rows
 
 # ================== 用户配置 ==================
 ESI = "https://ali-esi.evepc.163.com/latest"   # 网易国服 ESI 镜像
@@ -30,6 +31,7 @@ HEADERS = {"User-Agent": "eve-cost/0.6 (https://github.com/Deepsealeviathan/Eve-
 MAX_WORKERS = 8        # 并发拉取页数,出现大量连接错误时调小
 MAX_RETRIES = 4
 BATCH_SIZE = 100
+HISTORY_DAYS = 90      # 历史行情保留天数(趋势图时间窗)
 
 BASE_DIR = Path(__file__).resolve().parent
 
@@ -71,6 +73,9 @@ def esi_get(path, params=None):
     for attempt in range(1, MAX_RETRIES + 1):
         try:
             resp = get_session().get(url, params=params, timeout=30)
+            if resp.status_code == 404:
+                # 资源不存在(如该物品从未有过成交记录),重试无意义
+                return None
             if resp.status_code in (420, 429, 500, 502, 503, 504):
                 time.sleep(2 * attempt)
                 continue
@@ -240,6 +245,110 @@ def sync_to_db(tracked, stats):
     return len(price_rows)
 
 
+def fetch_price_history(tracked):
+    """并发拉取每个跟踪物品的近 HISTORY_DAYS 天历史日线,返回 {type_id: [row,...]}。
+    行格式: (type_id, date, average, highest, lowest, volume, order_count)"""
+    cutoff = time.strftime('%Y-%m-%d', time.localtime(time.time() - HISTORY_DAYS * 86400))
+    type_ids = list(tracked.keys())
+    print(f"拉取历史行情: {len(type_ids)} 个物品,保留 {HISTORY_DAYS} 天...")
+
+    def fetch_one(tid):
+        # 从未有过成交记录的物品 ESI 返回 404,esi_get 直接给 None
+        resp = esi_get(f"/markets/{REGION_ID}/history/", {"type_id": tid})
+        if resp is None:
+            return tid, []
+        rows = []
+        try:
+            for day in resp.json():
+                if day.get('date', '') >= cutoff:
+                    rows.append((
+                        tid, day['date'], day.get('average'), day.get('highest'),
+                        day.get('lowest'), day.get('volume'), day.get('order_count'),
+                    ))
+        except ValueError:
+            return tid, []
+        return tid, rows
+
+    results = {}
+    done = 0
+    with ThreadPoolExecutor(max_workers=MAX_WORKERS) as pool:
+        for tid, rows in pool.map(fetch_one, type_ids):
+            results[tid] = rows
+            done += 1
+            if done % 50 == 0:
+                print(f"历史行情: {done}/{len(type_ids)}")
+    print(f"历史行情拉取完成,共 {sum(len(v) for v in results.values())} 条日线")
+    return results
+
+
+def sync_price_history(history):
+    """增量写入 price_history:只插入比库中该物品最新日期更新的行。
+    绝大多数更新周期内每个物品只有 0~1 条新日线,写入量极小。"""
+    conn = None
+    try:
+        conn = pymysql.connect(**load_db_config())
+        with conn.cursor() as cursor:
+            cursor.execute("SELECT type_id, MAX(date) FROM price_history GROUP BY type_id")
+            last_dates = {row[0]: str(row[1]) if row[1] is not None else None for row in cursor.fetchall()}
+            new_rows = []
+            for tid, rows in history.items():
+                last = last_dates.get(tid)
+                for row in rows:
+                    if last is None or str(row[1]) > last:
+                        new_rows.append(row)
+            if new_rows:
+                cursor.executemany(
+                    "INSERT INTO price_history "
+                    "(type_id, date, average, highest, lowest, volume, order_count) "
+                    "VALUES (%s, %s, %s, %s, %s, %s, %s)",
+                    new_rows,
+                )
+            conn.commit()
+            print(f"历史行情入库:新增 {len(new_rows)} 条")
+    finally:
+        if conn:
+            conn.close()
+
+
+def snapshot_profit():
+    """把全部可制造物品的单件成本与市场价写入 profit_snapshot(利润排行页数据源)。"""
+    rows = compute_profit_rows()
+    if not rows:
+        print("利润快照:没有可计算的物品,跳过")
+        return
+    now = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())
+    sql = """
+        INSERT INTO profit_snapshot
+            (type_id, name, category, unit_cost_instant, unit_cost_buyorder,
+             market_sell_min, market_buy_max, complete, updated_at)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+        ON DUPLICATE KEY UPDATE
+            name = VALUES(name), category = VALUES(category),
+            unit_cost_instant = VALUES(unit_cost_instant),
+            unit_cost_buyorder = VALUES(unit_cost_buyorder),
+            market_sell_min = VALUES(market_sell_min),
+            market_buy_max = VALUES(market_buy_max),
+            complete = VALUES(complete), updated_at = VALUES(updated_at)
+    """
+    conn = None
+    try:
+        conn = pymysql.connect(**load_db_config())
+        with conn.cursor() as cursor:
+            data = [(
+                r['type_id'], r['name'], r['category'],
+                r['unit_cost_instant'], r['unit_cost_buyorder'],
+                r['market_sell_min'], r['market_buy_max'],
+                r['complete'], now,
+            ) for r in rows]
+            for i in range(0, len(data), BATCH_SIZE):
+                cursor.executemany(sql, data[i:i + BATCH_SIZE])
+        conn.commit()
+        print(f"利润快照:已写入 {len(rows)} 条")
+    finally:
+        if conn:
+            conn.close()
+
+
 def main():
     print("收集跟踪物品清单...")
     tracked = collect_tracked_items()
@@ -251,6 +360,16 @@ def main():
     print("同步数据库...")
     total = sync_to_db(tracked, stats)
     print(f"导入完成,共更新 {total} 条记录。")
+
+    # 历史行情与利润快照:失败只记日志,不影响价格主流程
+    try:
+        sync_price_history(fetch_price_history(tracked))
+    except Exception as e:
+        print(f"历史行情同步失败(不影响价格更新): {e}")
+    try:
+        snapshot_profit()
+    except Exception as e:
+        print(f"利润快照计算失败(不影响价格更新): {e}")
     return total
 
 

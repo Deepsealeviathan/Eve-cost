@@ -1,6 +1,6 @@
 # Eve-cost
 
-EVE Online(国服晨曦)制造成本估算工具:直连网易 ESI 镜像抓取吉他 4-4(加达里海军组装车间)实时行情并入库,按配方清单估算材料总成本,提供 Web 页面与命令行两种使用方式。
+EVE Online(国服晨曦)制造成本估算工具:直连网易 ESI 镜像抓取吉他 4-4(加达里海军组装车间)实时行情并入库,按配方清单估算材料总成本,附带利润排行与价格趋势,提供 Web 页面与命令行两种使用方式。
 
 行情数据来源:[网易 ESI 镜像](https://ali-esi.evepc.163.com/ui/)(`datasource=serenity`,伏尔戈星域整域订单,过滤吉他 4-4 空间站)
 
@@ -9,7 +9,7 @@ EVE Online(国服晨曦)制造成本估算工具:直连网易 ESI 镜像抓取�
 ```
 ├── app.py                     # Flask Web 服务(页面查询入口)
 ├── Select.py                  # 成本计算核心逻辑(P1~P4 递归计算,被 app.py 调用)
-├── update_market.py           # 行情流水线:ESI 整域拉取 → 吉他 4-4 聚合 → upsert MySQL
+├── update_market.py           # 行情流水线:ESI 整域拉取 → 吉他 4-4 聚合 → 历史行情 + 利润快照 → upsert MySQL
 ├── db_config.py               # 数据库配置加载器(读取 config.ini)
 ├── config.example.ini         # 数据库配置模板(复制为 config.ini 后填写密码)
 ├── schema.sql                 # 数据库建表脚本
@@ -58,7 +58,7 @@ cp config.example.ini config.ini
 mysql -u root -p < schema.sql
 ```
 
-共两张表:`items`(物品名称与分类)和 `market_prices`(行情快照,按 type_id + region_id 覆盖更新)。入库使用 upsert,无需预先插行。
+共四张表:`items`(物品名称与分类)、`market_prices`(行情快照,按 type_id + region_id 覆盖更新)、`price_history`(0.8.0,近 90 天历史日线,趋势图用)和 `profit_snapshot`(0.8.0,利润快照,每次行情更新后自动重算)。入库使用 upsert,无需预先插行;建表语句全部 `IF NOT EXISTS`,**从旧版本升级时在已有库上重跑一次即可,不影响旧数据**。
 
 ## 使用方式(推荐:Web 页面)
 
@@ -70,7 +70,7 @@ python update_market.py
 python app.py
 ```
 
-Web 页面支持:单个/批量成本查询、物品目录浏览(分类 + 搜索)、组件制造计算器(访问 `/components`,目录选组件、数量加减、建筑加成减免)以及制造清单汇总(访问 `/bom`,粘贴购物单一键展开最终原材料)。
+Web 页面支持:单个/批量成本查询(清单可存进 URL 分享、结果可导出 CSV)、物品目录浏览(分类 + 搜索 + 价格新鲜度 + 近 90 天走势图)、组件制造计算器(访问 `/components`,目录选组件、数量加减、建筑加成减免)、制造清单汇总(访问 `/bom`,粘贴购物单一键展开最终原材料,汇总表可排序/导出)以及利润排行(访问 `/profit`,全部可制造物品的利润/利润率对比,支持挂单/即时两种卖出口径与税率设置)。
 
 ### 游客模式与管理员
 

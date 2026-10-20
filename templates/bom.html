@@ -41,6 +41,27 @@
             gap: 20px;
         }
 
+        /* ===== 顶部统一导航 ===== */
+        .top-nav{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 16px}
+        .top-nav a{padding:7px 16px;border-radius:999px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);color:#e8eef7;text-decoration:none;font-size:13px;transition:background .15s}
+        .top-nav a:hover{background:rgba(255,255,255,.18)}
+        .top-nav a.active{background:rgba(86,156,255,.28);border-color:rgba(86,156,255,.55);color:#fff}
+
+        /* ===== 全局提示条(替代原生 alert) ===== */
+        .toast{position:fixed;top:20px;left:50%;transform:translateX(-50%);z-index:999;display:none;padding:10px 20px;border-radius:10px;background:rgba(28,36,48,.96);border:1px solid rgba(255,255,255,.18);color:#e8eef7;font-size:14px;box-shadow:0 8px 28px rgba(0,0,0,.4)}
+        .toast.err{border-color:rgba(255,110,110,.65);color:#ffb4b4}
+
+        /* ===== 数据加载失败横幅 ===== */
+        .load-error {
+            background: rgba(239, 68, 68, 0.12);
+            border: 1px solid rgba(239, 68, 68, 0.45);
+            border-radius: 12px;
+            padding: 12px 16px;
+            font-size: 14px;
+            font-weight: 600;
+            color: #b91c1c;
+        }
+
         .topbar {
             display: flex;
             justify-content: space-between;
@@ -53,18 +74,6 @@
             color: #f9fafb;
             text-shadow: 0 2px 12px rgba(0, 0, 0, 0.4);
         }
-        .nav-links { display: flex; gap: 10px; }
-        .nav-link {
-            color: #c7d2fe;
-            text-decoration: none;
-            font-size: 14px;
-            background: rgba(79, 70, 229, 0.35);
-            padding: 8px 16px;
-            border-radius: 12px;
-            border: 1px solid rgba(199, 210, 254, 0.3);
-            transition: background 0.2s;
-        }
-        .nav-link:hover { background: rgba(79, 70, 229, 0.6); }
 
         .card {
             background: var(--card);
@@ -193,6 +202,26 @@
             border-bottom: none;
             background: rgba(79, 70, 229, 0.06);
         }
+
+        /* 汇总表可排序表头 */
+        .mat-table th.sortable { cursor: pointer; user-select: none; }
+        .mat-table th.sortable:hover { color: var(--primary-dark); }
+
+        /* 汇总表导出/复制按钮 */
+        .export-bar { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
+        .export-btn {
+            height: 34px;
+            padding: 0 18px;
+            border: 1px solid rgba(79, 70, 229, 0.45);
+            border-radius: 10px;
+            background: rgba(79, 70, 229, 0.08);
+            color: var(--primary-dark);
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+        .export-btn:hover { background: rgba(79, 70, 229, 0.18); }
         .tier-tag {
             display: inline-block;
             font-size: 11px;
@@ -230,13 +259,17 @@
 </head>
 <body>
 <div class="page">
+    <nav class="top-nav">
+      <a href="/">📦 成本查询</a>
+      <a href="/components">🛠️ 组件计算器</a>
+      <a href="/bom" class="active">🧾 清单汇总</a>
+      <a href="/profit">💰 利润排行</a>
+    </nav>
     <div class="topbar">
         <h1>🧾 制造清单汇总器</h1>
-        <div class="nav-links">
-            <a class="nav-link" href="/components">🛠️ 组件计算器 →</a>
-            <a class="nav-link" href="/">← 返回成本查询</a>
-        </div>
     </div>
+
+    <div class="load-error" id="data-error" style="display:none;">数据加载失败,请刷新重试</div>
 
     <div class="card" id="input-card">
         <div class="card-title">📋 粘贴制造清单</div>
@@ -292,16 +325,20 @@
 
         <div class="section-gap"></div>
         <div class="card-title">🪨 最终原材料汇总</div>
-        <table class="mat-table">
+        <div class="export-bar">
+            <button class="export-btn" id="export-csv-btn">⬇️ 导出 CSV</button>
+            <button class="export-btn" id="copy-btn">📋 复制数据</button>
+        </div>
+        <table class="mat-table" id="mat-table">
             <thead>
             <tr>
-                <th>材料</th>
-                <th>分类</th>
-                <th>总需求</th>
-                <th>单价(收)</th>
-                <th>小计(收)</th>
-                <th>单价(卖)</th>
-                <th>小计(卖)</th>
+                <th class="sortable" data-key="name" data-label="材料">材料</th>
+                <th class="sortable" data-key="tier" data-label="分类">分类</th>
+                <th class="sortable" data-key="qty" data-label="总需求">总需求</th>
+                <th class="sortable" data-key="buy" data-label="单价(收)">单价(收)</th>
+                <th class="sortable" data-key="subBuy" data-label="小计(收)">小计(收)</th>
+                <th class="sortable" data-key="sell" data-label="单价(卖)">单价(卖)</th>
+                <th class="sortable" data-key="subSell" data-label="小计(卖)">小计(卖)</th>
             </tr>
             </thead>
             <tbody id="mat-tbody"></tbody>
@@ -348,6 +385,7 @@ let RECIPES = {};       // name -> {id, tier, outputCount, inputs}
 let CAT_BY_ID = {};     // id   -> {name, buy_max, sell_min, tier}
 let CAT_BY_NAME = {};   // name -> {id, buy_max, sell_min, tier}
 let parsedItems = null; // 最近一次解析结果 {items: Map(name->qty), unknown: [{line, name}]}
+let dataReady = false;  // 配方与行情是否加载成功;未就绪时「解析清单」给出明确提示
 
 // 与组件制造计算器一致的建筑加成模型(来源: 游戏 SDE,经晨曦 ESI dogma 核实)
 // 一座工程综合体最多 3 个改装件槽位;同类改装件不叠加,取最高减免
@@ -408,7 +446,7 @@ function buildRigBox() {
             if (document.querySelectorAll('#rig-box input:checked').length > MAX_RIG_SLOTS) {
                 e.target.checked = false;
                 lab.classList.remove('checked');
-                alert(`一座建筑最多同时安装 ${MAX_RIG_SLOTS} 个改装件`);
+                toast(`一座建筑最多同时安装 ${MAX_RIG_SLOTS} 个改装件`, true);
                 return;
             }
             lab.classList.toggle('checked', cb.checked);
@@ -450,19 +488,26 @@ function fillSelects() {
 }
 
 async function loadData() {
-    const [rr, cr] = await Promise.all([
-        fetch('/recipes').then(r => r.json()),
-        fetch('/catalog').then(r => r.json())
-    ]);
-    if (rr.success) {
-        rr.data.forEach(r => { RECIPES[r.name] = r; });
+    let rr, cr;
+    try {
+        [rr, cr] = await Promise.all([
+            fetch('/recipes').then(r => r.json()),
+            fetch('/catalog').then(r => r.json())
+        ]);
+        if (!rr.success || !cr.success) throw new Error('接口返回异常');
+    } catch (e) {
+        // 加载失败:红色横幅 + 错误提示条;此时点「解析清单」会给出明确的未就绪提示
+        console.error('数据加载失败:', e);
+        document.getElementById('data-error').style.display = 'block';
+        toast('数据加载失败,请刷新重试', true);
+        return;
     }
-    if (cr.success) {
-        cr.data.forEach(c => {
-            CAT_BY_ID[c.id] = c;
-            CAT_BY_NAME[c.name] = c;
-        });
-    }
+    rr.data.forEach(r => { RECIPES[r.name] = r; });
+    cr.data.forEach(c => {
+        CAT_BY_ID[c.id] = c;
+        CAT_BY_NAME[c.name] = c;
+    });
+    dataReady = true;
 }
 
 // ==========================================
@@ -592,6 +637,9 @@ function expandAll() {
 // ==========================================
 // 渲染
 // ==========================================
+let matRows = [];                                // 汇总表数据(name/tier/qty/单价/小计)
+let matSort = { key: 'subSell', dir: 'desc' };   // 汇总表排序状态,默认卖单小计降序
+
 function render(rows, raws) {
     document.getElementById('result-card').style.display = 'block';
 
@@ -630,58 +678,173 @@ function render(rows, raws) {
         itb.appendChild(tr);
     });
 
-    // 原材料汇总(按卖单小计降序)
-    const list = [...raws.values()].sort((a, b) => {
-        const pa = a.id != null && CAT_BY_ID[a.id] ? (CAT_BY_ID[a.id].sell_min || 0) * a.qty : -1;
-        const pb = b.id != null && CAT_BY_ID[b.id] ? (CAT_BY_ID[b.id].sell_min || 0) * b.qty : -1;
-        return pb - pa;
-    });
-    const tb = document.getElementById('mat-tbody');
-    tb.innerHTML = '';
-    let totalBuy = 0, totalSell = 0, unpriced = 0;
-    list.forEach(m => {
+    // 原材料汇总数据(含单价与小计,供排序、导出、复制使用)
+    matRows = [...raws.values()].map(m => {
         const cat = m.id != null ? CAT_BY_ID[m.id] : CAT_BY_NAME[m.name];
         const buy = cat ? (cat.buy_max || 0) : 0;
         const sell = cat ? (cat.sell_min || 0) : 0;
-        const hasPrice = !!(cat && (cat.buy_max || cat.sell_min));
-        if (!hasPrice) unpriced++;
-        const subBuy = buy * m.qty, subSell = sell * m.qty;
-        totalBuy += subBuy;
-        totalSell += subSell;
+        return {
+            name: m.name,
+            id: m.id,
+            tier: m.tier,
+            qty: m.qty,
+            buy,
+            sell,
+            subBuy: buy * m.qty,
+            subSell: sell * m.qty,
+            hasPrice: !!(cat && (cat.buy_max || cat.sell_min)),
+        };
+    });
+    renderMatTable();
+}
+
+// 汇总表排序:数值列比较数值,文字列按中文 locale 比较
+function sortMatRows() {
+    const { key, dir } = matSort;
+    const mul = dir === 'asc' ? 1 : -1;
+    matRows.sort((a, b) => {
+        const va = a[key], vb = b[key];
+        if (typeof va === 'string' || typeof vb === 'string') {
+            return String(va).localeCompare(String(vb), 'zh-CN') * mul;
+        }
+        return ((va || 0) - (vb || 0)) * mul;
+    });
+}
+
+// 表头箭头指示:当前排序列显示 ▲(升)/ ▼(降)
+function updateSortHeaders() {
+    document.querySelectorAll('#mat-table th.sortable').forEach(th => {
+        const arrow = matSort.key === th.dataset.key ? (matSort.dir === 'asc' ? ' ▲' : ' ▼') : '';
+        th.textContent = th.dataset.label + arrow;
+    });
+}
+
+// 渲染汇总表(按当前排序)与合计行;无行情提示先移除旧条目,避免重复堆积
+function renderMatTable() {
+    sortMatRows();
+    updateSortHeaders();
+    const tb = document.getElementById('mat-tbody');
+    tb.innerHTML = '';
+    let totalBuy = 0, totalSell = 0, unpriced = 0;
+    matRows.forEach(m => {
+        if (!m.hasPrice) unpriced++;
+        totalBuy += m.subBuy;
+        totalSell += m.subSell;
         const tr = document.createElement('tr');
         tr.innerHTML = `
-            <td>${m.name}${hasPrice ? '' : ' <span class="mini-warn">(无行情)</span>'}</td>
+            <td>${m.name}${m.hasPrice ? '' : ' <span class="mini-warn">(无行情)</span>'}</td>
             <td><span class="tier-tag">${m.tier}</span></td>
             <td><b>${fmtQty(m.qty)}</b></td>
-            <td>${hasPrice ? fmt(buy) : '-'}</td>
-            <td>${hasPrice ? fmt(subBuy) : '-'}</td>
-            <td>${hasPrice ? fmt(sell) : '-'}</td>
-            <td>${hasPrice ? fmt(subSell) : '-'}</td>`;
+            <td>${m.hasPrice ? fmt(m.buy) : '-'}</td>
+            <td>${m.hasPrice ? fmt(m.subBuy) : '-'}</td>
+            <td>${m.hasPrice ? fmt(m.sell) : '-'}</td>
+            <td>${m.hasPrice ? fmt(m.subSell) : '-'}</td>`;
         tb.appendChild(tr);
     });
     document.getElementById('total-buy').textContent = fmt(totalBuy);
     document.getElementById('total-sell').textContent = fmt(totalSell);
     document.getElementById('cost-buy').textContent = fmt(totalBuy);
     document.getElementById('cost-sell').textContent = fmt(totalSell);
+    const oldNote = document.getElementById('mat-note');
+    if (oldNote) oldNote.remove();
     if (unpriced > 0) {
         const note = document.createElement('div');
         note.className = 'mini-warn';
+        note.id = 'mat-note';
         note.style.marginTop = '8px';
         note.textContent = `⚠️ 有 ${unpriced} 种材料暂无行情数据(未计入合计),可先执行行情更新。`;
-        document.getElementById('mat-tbody').after(note);
+        document.getElementById('mat-table').after(note);
     }
+}
+
+// ==========================================
+// 导出 CSV / 复制数据(列与汇总表一致,末行合计)
+// ==========================================
+function buildExportText(sep) {
+    const esc = v => {
+        const s = String(v);
+        return (s.includes(sep) || s.includes('"') || s.includes('\n'))
+            ? '"' + s.replace(/"/g, '""') + '"' : s;
+    };
+    const header = ['材料', 'ID', '分类', '总需求', '单价(收)', '小计(收)', '单价(卖)', '小计(卖)'];
+    const lines = [header.join(sep)];
+    let totalBuy = 0, totalSell = 0;
+    matRows.forEach(m => {
+        totalBuy += m.subBuy;
+        totalSell += m.subSell;
+        lines.push([
+            m.name,
+            m.id != null ? m.id : '',
+            m.tier,
+            m.qty,
+            m.hasPrice ? m.buy : '',
+            m.hasPrice ? m.subBuy : '',
+            m.hasPrice ? m.sell : '',
+            m.hasPrice ? m.subSell : '',
+        ].map(esc).join(sep));
+    });
+    lines.push(['合计', '', '', '', '', totalBuy, '', totalSell].map(esc).join(sep));
+    return lines.join('\n');
+}
+
+function exportCsv() {
+    if (!matRows.length) { toast('没有可导出的数据', true); return; }
+    const blob = new Blob(['\ufeff' + buildExportText(',')], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'bom.csv';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast('CSV 已导出');
+}
+
+function copyData() {
+    if (!matRows.length) { toast('没有可复制的数据', true); return; }
+    const text = buildExportText('\t');
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text)
+            .then(() => toast('已复制到剪贴板'))
+            .catch(() => fallbackCopy(text));
+    } else {
+        fallbackCopy(text);
+    }
+}
+
+// 剪贴板 API 不可用或写入失败时降级:隐藏 textarea + execCommand
+function fallbackCopy(text) {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    const ok = document.execCommand('copy');
+    document.body.removeChild(ta);
+    toast(ok ? '已复制到剪贴板' : '复制失败,请手动复制表格数据', !ok);
 }
 
 // ==========================================
 // 工具函数
 // ==========================================
+// 统一金额格式化:千分位分隔,最多保留两位小数
 function fmt(n) {
-    if (n === null || n === undefined || isNaN(n)) return '-';
-    if (n === 0) return '0';
-    if (Math.abs(n) >= 1e9) return (n / 1e9).toFixed(2) + ' B';
-    if (Math.abs(n) >= 1e6) return (n / 1e6).toFixed(2) + ' M';
-    if (Math.abs(n) >= 1e4) return (n / 1e3).toFixed(1) + ' K';
-    return n.toLocaleString('zh-CN', { maximumFractionDigits: 2 });
+  if (n === null || n === undefined || isNaN(n)) return '-';
+  return Number(n).toLocaleString('zh-CN', { maximumFractionDigits: 2 });
+}
+
+// 全局提示条:错误场景传 isErr = true
+let _toastTimer = null;
+function toast(msg, isErr) {
+  let el = document.getElementById('page-toast');
+  if (!el) { el = document.createElement('div'); el.id = 'page-toast'; document.body.appendChild(el); }
+  el.textContent = msg;
+  el.className = 'toast' + (isErr ? ' err' : '');
+  el.style.display = 'block';
+  clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(() => { el.style.display = 'none'; }, 3200);
 }
 
 function fmtQty(n) {
@@ -692,18 +855,41 @@ function fmtQty(n) {
 // 事件绑定
 // ==========================================
 document.getElementById('parse-btn').onclick = () => {
+    if (!dataReady) {
+        // 数据未就绪(仍在加载或加载失败):明确提示,避免误报「没有可识别的物品」
+        toast('配方与行情数据尚未加载完成(或加载失败),请稍候或刷新页面重试', true);
+        return;
+    }
     const text = document.getElementById('paste-box').value;
     if (!text.trim()) {
-        alert('请先粘贴制造清单');
+        toast('请先粘贴制造清单', true);
         return;
     }
     parsedItems = parseList(text);
     if (!parsedItems.items.size) {
-        alert('没有可识别的物品,请检查格式(每行: 数量 x 物品名)');
+        toast('没有可识别的物品,请检查格式(每行: 数量 x 物品名)', true);
         return;
     }
     expandAll();
 };
+
+// 汇总表表头点击排序:同列切换升/降序;换列时文字列默认升序、数值列默认降序
+document.querySelectorAll('#mat-table th.sortable').forEach(th => {
+    th.addEventListener('click', () => {
+        const key = th.dataset.key;
+        if (matSort.key === key) {
+            matSort.dir = matSort.dir === 'asc' ? 'desc' : 'asc';
+        } else {
+            const isText = key === 'name' || key === 'tier';
+            matSort = { key, dir: isText ? 'asc' : 'desc' };
+        }
+        renderMatTable();
+    });
+});
+
+// 导出 CSV / 复制数据
+document.getElementById('export-csv-btn').onclick = exportCsv;
+document.getElementById('copy-btn').onclick = copyData;
 
 // 加成参数变化时,若已解析过清单则实时重算
 document.getElementById('structure-select').addEventListener('change', () => { buildRigBox(); if (parsedItems) expandAll(); });
