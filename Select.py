@@ -22,6 +22,8 @@ def _get_search_roots():
         os.path.join(base_dir, 'MoonMaterials'),
         os.path.join(base_dir, 'Gas'),
         os.path.join(base_dir, 'Commodities'),
+        os.path.join(base_dir, 'Salvage'),
+        os.path.join(base_dir, 'AncientSalvage'),
         os.path.join(base_dir, 'Reactions', '混合聚合物'),
         os.path.join(base_dir, 'Reactions', '中间产物'),
         os.path.join(base_dir, 'Reactions', '合成物'),
