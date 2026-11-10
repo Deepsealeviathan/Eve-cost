@@ -1,6 +1,6 @@
 # Eve-cost
 
-EVE Online(国服晨曦)制造成本估算工具:直连网易 ESI 镜像抓取吉他 4-4(加达里海军组装车间)实时行情并入库,按配方清单估算材料总成本,附带利润排行与价格趋势,提供 Web 页面与命令行两种使用方式。
+EVE Online(国服晨曦)制造成本估算工具:直连网易 ESI 镜像抓取吉他 4-4(加达里海军组装车间)实时行情并入库,按配方清单估算材料总成本,并按官方 EIV 公式估算制造安装费,附带利润排行与价格趋势,提供 Web 页面与命令行两种使用方式。
 
 行情数据来源:[网易 ESI 镜像](https://ali-esi.evepc.163.com/ui/)(`datasource=serenity`,伏尔戈星域整域订单,过滤吉他 4-4 空间站)
 
@@ -8,8 +8,8 @@ EVE Online(国服晨曦)制造成本估算工具:直连网易 ESI 镜像抓取�
 
 ```
 ├── app.py                     # Flask Web 服务(页面查询入口)
-├── Select.py                  # 成本计算核心逻辑(P1~P4 递归计算,被 app.py 调用)
-├── update_market.py           # 行情流水线:ESI 整域拉取 → 吉他 4-4 聚合 → 历史行情 + 利润快照 → upsert MySQL
+├── Select.py                  # 成本计算核心逻辑(P1~P4 递归计算 + EIV,被 app.py 调用)
+├── update_market.py           # 行情流水线:ESI 整域拉取 → 吉他 4-4 聚合 → 历史行情 + 利润快照 + 调整价 → upsert MySQL
 ├── db_config.py               # 数据库配置加载器(读取 config.ini)
 ├── config.example.ini         # 数据库配置模板(复制为 config.ini 后填写密码)
 ├── schema.sql                 # 数据库建表脚本
@@ -60,7 +60,7 @@ cp config.example.ini config.ini
 mysql -u root -p < schema.sql
 ```
 
-共四张表:`items`(物品名称与分类)、`market_prices`(行情快照,按 type_id + region_id 覆盖更新)、`price_history`(0.8.0,近 90 天历史日线,趋势图用)和 `profit_snapshot`(0.8.0,利润快照,每次行情更新后自动重算)。入库使用 upsert,无需预先插行;建表语句全部 `IF NOT EXISTS`,**从旧版本升级时在已有库上重跑一次即可,不影响旧数据**。
+共五张表:`items`(物品名称与分类)、`market_prices`(行情快照,按 type_id + region_id 覆盖更新)、`price_history`(0.8.0,近 90 天历史日线,趋势图用)、`profit_snapshot`(0.8.0,利润快照,每次行情更新后自动重算)和 `adjusted_prices`(ESI 调整价,制造安装费/EIV 计算用)。入库使用 upsert,无需预先插行;建表语句全部 `IF NOT EXISTS`,**从旧版本升级时在已有库上重跑一次即可,不影响旧数据**。
 
 ## 使用方式(推荐:Web 页面)
 
@@ -72,7 +72,7 @@ python update_market.py
 python app.py
 ```
 
-Web 页面支持:单个/批量成本查询(清单可存进 URL 分享、结果可导出 CSV)、物品目录浏览(分类 + 搜索 + 价格新鲜度 + 近 90 天走势图)、组件制造计算器(访问 `/components`,目录选组件、数量加减、建筑加成减免)、制造清单汇总(访问 `/bom`,粘贴购物单一键展开最终原材料,汇总表可排序/导出)以及利润排行(访问 `/profit`,全部可制造物品的利润/利润率对比,支持挂单/即时两种卖出口径与税率设置)。
+Web 页面支持:单个/批量成本查询(清单可存进 URL 分享、结果可导出 CSV)、物品目录浏览(分类 + 搜索 + 价格新鲜度 + 近 90 天走势图)、组件制造计算器(访问 `/components`,目录选组件、数量加减、建筑加成减免、星系成本系数与官方 EIV 制造安装费)、制造清单汇总(访问 `/bom`,粘贴购物单一键展开最终原材料,汇总表可排序/导出)以及利润排行(访问 `/profit`,全部可制造物品的利润/利润率对比,支持挂单/即时两种卖出口径与税率设置)。
 
 ### 游客模式与管理员
 
@@ -93,13 +93,14 @@ Web 页面支持:单个/批量成本查询(清单可存进 URL 分享、结果�
 - **配方文件**:扫描各配方目录下 JSON 的 `id` 和配方 `inputs` 的 `materialId`
 - **补充物品**:既不出现在配方中又有市场价的物品(如燃料块),在 `update_market.py` 顶部的 `EXTRA_TYPE_IDS` 中登记 type_id
 - **分类**:行星产物按目录记 P1~P4;其余按根目录 `categories.json`(格式 `{"分类名": ["物品名", ...]}`);都不在则为「其他」。分类随行情一并写入 `items` 表
+- **调整价**:同一份跟踪清单从 ESI `/markets/prices/` 拉取 `adjusted_price`,写入 `adjusted_prices` 表,供组件页按官方 EIV 公式计算制造安装费
 
 ## 使用方式(命令行)
 
 ```python
 from Select import query_by_name, get_catalog
 
-result = query_by_name('机械元件', quantity=3)   # 返回材料明细与总成本
+result = query_by_name('机械元件', quantity=3)   # 返回材料明细、总成本与单轮 EIV
 items = get_catalog()                             # 返回全部物品目录
 ```
 

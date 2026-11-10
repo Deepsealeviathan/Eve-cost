@@ -245,6 +245,63 @@ def sync_to_db(tracked, stats):
     return len(price_rows)
 
 
+def fetch_adjusted_prices(tracked):
+    """拉取 ESI 全量调整价,只保留跟踪物品,返回 {type_id: (adjusted_price, average_price)}。
+
+    调整价用于按官方 EIV 公式估算制造安装费,与吉他市场价不是同一套数据。
+    """
+    resp = esi_get("/markets/prices/")
+    if resp is None:
+        raise RuntimeError("拉取调整价失败")
+    try:
+        data = resp.json()
+    except ValueError as e:
+        raise RuntimeError(f"调整价返回格式错误: {e}")
+
+    prices = {}
+    for row in data:
+        tid = row.get("type_id")
+        if tid in tracked:
+            prices[tid] = (row.get("adjusted_price"), row.get("average_price"))
+    print(f"调整价:跟踪物品 {len(prices)}/{len(tracked)} 个有数据")
+    return prices
+
+
+def sync_adjusted_prices(prices):
+    """upsert adjusted_prices:只保留跟踪物品,行情更新时整体覆盖。"""
+    if not prices:
+        print("调整价:没有可写入的数据,跳过")
+        return 0
+
+    now = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())
+    sql = """
+        INSERT INTO adjusted_prices (type_id, adjusted_price, average_price, updated_at)
+        VALUES (%s, %s, %s, %s)
+        ON DUPLICATE KEY UPDATE
+            adjusted_price = VALUES(adjusted_price),
+            average_price = VALUES(average_price),
+            updated_at = VALUES(updated_at)
+    """
+    rows = [(tid, adj, avg, now) for tid, (adj, avg) in prices.items()]
+
+    conn = None
+    try:
+        conn = pymysql.connect(**load_db_config())
+        with conn.cursor() as cursor:
+            for i in range(0, len(rows), BATCH_SIZE):
+                cursor.executemany(sql, rows[i:i + BATCH_SIZE])
+        conn.commit()
+        print(f"调整价入库: {len(rows)} 条")
+        return len(rows)
+    except Exception:
+        if conn:
+            conn.rollback()
+        raise
+    finally:
+        if conn:
+            conn.close()
+
+
 def fetch_price_history(tracked):
     """并发拉取每个跟踪物品的近 HISTORY_DAYS 天历史日线,返回 {type_id: [row,...]}。
     行格式: (type_id, date, average, highest, lowest, volume, order_count)"""
@@ -360,6 +417,12 @@ def main():
     print("同步数据库...")
     total = sync_to_db(tracked, stats)
     print(f"导入完成,共更新 {total} 条记录。")
+
+    # 调整价:制造安装费(EIV)数据源,失败只记日志
+    try:
+        sync_adjusted_prices(fetch_adjusted_prices(tracked))
+    except Exception as e:
+        print(f"调整价同步失败(不影响价格更新): {e}")
 
     # 历史行情与利润快照:失败只记日志,不影响价格主流程
     try:

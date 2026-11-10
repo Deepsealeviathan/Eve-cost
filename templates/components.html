@@ -294,6 +294,35 @@
         }
         .me-summary .warn { color: var(--warning); }
 
+        .sci-input { width: 90px; cursor: text; }
+        .scc-fixed {
+            height: 38px;
+            padding: 0 12px;
+            display: flex;
+            align-items: center;
+            border: 2px dashed var(--border);
+            border-radius: 12px;
+            color: var(--muted);
+            font-weight: 700;
+            font-size: 14px;
+        }
+
+        /* 制造安装费明细 */
+        .fee-card {
+            margin-top: 18px;
+            padding: 16px;
+            border-radius: 14px;
+            background: rgba(6, 182, 212, 0.06);
+            border: 1px solid rgba(6, 182, 212, 0.25);
+        }
+        .fee-title { font-weight: 700; margin-bottom: 10px; color: #0e7490; }
+        table.fee-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        .fee-table td { padding: 5px 0; vertical-align: top; }
+        .fee-table td:first-child { color: var(--muted); width: 48%; }
+        .fee-table td:last-child { text-align: right; font-variant-numeric: tabular-nums; }
+        .fee-table .fee-total-row td { border-top: 1px solid var(--border); padding-top: 8px; font-weight: 700; }
+        .fee-warn { margin-top: 8px; font-size: 12px; color: var(--warning); }
+
         /* 材料表 */
         table.mat-table { width: 100%; border-collapse: collapse; font-size: 14px; }
         .mat-table th, .mat-table td {
@@ -321,6 +350,7 @@
         }
         .compare-box .label { font-size: 13px; color: var(--muted); margin-bottom: 6px; }
         .compare-box .value { font-size: 22px; font-weight: 800; }
+        .compare-box .sub { margin-top: 6px; font-size: 12px; color: var(--muted); font-weight: 400; }
         .compare-box.craft { background: rgba(79, 70, 229, 0.10); }
         .compare-box.craft .value { color: var(--primary-dark); }
         .compare-box.market { background: rgba(6, 182, 212, 0.10); }
@@ -393,6 +423,14 @@
                     <select id="structure-select"></select>
                 </div>
                 <div class="ctrl-group">
+                    <span class="ctrl-label">星系成本系数(制造,%)</span>
+                    <input class="me-input sci-input" id="sci-input" type="number" min="0" max="100" step="0.01" value="0">
+                </div>
+                <div class="ctrl-group">
+                    <span class="ctrl-label">SCC 附加费(制造固定)</span>
+                    <div class="scc-fixed">4.00%</div>
+                </div>
+                <div class="ctrl-group">
                     <span class="ctrl-label">改装件(可多选,同一建筑最多 3 个)</span>
                     <div class="rig-box" id="rig-box" style="display:none;"></div>
                 </div>
@@ -422,7 +460,7 @@
                 <tbody id="mat-tbody"></tbody>
                 <tfoot>
                 <tr>
-                    <td colspan="4">合计</td>
+                    <td colspan="4">材料合计(不含安装费)</td>
                     <td id="total-buy">-</td>
                     <td></td>
                     <td id="total-sell">-</td>
@@ -430,10 +468,25 @@
                 </tfoot>
             </table>
 
+            <div class="fee-card">
+                <div class="fee-title">制造安装费(官方 EIV 公式)</div>
+                <table class="fee-table">
+                    <tbody id="fee-tbody">
+                        <tr><td>EIV(ME0 材料 × ESI 调整价)</td><td id="fee-eiv">-</td></tr>
+                        <tr><td>星系成本系数 × (1 − 结构费用减免)</td><td id="fee-sci">-</td></tr>
+                        <tr><td>SCC 附加费(制造固定)</td><td id="fee-scc">4.00%</td></tr>
+                        <tr class="fee-total-row"><td>合计费率 / 安装费</td><td id="fee-total">-</td></tr>
+                        <tr><td>单件安装费</td><td id="fee-unit">-</td></tr>
+                    </tbody>
+                </table>
+                <div class="fee-warn" id="fee-warn" style="display:none;"></div>
+            </div>
+
             <div class="compare">
                 <div class="compare-box craft">
-                    <div class="label">制造总成本(按出售价计)</div>
+                    <div class="label">制造总成本(材料卖价 + 安装费)</div>
                     <div class="value" id="craft-total">-</div>
+                    <div class="sub" id="craft-breakdown"></div>
                 </div>
                 <div class="compare-box market">
                     <div class="label">市场直购总价(出售价 × 数量)</div>
@@ -443,10 +496,12 @@
             <div class="verdict" id="verdict"></div>
 
             <div class="formula-note">
-                计算公式: 需求 = max(轮次, ⌈单轮用量 × 轮次 × (1 − 蓝图ME减免) × (1 − 改装件减免) × (1 − 结构减免)⌉),轮次 = ⌈数量 ÷ 每轮产出⌉,每种材料每轮至少 1 个。<br>
+                材料计算公式: 需求 = max(轮次, ⌈单轮用量 × 轮次 × (1 − 蓝图ME减免) × (1 − 改装件减免) × (1 − 结构减免)⌉),轮次 = ⌈数量 ÷ 每轮产出⌉,每种材料每轮至少 1 个。<br>
                 蓝图 ME = 每级 −1%,研究 10 级共 −10%(ME 0 即无减免);结构减免: 莱塔卢 / 阿兹贝尔 / 索迪约均提供 1% 材料减免(NPC 站无减免);<br>
                 改装件减免 = 已装适用改装件中的最高值(T1 2.0% / T2 2.4%,同类不叠加) × 星系系数(高安 ×1.0 / 低安 ×1.9 / 00 与虫洞 ×2.1,系数只放大改装件、不放大结构 1%)。
-                一座工程综合体最多同时安装 3 个改装件,不同类别(如"基础旗舰"与"高级组件")可同时生效。数值经晨曦 ESI dogma 属性核实(attributeEngRigMatBonus / hiSecModifier / strEngMatBonus)。
+                一座工程综合体最多同时安装 3 个改装件,不同类别(如"基础旗舰"与"高级组件")可同时生效。数值经晨曦 ESI dogma 属性核实(attributeEngRigMatBonus / hiSecModifier / strEngMatBonus)。<br>
+                安装费计算公式: 安装费 = EIV × (星系成本系数 × (1 − 建筑费用减免) + SCC 4%);EIV = Σ(ME0 单轮材料量 × ESI 调整价) × 轮次。
+                建筑费用减免: NPC 站 0% / 莱塔卢 3% / 阿兹贝尔 4% / 索迪约 5%。本页按设施税 0%、非 Alpha 克隆计算;EIV 用 ME0 材料量,不受蓝图 ME 和改装件材料减免影响。
             </div>
         </div>
     </main>
@@ -533,12 +588,12 @@ document.getElementById('catalog-search').addEventListener('input', renderList);
 // 建筑加成数据(来源: 游戏 SDE,经晨曦 ESI dogma 核实)
 // ==========================================
 // 一座工程综合体最多 3 个改装件槽位;同类改装件不叠加,取最高减免
+// structMe = 材料减免;structFee = 制造安装费减免(只作用于星系成本系数部分)
 const STRUCTURES = [
-    { id: 'station', label: 'NPC 站(无任何减免)',                size: null, structMe: 0 },
-    { id: 'norigs',  label: '工程综合体·未装改装件(仅结构 1%)',    size: null, structMe: 0.01 },
-    { id: 'raitaru', label: '莱塔卢(中型 EC,结构 1%)',            size: 'M',  structMe: 0.01 },
-    { id: 'azbel',   label: '阿兹贝尔(大型 EC,结构 1%)',          size: 'L',  structMe: 0.01 },
-    { id: 'sotiyo',  label: '索迪约(超大型 EC,结构 1%)',          size: 'XL', structMe: 0.01 },
+    { id: 'station', label: 'NPC 站(无任何减免)',                     size: null, structMe: 0,    structFee: 0 },
+    { id: 'raitaru', label: '莱塔卢(中型 EC,材料 1%,费用 3%)',         size: 'M',  structMe: 0.01, structFee: 0.03 },
+    { id: 'azbel',   label: '阿兹贝尔(大型 EC,材料 1%,费用 4%)',       size: 'L',  structMe: 0.01, structFee: 0.04 },
+    { id: 'sotiyo',  label: '索迪约(超大型 EC,材料 1%,费用 5%)',       size: 'XL', structMe: 0.01, structFee: 0.05 },
 ];
 
 // 改装件:base 为基础减免(T1=2.0%, T2=2.4%),scope 为适用的组件分类;size 须与建筑规格匹配
@@ -622,7 +677,7 @@ function fillSelects() {
         o.textContent = s.label;
         stSel.appendChild(o);
     });
-    stSel.value = 'norigs';
+    stSel.value = 'raitaru';
     const secSel = document.getElementById('sec-select');
     SEC_PRESETS.forEach(s => {
         const o = document.createElement('option');
@@ -631,6 +686,10 @@ function fillSelects() {
         secSel.appendChild(o);
     });
     buildRigBox();
+    try {
+        const savedSci = localStorage.getItem('eveCostSci');
+        if (savedSci !== null) document.getElementById('sci-input').value = savedSci;
+    } catch (e) { /* 隐私模式下 localStorage 不可用,忽略 */ }
 }
 
 // ==========================================
@@ -702,20 +761,26 @@ function getQty() {
     return Math.floor(q);
 }
 
+function getSci() {
+    let sci = parseFloat(document.getElementById('sci-input').value);
+    if (!Number.isFinite(sci) || sci < 0) sci = 0;
+    return Math.min(sci, 100);
+}
+
 function meParams() {
     const structure = STRUCTURES.find(s => s.id === document.getElementById('structure-select').value) || STRUCTURES[1];
     const sec = SEC_PRESETS.find(s => s.id === document.getElementById('sec-select').value) || SEC_PRESETS[0];
     let meLevel = parseInt(document.getElementById('me-input').value, 10);
     if (!Number.isFinite(meLevel)) meLevel = 0;
     meLevel = Math.max(0, Math.min(10, meLevel));
-    return { structure, rigs: selectedRigs(), sec, meLevel };
+    return { structure, rigs: selectedRigs(), sec, meLevel, sci: getSci() };
 }
 
 function recalc() {
     if (!current) return;
     const { recipe } = current;
     const qty = getQty();
-    const { structure, rigs, sec, meLevel } = meParams();
+    const { structure, rigs, sec, meLevel, sci } = meParams();
 
     const meFactor = 1 - 0.01 * meLevel;               // 蓝图 ME:每级 -1%,10 级共 -10%
     const rigEff = rigBonusFor(recipe.tier, rigs, sec.scale);  // 已装适用改装件中的最高减免
@@ -756,14 +821,52 @@ function recalc() {
     });
     document.getElementById('total-buy').textContent = fmt(totalBuy);
     document.getElementById('total-sell').textContent = fmt(totalSell);
-    document.getElementById('craft-total').textContent = fmt(totalSell);
+
+    // 制造安装费:官方 EIV 公式。按设施税 0%、非 Alpha 克隆计算,只加 SCC 4%。
+    const eivPerRun = recipe.eiv_per_run || 0;
+    const eiv = eivPerRun * runs;
+    const structFee = structure.structFee || 0;
+    const sciEff = (sci / 100) * (1 - structFee);      // 结构费用减免只作用于星系成本系数
+    const feeRate = sciEff + 0.04;                      // SCC 附加费固定 4%
+    const jobFee = Math.floor(eiv * feeRate);
+
+    document.getElementById('fee-eiv').textContent = eivPerRun > 0
+        ? `${fmt(eivPerRun)} × ${runs} 轮 = ${fmt(eiv)} ISK`
+        : '数据未就绪';
+    document.getElementById('fee-sci').textContent =
+        `${sci.toFixed(2)}% × (1 − ${(structFee * 100).toFixed(0)}%) = ${(sciEff * 100).toFixed(4)}%`;
+    document.getElementById('fee-scc').textContent = '4.00%';
+    document.getElementById('fee-total').textContent =
+        `${(feeRate * 100).toFixed(4)}% ⇒ ${fmt(jobFee)} ISK`;
+    const produced = runs * oc;
+    document.getElementById('fee-unit').textContent = produced > 0
+        ? `${fmt(jobFee / produced)} ISK(按 ${produced} 个产出)`
+        : '-';
+
+    const feeWarn = document.getElementById('fee-warn');
+    let warn = '';
+    if (recipe.eiv_per_run === undefined) {
+        warn = '接口未返回 EIV 数据:请重启 Web 服务后再试。';
+    } else if (recipe.eiv_complete === false) {
+        warn = '部分材料缺少 ESI 调整价,安装费偏低或为 0;请先重跑 schema.sql 并更新行情(python update_market.py)。';
+    } else if (eivPerRun <= 0) {
+        warn = 'EIV 为 0,调整价可能尚未入库;请先重跑 schema.sql 并更新行情(python update_market.py)。';
+    }
+    feeWarn.textContent = warn;
+    feeWarn.style.display = warn ? 'block' : 'none';
+
+    // 制造总成本 = 材料(卖价) + 安装费
+    const craftTotal = totalSell + jobFee;
+    document.getElementById('craft-total').textContent = fmt(craftTotal);
+    document.getElementById('craft-breakdown').textContent =
+        `材料 ${fmt(totalSell)} + 安装费 ${fmt(jobFee)}`;
 
     // 市场对比
     const marketTotal = (recipe.market_sell || 0) * qty;
     document.getElementById('market-total').textContent = fmt(marketTotal);
     const verdict = document.getElementById('verdict');
     if (marketTotal > 0) {
-        const diff = marketTotal - totalSell;
+        const diff = marketTotal - craftTotal;
         if (diff > 0) {
             verdict.className = 'verdict profit';
             verdict.textContent = `✅ 制造更划算:比市场直购节省 ${fmt(diff)} ISK(差价 ${(diff / marketTotal * 100).toFixed(1)}%)`;
@@ -794,6 +897,10 @@ document.getElementById('qty-input').addEventListener('input', recalc);
 document.getElementById('structure-select').addEventListener('change', () => { buildRigBox(); recalc(); });
 document.getElementById('sec-select').addEventListener('change', recalc);
 document.getElementById('me-input').addEventListener('input', recalc);
+document.getElementById('sci-input').addEventListener('input', () => {
+    try { localStorage.setItem('eveCostSci', document.getElementById('sci-input').value); } catch (e) { /* 忽略 */ }
+    recalc();
+});
 
 // ==========================================
 // 工具函数

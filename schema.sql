@@ -49,3 +49,11 @@ CREATE TABLE IF NOT EXISTS price_history (
     order_count INT,
     PRIMARY KEY (type_id, date)
 );
+
+-- 调整价:ESI /markets/prices/ 的 adjusted_price,用于按官方 EIV 公式计算制造安装费
+CREATE TABLE IF NOT EXISTS adjusted_prices (
+    type_id        INT PRIMARY KEY,
+    adjusted_price DOUBLE,
+    average_price  DOUBLE,
+    updated_at     DATETIME
+);

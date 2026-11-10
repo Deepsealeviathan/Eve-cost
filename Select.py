@@ -100,6 +100,8 @@ class _QueryContext:
     def __init__(self):
         self.conn = None
         self.price_cache = {}
+        # ESI 调整价(adjusted_price)全量缓存,首次用到时加载一次;{} 表示表不存在或为空
+        self.adjusted_all = None
 
     def get_conn(self):
         if self.conn is None:
@@ -160,6 +162,36 @@ def _query_price_map(ids, ctx):
     return result
 
 
+def _query_adjusted_prices(ids, ctx):
+    """读取 ESI 调整价(adjusted_price),用于按官方公式计算 EIV。
+
+    首次调用时把整张表加载进 ctx(跟踪物品只有几百条),后续查找零查询。
+    表不存在(未升级 schema / 未跑过行情更新)时返回空映射,前端据此提示数据未就绪。
+    """
+    if not ids:
+        return {}
+
+    if ctx.adjusted_all is None:
+        # 与价格查询一致:连接类错误丢弃旧连接重试一次;表不存在(1146)直接按空数据处理
+        for attempt in (0, 1):
+            try:
+                conn = ctx.get_conn()
+                with conn.cursor() as cursor:
+                    cursor.execute("SELECT type_id, adjusted_price FROM adjusted_prices")
+                    ctx.adjusted_all = {row[0]: row[1] for row in cursor.fetchall()}
+                break
+            except (pymysql.Error, OSError) as e:
+                ctx.close()
+                if getattr(e, 'args', [None])[0] == 1146:
+                    ctx.adjusted_all = {}
+                    break
+                if attempt == 1:
+                    print(f"读取调整价失败: {e}")
+                    ctx.adjusted_all = {}
+
+    return {tid: ctx.adjusted_all.get(tid) for tid in ids}
+
+
 def _query_p1(data, quantity, ctx):
     """
     基础材料：直接查询数据库中该物品的 buy_max/sell_min
@@ -206,6 +238,22 @@ def _query_crafted(data, quantity, tier, ctx):
     recipe = data.get('recipe', {})
     output_count = recipe.get('outputCount', 1)
     inputs = recipe.get('inputs', [])
+
+    # 官方 EIV：按 ME0 单轮材料量 × ESI 调整价计算；
+    # ME/改装件的材料减免不影响安装费，所以这里用 recipe 的原始 count。
+    adjusted = _query_adjusted_prices(
+        [inp.get('materialId') for inp in inputs if inp.get('materialId') is not None], ctx)
+    eiv_per_run = 0.0
+    eiv_complete = True
+    for inp in inputs:
+        sub_id = inp.get('materialId')
+        if sub_id is None:
+            continue
+        adjusted_price = adjusted.get(sub_id)
+        if adjusted_price is None:
+            eiv_complete = False
+        else:
+            eiv_per_run += (inp.get('count', 0) or 0) * adjusted_price
 
     # 查询该物品自身的市场价格（buy_max / sell_min）；无 ID 的物品没有直接市场价
     if item_id is not None:
@@ -282,7 +330,10 @@ def _query_crafted(data, quantity, tier, ctx):
         'market_buy': market_buy or 0,
         'market_sell': market_sell or 0,
         'total_market_buy': (market_buy or 0) * quantity,
-        'total_market_sell': (market_sell or 0) * quantity
+        'total_market_sell': (market_sell or 0) * quantity,
+        # 官方制造安装费(EIV)取数：单轮 EIV 与是否缺调整价
+        'eiv_per_run': eiv_per_run,
+        'eiv_complete': eiv_complete
     }
 
 
