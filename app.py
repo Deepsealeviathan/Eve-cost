@@ -26,6 +26,7 @@ import update_market
 # get_catalog: 物品目录
 # get_recipes: 全部配方轻量索引
 from Select import query_by_name, get_catalog, get_recipes, get_profit_snapshot, get_price_history
+from reprocessing import get_catalog as get_reprocessing_catalog
 
 # 配置加载:数据库连接 / 管理员密钥 / 定时任务参数
 from db_config import load_db_config, load_security_config, load_schedule_config
@@ -341,6 +342,21 @@ def bom_page():
     return render_template('bom.html')
 
 
+# 垃圾回收化矿页:全部 T1 衍生装备与 T1 弹药的 55% 化矿收益
+@app.route('/reprocess')
+def reprocess_page():
+    return render_template('reprocess.html')
+
+
+@app.route('/api/reprocess', methods=['GET'])
+def api_reprocess():
+    """返回化矿清单、材料行情与物品行情;计算在前端按选定化矿率完成"""
+    try:
+        return jsonify({'success': True, 'data': get_reprocessing_catalog()})
+    except Exception as e:
+        return _api_error(e, '化矿数据加载失败,请稍后刷新重试')
+
+
 # 0.6.0 /recipes 接口返回全部配方的轻量索引,供 BOM 页前端递归展开
 @app.route('/recipes', methods=['GET'])
 def recipes():
@@ -420,9 +436,10 @@ if os.environ.get('EVE_COST_DISABLE_AUTO_UPDATE') != '1':
 if __name__ == '__main__':
     # 启动 Flask 内置开发服务器
     # host='0.0.0.0': 允许局域网内其他设备访问（不仅限于本机）
-    # port=5000: 服务运行在 5000 端口
+    # 端口默认 38000,可用 EVE_COST_PORT 覆盖(5000 留给机器上其他服务)
     # debug 默认关闭:调试模式会向局域网暴露 Werkzeug 调试器(可执行任意代码),安全风险
     # 本地开发需要自动重载时显式开启: EVE_COST_DEBUG=1 python app.py
     debug = os.environ.get('EVE_COST_DEBUG', '0') == '1'
+    port = int(os.environ.get('EVE_COST_PORT', '38000'))
 
-    app.run(debug=debug, host='0.0.0.0', port=5000)
+    app.run(debug=debug, host='0.0.0.0', port=port)

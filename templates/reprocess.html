@@ -1,0 +1,964 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EVE 垃圾回收化矿</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --primary: #4f46e5;
+            --primary-dark: #3730a3;
+            --accent: #06b6d4;
+            --success: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --bg: #0b0f19;
+            --card: rgba(255, 255, 255, 0.94);
+            --text: #1f2937;
+            --muted: #6b7280;
+            --border: rgba(0, 0, 0, 0.08);
+        }
+
+        body {
+            font-family: "Microsoft YaHei", "PingFang SC", Arial, sans-serif;
+            background:
+                radial-gradient(circle at 10% 20%, rgba(16, 185, 129, 0.16) 0%, transparent 35%),
+                radial-gradient(circle at 90% 80%, rgba(6, 182, 212, 0.14) 0%, transparent 35%),
+                linear-gradient(135deg, #0b0f19 0%, #111827 50%, #0b0f19 100%);
+            min-height: 100vh;
+            padding: 40px 20px;
+            color: var(--text);
+        }
+
+        .page { max-width: 1440px; margin: 0 auto; }
+
+        .top-nav{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 16px}
+        .top-nav a{padding:7px 16px;border-radius:999px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);color:#e8eef7;text-decoration:none;font-size:13px;transition:background .15s}
+        .top-nav a:hover{background:rgba(255,255,255,.18)}
+        .top-nav a.active{background:rgba(86,156,255,.28);border-color:rgba(86,156,255,.55);color:#fff}
+
+        .hero {
+            background: var(--card);
+            border-radius: 24px;
+            padding: 30px 36px;
+            margin-bottom: 18px;
+            border: 1px solid rgba(255, 255, 255, 0.45);
+            box-shadow: 0 24px 70px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255,255,255,.6);
+            backdrop-filter: blur(20px);
+        }
+        h1 {
+            font-size: 30px;
+            font-weight: 800;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: linear-gradient(90deg, var(--primary), var(--accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .desc { margin-top: 10px; color: var(--muted); font-size: 14px; line-height: 1.7; }
+        .desc strong { color: #0f766e; }
+        .desc .warn { color: #b45309; }
+
+        /* ===== 批量粘贴解析 ===== */
+        .batch-card {
+            background: var(--card);
+            border-radius: 20px;
+            padding: 22px 24px;
+            margin-bottom: 18px;
+            border: 1px solid rgba(255, 255, 255, 0.45);
+            box-shadow: 0 20px 54px rgba(0, 0, 0, 0.24);
+        }
+        .batch-head { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
+        .batch-head h2 { font-size: 18px; font-weight: 800; color: #1e293b; }
+        .batch-head .hint { font-size: 12px; color: var(--muted); }
+        .batch-grid { display: grid; grid-template-columns: minmax(340px, 0.95fr) minmax(420px, 1.25fr); gap: 20px; align-items: start; }
+        #batch-input {
+            width: 100%;
+            min-height: 168px;
+            resize: vertical;
+            padding: 12px 14px;
+            font-size: 13px;
+            line-height: 1.65;
+            font-family: Consolas, "Microsoft YaHei", monospace;
+            border: 1px solid #dbe3ec;
+            border-radius: 12px;
+            background: #fff;
+            color: var(--text);
+            outline: none;
+        }
+        #batch-input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(79,70,229,.12); }
+        .batch-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 10px; }
+        .btn {
+            font-family: inherit;
+            font-size: 13px;
+            font-weight: 700;
+            border: 0;
+            border-radius: 10px;
+            padding: 9px 18px;
+            cursor: pointer;
+            transition: transform .1s, opacity .15s;
+        }
+        .btn:active { transform: translateY(1px); }
+        .btn-primary { background: linear-gradient(135deg, var(--primary), var(--primary-dark)); color: #fff; }
+        .btn-primary:hover { opacity: .9; }
+        .btn-ghost { background: #eef2f7; color: #475569; }
+        .btn-ghost:hover { background: #e2e8f0; }
+        .batch-hint { font-size: 11px; color: var(--muted); line-height: 1.5; }
+        .batch-result {
+            min-height: 168px;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 14px;
+            padding: 14px 16px;
+        }
+        .batch-empty { color: var(--muted); font-size: 13px; line-height: 1.8; padding: 22px 8px; text-align: center; }
+        .batch-summary { display: grid; grid-template-columns: repeat(3, minmax(120px, 1fr)); gap: 8px; margin-bottom: 12px; }
+        .batch-stat { background: #fff; border: 1px solid #e8edf3; border-radius: 10px; padding: 8px 10px; }
+        .batch-stat .k { font-size: 10px; color: var(--muted); display: block; margin-bottom: 3px; }
+        .batch-stat .v { font-size: 15px; font-weight: 800; font-variant-numeric: tabular-nums; }
+        .batch-stat .v.pos { color: #047857; }
+        .batch-stat .v.neg { color: #b91c1c; }
+        .batch-subtitle { font-size: 12px; font-weight: 800; color: #334155; margin: 10px 0 6px; }
+        .batch-minerals { max-height: 245px; overflow: auto; border: 1px solid #e8edf3; border-radius: 10px; }
+        .batch-minerals table { font-size: 12px; }
+        .batch-minerals thead th { position: static; background: #eef2f7; padding: 6px 8px; }
+        .batch-minerals tbody td { padding: 5px 8px; }
+        .batch-minerals tbody td:first-child { text-align: left; font-weight: 600; }
+        .unmatched {
+            margin-top: 10px;
+            padding: 8px 10px;
+            border-radius: 9px;
+            background: rgba(245, 158, 11, .1);
+            border: 1px solid rgba(245, 158, 11, .35);
+            color: #92400e;
+            font-size: 11px;
+            line-height: 1.65;
+            max-height: 120px;
+            overflow: auto;
+        }
+        .matched-line { margin-top: 8px; font-size: 11px; color: var(--muted); line-height: 1.6; }
+
+        .toolbar {
+            background: var(--card);
+            border-radius: 18px;
+            padding: 16px 20px;
+            margin-bottom: 14px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px 18px;
+            align-items: center;
+            border: 1px solid rgba(255, 255, 255, 0.45);
+            box-shadow: 0 14px 36px rgba(0, 0, 0, 0.2);
+            position: sticky;
+            top: 10px;
+            z-index: 20;
+        }
+        .field { display: flex; align-items: center; gap: 8px; }
+        .field > label { font-size: 12px; font-weight: 700; color: #4b5563; white-space: nowrap; }
+        input, select {
+            font-family: inherit;
+            font-size: 13px;
+            border: 1px solid #e5e7eb;
+            background: #fff;
+            color: var(--text);
+            border-radius: 10px;
+            padding: 8px 12px;
+            outline: none;
+            transition: border-color .15s, box-shadow .15s;
+        }
+        input:focus, select:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(79,70,229,.12); }
+        #search { width: 210px; }
+        #rate { width: 82px; cursor: text; }
+        .rate-suffix { font-size: 12px; color: var(--muted); }
+        .stat { margin-left: auto; font-size: 13px; color: var(--muted); }
+        .stat b { color: var(--text); }
+        .stat .pos { color: #047857; }
+        .stat .updated { display: block; font-size: 11px; margin-top: 2px; }
+
+        .table-card {
+            background: var(--card);
+            border-radius: 20px;
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.45);
+            box-shadow: 0 24px 70px rgba(0, 0, 0, 0.3);
+        }
+        .table-scroll { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        thead th {
+            position: sticky;
+            top: 0;
+            z-index: 5;
+            background: #f1f5f9;
+            color: #475569;
+            text-align: right;
+            padding: 12px 12px;
+            white-space: nowrap;
+            border-bottom: 1px solid #e2e8f0;
+            font-size: 12px;
+            font-weight: 700;
+        }
+        thead th:first-child, thead th:nth-child(2), thead th:nth-child(3) { text-align: left; }
+        thead th.sortable { cursor: pointer; user-select: none; }
+        thead th.sortable:hover { color: var(--primary); }
+        thead th .arrow { color: var(--primary); font-size: 10px; margin-left: 3px; }
+        tbody td {
+            padding: 10px 12px;
+            text-align: right;
+            border-bottom: 1px solid rgba(0, 0, 0, .045);
+            font-variant-numeric: tabular-nums;
+            white-space: nowrap;
+        }
+        tbody td:first-child, tbody td:nth-child(2), tbody td:nth-child(3) { text-align: left; }
+        tbody tr.item-row { cursor: pointer; transition: background .12s; }
+        tbody tr.item-row:hover { background: rgba(79, 70, 229, .055); }
+        tbody tr.item-row.expanded { background: rgba(79, 70, 229, .08); }
+        .item-name { font-weight: 700; color: #111827; }
+        .item-name::before { content: "▸"; color: #94a3b8; margin-right: 6px; font-size: 11px; }
+        tr.expanded .item-name::before { content: "▾"; color: var(--primary); }
+        .badge {
+            display: inline-block;
+            border-radius: 999px;
+            padding: 1px 7px;
+            font-size: 10px;
+            font-weight: 700;
+            margin-left: 6px;
+            vertical-align: 1px;
+        }
+        .badge.equipment { background: rgba(79, 70, 229, .1); color: #4338ca; }
+        .badge.ammo { background: rgba(6, 182, 212, .12); color: #0e7490; }
+        .sub { color: var(--muted); font-size: 11px; }
+        .pos { color: #047857; font-weight: 700; }
+        .neg { color: #b91c1c; font-weight: 700; }
+        .zero { color: #94a3b8; }
+        .no-quote { color: #b45309; font-size: 12px; font-weight: 600; }
+
+        tr.detail-row > td {
+            padding: 0;
+            background: #f8fafc;
+            border-bottom: 2px solid rgba(79, 70, 229, .12);
+            white-space: normal;
+        }
+        .detail-box {
+            display: grid;
+            grid-template-columns: minmax(420px, 1.4fr) minmax(300px, 1fr);
+            gap: 18px;
+            padding: 18px 22px 22px;
+        }
+        .detail-title { font-size: 14px; font-weight: 800; margin-bottom: 10px; color: #334155; }
+        table.mat-table { width: 100%; font-size: 12px; }
+        .mat-table th { position: static; padding: 7px 8px; text-align: right; background: #eef2f7; border-bottom: 1px solid #dbe3ec; }
+        .mat-table th:first-child { text-align: left; }
+        .mat-table td { padding: 7px 8px; border-bottom: 1px solid #e8edf3; }
+        .mat-table td:first-child { text-align: left; font-weight: 600; }
+        .calc-panel {
+            background: #fff;
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 16px;
+            align-self: start;
+        }
+        .calc-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+        .calc-row label { font-size: 12px; font-weight: 700; color: #475569; }
+        #calc-qty { width: 130px; }
+        .calc-metrics { display: grid; gap: 8px; }
+        .metric { display: flex; justify-content: space-between; gap: 14px; font-size: 13px; padding: 5px 0; border-bottom: 1px dashed #e5e7eb; }
+        .metric:last-child { border-bottom: 0; }
+        .metric span:first-child { color: var(--muted); }
+        .metric b { font-variant-numeric: tabular-nums; }
+        .metric.total b { font-size: 16px; }
+        .note { margin-top: 10px; font-size: 11px; color: var(--muted); line-height: 1.6; }
+        .empty-row { text-align: center !important; color: var(--muted); padding: 40px !important; }
+
+        .toast {
+            position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+            z-index: 999; display: none; padding: 10px 20px; border-radius: 10px;
+            background: rgba(28,36,48,.96); border: 1px solid rgba(255,255,255,.18);
+            color: #e8eef7; font-size: 14px; box-shadow: 0 8px 28px rgba(0,0,0,.4);
+        }
+        .toast.err { border-color: rgba(255,110,110,.65); color: #ffb4b4; }
+        .hidden { display: none !important; }
+
+        @media (max-width: 900px) {
+            body { padding: 22px 10px; }
+            .hero { padding: 22px; }
+            h1 { font-size: 23px; }
+            .toolbar { position: static; }
+            .stat { margin-left: 0; width: 100%; }
+            .batch-grid { grid-template-columns: 1fr; }
+            .batch-summary { grid-template-columns: repeat(2, minmax(120px, 1fr)); }
+            .detail-box { grid-template-columns: 1fr; padding: 14px; }
+            .detail-box { overflow-x: auto; }
+        }
+    </style>
+</head>
+<body>
+<div class="page">
+    <nav class="top-nav">
+        <a href="/">📦 成本查询</a>
+        <a href="/components">🛠️ 组件计算器</a>
+        <a href="/bom">🧾 清单汇总</a>
+        <a href="/profit">💰 利润排行</a>
+        <a href="/reprocess" class="active">♻️ 垃圾化矿</a>
+    </nav>
+
+    <header class="hero">
+        <h1>♻️ 垃圾回收化矿</h1>
+        <p class="desc">
+            收录全部 <strong>衍生等级 1~4 的 T1 衍生装备</strong> 与 <strong>所有 T1 弹药</strong>,
+            按最高 <strong>55%</strong> 化矿率计算每份产出。材料数量取自官方 SDE,行情来自网易 ESI 吉他 4-4。
+            <span class="warn">利润按“最低卖单买入物品、最高买单即时卖出矿物”估算,未扣交易税与设施税。</span>
+        </p>
+    </header>
+
+    <section class="batch-card">
+        <div class="batch-head">
+            <h2>📋 批量粘贴解析</h2>
+            <span class="hint">每行一个物品,直接粘贴“物品名 + 数量”后点击解析;按当前化矿率汇总矿物和收益。</span>
+        </div>
+        <div class="batch-grid">
+            <div>
+                <textarea id="batch-input" spellcheck="false" placeholder="小型F-S9覆盖式紧凑型护盾扩展装置 292&#10;大型F-S9覆盖式紧凑型护盾扩展装置 333"></textarea>
+                <div class="batch-actions">
+                    <button type="button" class="btn btn-primary" id="batch-parse">解析并计算</button>
+                    <button type="button" class="btn btn-ghost" id="batch-clear">清空</button>
+                    <span class="batch-hint">支持:物品名 数量 / 数量 物品名 / 数量 x 物品名;数量可带千分位</span>
+                </div>
+            </div>
+            <div class="batch-result" id="batch-result">
+                <div class="batch-empty">
+                    粘贴物品清单后点击「解析并计算」<br>
+                    将自动匹配化矿清单、按 <b>55%</b> 化矿率汇总矿物产出与价值。
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="toolbar">
+        <div class="field">
+            <label for="search">搜索</label>
+            <input id="search" type="search" placeholder="物品名 / 分组">
+        </div>
+        <div class="field">
+            <label for="kind-select">类型</label>
+            <select id="kind-select">
+                <option value="">全部</option>
+                <option value="equipment">衍生装备</option>
+                <option value="ammo">T1 弹药</option>
+            </select>
+        </div>
+        <div class="field">
+            <label for="group-select">分组</label>
+            <select id="group-select"><option value="">全部分组</option></select>
+        </div>
+        <div class="field">
+            <label for="rate">化矿率</label>
+            <input id="rate" type="number" min="0" max="55" step="0.01" value="55">
+            <span class="rate-suffix">%,上限 55</span>
+        </div>
+        <div class="stat" id="stat-line"></div>
+    </section>
+
+    <section class="table-card">
+        <div class="table-scroll">
+            <table>
+                <thead>
+                    <tr>
+                        <th class="sortable" data-key="name">物品<span class="arrow"></span></th>
+                        <th class="sortable" data-key="group">分组<span class="arrow"></span></th>
+                        <th class="sortable" data-key="meta">衍生<span class="arrow"></span></th>
+                        <th>每份数量</th>
+                        <th class="sortable" data-key="cost">每份买入成本<span class="arrow"></span></th>
+                        <th class="sortable" data-key="outputBuy">化矿产物价值<span class="arrow"></span></th>
+                        <th class="sortable" data-key="profit">每份利润<span class="arrow"></span></th>
+                        <th class="sortable" data-key="margin">利润率<span class="arrow"></span></th>
+                    </tr>
+                </thead>
+                <tbody id="table-body">
+                    <tr><td colspan="8" class="empty-row">加载中...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function () {
+    'use strict';
+
+    let data = null;
+    let rows = [];
+    let itemByName = new Map();
+    let batchEntries = [];
+    let batchUnmatched = [];
+    let expandedId = null;
+    let calcQty = null;
+    const state = {
+        search: '',
+        kind: '',
+        group: '',
+        rate: 55,
+        sortKey: 'profit',
+        sortDir: 'desc'
+    };
+    const TEXT_KEYS = { name: true, group: true };
+
+    const $ = id => document.getElementById(id);
+
+    function escapeHtml(s) {
+        return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({
+            '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+        }[c]));
+    }
+
+    function fmt(n) {
+        if (n === null || n === undefined || isNaN(n)) return '-';
+        return Number(n).toLocaleString('zh-CN', { maximumFractionDigits: 2 });
+    }
+
+    function fmtInt(n) {
+        if (n === null || n === undefined || isNaN(n)) return '-';
+        return Math.floor(Number(n)).toLocaleString('zh-CN');
+    }
+
+    function toast(message, isError) {
+        const el = $('toast');
+        el.textContent = message;
+        el.className = 'toast' + (isError ? ' err' : '');
+        el.style.display = 'block';
+        clearTimeout(toast._timer);
+        toast._timer = setTimeout(() => { el.style.display = 'none'; }, 3200);
+    }
+
+    function propClass(v) {
+        if (v === null || v === undefined) return 'zero';
+        return v > 0 ? 'pos' : (v < 0 ? 'neg' : 'zero');
+    }
+
+    // EVE 化矿按整份计算:每份基础数量 × 份数 × 化矿率,最后向下取整
+    function outputQty(baseQty, portions, ratePct) {
+        return Math.floor(baseQty * portions * (ratePct / 100) + 1e-9);
+    }
+
+    function materialPrice(id) {
+        return (data.materials && data.materials[String(id)]) || { name: '未知材料', buy_max: 0, sell_min: 0 };
+    }
+
+    function computeRow(item) {
+        const portions = 1;
+        const rate = state.rate;
+        let outputBuy = 0, outputSell = 0, missingPrice = false;
+        const mats = item.materials.map(m => {
+            const p = materialPrice(m.id);
+            const qty = outputQty(m.quantity, portions, rate);
+            const buyValue = qty * (p.buy_max || 0);
+            const sellValue = qty * (p.sell_min || 0);
+            outputBuy += buyValue;
+            outputSell += sellValue;
+            if (qty > 0 && !(p.buy_max > 0)) missingPrice = true;
+            return {
+                id: m.id, name: p.name, base: m.quantity, qty: qty,
+                buy_max: p.buy_max || 0, sell_min: p.sell_min || 0,
+                buyValue: buyValue, sellValue: sellValue
+            };
+        });
+        const portion = item.portion_size || 1;
+        const cost = (item.sell_min || 0) * portion;
+        const buyCredit = (item.buy_max || 0) * portion;
+        const profit = cost > 0 ? outputBuy - cost : null;
+        const margin = cost > 0 ? profit / cost * 100 : null;
+        return {
+            id: item.id,
+            name: item.name,
+            group: item.group,
+            kind: item.kind,
+            meta: item.kind === 'ammo' ? 'T1' : ('衍生 ' + (item.meta_level || 0)),
+            metaLevel: item.meta_level || 0,
+            portion: portion,
+            buy_max: item.buy_max || 0,
+            sell_min: item.sell_min || 0,
+            cost: cost,
+            buyCredit: buyCredit,
+            outputBuy: outputBuy,
+            outputSell: outputSell,
+            profit: profit,
+            margin: margin,
+            mats: mats,
+            missingPrice: missingPrice
+        };
+    }
+
+    // ==========================================
+    // 批量粘贴解析
+    // ==========================================
+    function normalizeName(value) {
+        return String(value == null ? '' : value)
+            .replace(/[\u3000\t]+/g, ' ')
+            .replace(/\s+/g, ' ')
+            .trim()
+            .toLowerCase();
+    }
+
+    function buildItemIndex() {
+        itemByName = new Map();
+        (data.items || []).forEach(item => itemByName.set(normalizeName(item.name), item));
+    }
+
+    function findItem(rawName) {
+        const key = normalizeName(rawName).replace(/^["'“”‘’「」]+|["'“”‘’「」]+$/g, '');
+        if (!key) return { item: null, reason: '物品名为空' };
+        if (itemByName.has(key)) return { item: itemByName.get(key) };
+
+        // 兜底:输入的是唯一子串时也能匹配(至少 4 个字符,避免过短误匹配)
+        if (key.length >= 4) {
+            const matches = data.items.filter(item => {
+                const name = normalizeName(item.name);
+                return name.indexOf(key) !== -1 || key.indexOf(name) !== -1;
+            });
+            if (matches.length === 1) return { item: matches[0] };
+            if (matches.length > 1) {
+                return {
+                    item: null,
+                    reason: '名称不唯一,可能是:' + matches.slice(0, 3).map(i => i.name).join(' / ')
+                };
+            }
+        }
+        return { item: null, reason: '化矿清单中未找到' };
+    }
+
+    function parseQuantity(value) {
+        const n = parseInt(String(value).replace(/[,\s]/g, ''), 10);
+        return Number.isFinite(n) && n > 0 ? n : null;
+    }
+
+    function parseBatchLine(raw) {
+        let line = String(raw == null ? '' : raw)
+            .replace(/\u3000/g, ' ')
+            .trim()
+            .replace(/^[-*•·]\s*/, '');
+        if (!line) return null;
+
+        // 物品名 数量 / 物品名 x 数量 / 物品名 292个
+        let m = line.match(/^(.*?)\s+(?:[x×*]\s*)?([\d][\d,]*)\s*(?:个|件|发|枚|包|瓶)?$/i);
+        if (m && normalizeName(m[1])) {
+            const qty = parseQuantity(m[2]);
+            if (qty !== null) return { name: m[1], qty: qty };
+        }
+
+        // 数量 物品名 / 数量 x 物品名
+        m = line.match(/^([\d][\d,]*)\s*(?:[x×*]\s*)?(.+?)\s*(?:个|件|发|枚|包|瓶)?$/i);
+        if (m && normalizeName(m[2])) {
+            const qty = parseQuantity(m[1]);
+            if (qty !== null) return { name: m[2], qty: qty };
+        }
+
+        // 无空格:物品名292,按已知物品名最长前缀匹配
+        const normalizedLine = normalizeName(line);
+        const candidates = Array.from(itemByName.keys())
+            .filter(name => normalizedLine.startsWith(name))
+            .sort((a, b) => b.length - a.length);
+        for (const name of candidates) {
+            const rest = normalizedLine.slice(name.length).replace(/^[x×*]\s*/, '');
+            const qty = parseQuantity(rest);
+            if (qty !== null) return { name: name, qty: qty };
+        }
+        return null;
+    }
+
+    function parseBatchInput() {
+        if (!data) return;
+        const lines = $('batch-input').value.split(/\r?\n/);
+        const grouped = new Map();
+        const unmatched = [];
+
+        lines.forEach((rawLine, index) => {
+            if (!rawLine.trim()) return;
+            const parsed = parseBatchLine(rawLine);
+            if (!parsed) {
+                unmatched.push({ line: index + 1, text: rawLine.trim(), reason: '无法识别“物品名 + 数量”' });
+                return;
+            }
+            const found = findItem(parsed.name);
+            if (!found.item) {
+                unmatched.push({ line: index + 1, text: rawLine.trim(), reason: found.reason });
+                return;
+            }
+            const entry = grouped.get(found.item.id) || { item: found.item, quantity: 0 };
+            entry.quantity += parsed.qty;
+            grouped.set(found.item.id, entry);
+        });
+
+        batchEntries = Array.from(grouped.values());
+        batchUnmatched = unmatched;
+        renderBatch();
+
+        if (batchEntries.length === 0) {
+            toast('没有解析到可化矿物品,请检查格式和物品名', true);
+        } else if (unmatched.length) {
+            toast('已解析 ' + batchEntries.length + ' 种物品,' + unmatched.length + ' 行未匹配', true);
+        } else {
+            toast('解析完成:共 ' + batchEntries.length + ' 种物品');
+        }
+    }
+
+    function renderBatch() {
+        const box = $('batch-result');
+        if (!batchEntries.length && !batchUnmatched.length) {
+            box.innerHTML = '<div class="batch-empty">粘贴物品清单后点击「解析并计算」<br>' +
+                '将自动匹配化矿清单、按 <b>' + state.rate + '%</b> 化矿率汇总矿物产出与价值。</div>';
+            return;
+        }
+
+        const minerals = new Map();
+        let totalQty = 0, effectiveQty = 0, remainderQty = 0;
+        let totalCost = 0, totalOutputBuy = 0, totalOutputSell = 0;
+
+        const itemRows = batchEntries.map(entry => {
+            const item = entry.item;
+            const portion = item.portion_size || 1;
+            const portions = Math.floor(entry.quantity / portion);
+            const used = portions * portion;
+            let itemOutputBuy = 0, itemOutputSell = 0;
+
+            item.materials.forEach(m => {
+                const p = materialPrice(m.id);
+                const qty = outputQty(m.quantity, portions, state.rate);
+                const current = minerals.get(m.id) || {
+                    id: m.id, name: p.name, qty: 0,
+                    buy_max: p.buy_max || 0, sell_min: p.sell_min || 0
+                };
+                current.qty += qty;
+                minerals.set(m.id, current);
+                itemOutputBuy += qty * (p.buy_max || 0);
+                itemOutputSell += qty * (p.sell_min || 0);
+            });
+
+            const cost = (item.sell_min || 0) * used;
+            totalQty += entry.quantity;
+            effectiveQty += used;
+            remainderQty += entry.quantity - used;
+            totalCost += cost;
+            totalOutputBuy += itemOutputBuy;
+            totalOutputSell += itemOutputSell;
+
+            return {
+                name: item.name, quantity: entry.quantity, portion: portion,
+                portions: portions, cost: cost, outputBuy: itemOutputBuy
+            };
+        });
+
+        const profit = totalCost > 0 ? totalOutputBuy - totalCost : null;
+        const margin = totalCost > 0 ? profit / totalCost * 100 : null;
+        const mineralList = Array.from(minerals.values())
+            .filter(m => m.qty > 0)
+            .sort((a, b) => (b.qty * b.buy_max) - (a.qty * a.buy_max));
+
+        const mineralRows = mineralList.length
+            ? mineralList.map(m =>
+                '<tr>' +
+                    '<td>' + escapeHtml(m.name) + '</td>' +
+                    '<td>' + fmtInt(m.qty) + '</td>' +
+                    '<td>' + fmt(m.buy_max) + '</td>' +
+                    '<td>' + fmt(m.sell_min) + '</td>' +
+                    '<td>' + fmt(m.qty * m.buy_max) + '</td>' +
+                    '<td>' + fmt(m.qty * m.sell_min) + '</td>' +
+                '</tr>'
+            ).join('')
+            : '<tr><td colspan="6" class="empty-row">当前数量不足一份,或化矿率为 0</td></tr>';
+
+        const unmatchedHtml = batchUnmatched.length
+            ? '<div class="unmatched"><b>未匹配 ' + batchUnmatched.length + ' 行:</b><br>' +
+                batchUnmatched.slice(0, 30).map(u =>
+                    '第 ' + u.line + ' 行 “' + escapeHtml(u.text) + '” — ' + escapeHtml(u.reason)
+                ).join('<br>') +
+                (batchUnmatched.length > 30 ? '<br>…还有 ' + (batchUnmatched.length - 30) + ' 行' : '') +
+              '</div>'
+            : '';
+
+        const matchedText = itemRows.slice(0, 8).map(r =>
+            escapeHtml(r.name) + ' ×' + fmtInt(r.quantity)
+        ).join(' · ') + (itemRows.length > 8 ? ' · …等 ' + itemRows.length + ' 种' : '');
+
+        box.innerHTML =
+            '<div class="batch-summary">' +
+                '<div class="batch-stat"><span class="k">匹配物品</span><span class="v">' + itemRows.length + ' 种 / ' + fmtInt(totalQty) + ' 个</span></div>' +
+                '<div class="batch-stat"><span class="k">有效化矿</span><span class="v">' + fmtInt(effectiveQty) + ' 个</span></div>' +
+                '<div class="batch-stat"><span class="k">不足一份余量</span><span class="v">' + fmtInt(remainderQty) + ' 个</span></div>' +
+                '<div class="batch-stat"><span class="k">买入成本(最低卖单)</span><span class="v">' + fmt(totalCost) + '</span></div>' +
+                '<div class="batch-stat"><span class="k">矿物价值(最高买单)</span><span class="v">' + fmt(totalOutputBuy) + '</span></div>' +
+                '<div class="batch-stat"><span class="k">利润 / 利润率</span><span class="v ' + propClass(profit) + '">' +
+                    (profit === null ? '-' : fmt(profit) + ' / ' + fmt(margin) + '%') + '</span></div>' +
+            '</div>' +
+            '<div class="batch-subtitle">矿物产出汇总(' + state.rate + '% 化矿率)</div>' +
+            '<div class="batch-minerals"><table>' +
+                '<thead><tr><th>矿物</th><th>总产出</th><th>最高买单</th><th>最低卖单</th><th>价值(买单)</th><th>价值(卖单)</th></tr></thead>' +
+                '<tbody>' + mineralRows + '</tbody>' +
+            '</table></div>' +
+            '<div class="matched-line">已匹配:' + matchedText + '</div>' +
+            unmatchedHtml;
+    }
+
+    function rebuildGroupOptions() {
+        const current = $('group-select').value;
+        const groups = Array.from(new Set(
+            (data.items || [])
+                .filter(it => !state.kind || it.kind === state.kind)
+                .map(it => it.group || '其他')
+        )).sort((a, b) => a.localeCompare(b, 'zh'));
+        $('group-select').innerHTML = '<option value="">全部分组</option>' +
+            groups.map(g => '<option value="' + escapeHtml(g) + '">' + escapeHtml(g) + '</option>').join('');
+        if (groups.indexOf(current) !== -1) $('group-select').value = current;
+        else state.group = '';
+    }
+
+    function filteredRows() {
+        const kw = state.search.trim().toLowerCase();
+        return rows.filter(r => {
+            if (state.kind && r.kind !== state.kind) return false;
+            if (state.group && r.group !== state.group) return false;
+            if (kw && (r.name + ' ' + r.group).toLowerCase().indexOf(kw) === -1) return false;
+            return true;
+        });
+    }
+
+    function sortRows(list) {
+        const key = state.sortKey;
+        const dir = state.sortDir === 'desc' ? -1 : 1;
+        const isText = !!TEXT_KEYS[key];
+        const value = r => {
+            let v = r[key];
+            if (key === 'meta') v = r.kind === 'ammo' ? -1 : r.metaLevel;
+            if (isText) return String(v || '');
+            return (v === null || v === undefined || isNaN(v)) ? -Infinity : v;
+        };
+        const cmp = (a, b) => {
+            const va = value(a), vb = value(b);
+            return isText ? va.localeCompare(vb, 'zh') * dir : (va - vb) * dir;
+        };
+        const quoted = list.filter(r => r.cost > 0).sort(cmp);
+        const noQuote = list.filter(r => !(r.cost > 0)).sort(cmp);
+        return quoted.concat(noQuote);
+    }
+
+    function renderHeaders() {
+        document.querySelectorAll('th.sortable').forEach(th => {
+            const arrow = th.querySelector('.arrow');
+            arrow.textContent = th.getAttribute('data-key') === state.sortKey
+                ? (state.sortDir === 'desc' ? '▼' : '▲') : '';
+        });
+    }
+
+    function buildDetail(r) {
+        const portion = r.portion;
+        const qty = calcQty !== null ? calcQty : portion;
+        const portions = Math.floor(qty / portion);
+        const used = portions * portion;
+        const remainder = qty - used;
+        const totalOutputBuy = r.mats.reduce((sum, m) => sum + outputQty(m.base, portions, state.rate) * m.buy_max, 0);
+        const totalOutputSell = r.mats.reduce((sum, m) => sum + outputQty(m.base, portions, state.rate) * m.sell_min, 0);
+        const totalCost = (r.sell_min || 0) * used;
+        const totalProfit = totalCost > 0 ? totalOutputBuy - totalCost : null;
+        const totalMargin = totalCost > 0 ? totalProfit / totalCost * 100 : null;
+
+        const matRows = r.mats.map(m => {
+            const totalQty = outputQty(m.base, portions, state.rate);
+            return '<tr>' +
+                '<td>' + escapeHtml(m.name) + '</td>' +
+                '<td>' + fmtInt(m.base) + '</td>' +
+                '<td>' + fmtInt(m.qty) + '</td>' +
+                '<td>' + fmtInt(totalQty) + '</td>' +
+                '<td>' + fmt(m.buy_max) + '</td>' +
+                '<td>' + fmt(m.sell_min) + '</td>' +
+                '<td>' + fmt(totalQty * m.buy_max) + '</td>' +
+                '</tr>';
+        }).join('');
+
+        return '<tr class="detail-row" data-detail-for="' + r.id + '"><td colspan="8"><div class="detail-box">' +
+            '<div>' +
+                '<div class="detail-title">化矿产物明细(每份 ' + fmtInt(portion) + ' 个)</div>' +
+                '<table class="mat-table">' +
+                    '<thead><tr><th>材料</th><th>每份基础量</th><th>每份产出(' + state.rate + '%)</th>' +
+                    '<th>本次产出</th><th>最高买单</th><th>最低卖单</th><th>产物价值(买单)</th></tr></thead>' +
+                    '<tbody>' + matRows + '</tbody>' +
+                '</table>' +
+            '</div>' +
+            '<div class="calc-panel">' +
+                '<div class="detail-title">批量计算</div>' +
+                '<div class="calc-row">' +
+                    '<label for="calc-qty">物品数量</label>' +
+                    '<input id="calc-qty" type="number" min="1" step="1" value="' + qty + '">' +
+                    '<span class="sub">个</span>' +
+                '</div>' +
+                '<div class="calc-metrics">' +
+                    '<div class="metric"><span>可化矿份数</span><b>' + fmtInt(portions) + ' 份(' + fmtInt(used) + ' 个)</b></div>' +
+                    '<div class="metric"><span>剩余不足一份</span><b>' + fmtInt(remainder) + ' 个</b></div>' +
+                    '<div class="metric"><span>买入成本(最低卖单)</span><b>' + fmt(totalCost) + ' ISK</b></div>' +
+                    '<div class="metric"><span>产物价值(最高买单)</span><b>' + fmt(totalOutputBuy) + ' ISK</b></div>' +
+                    '<div class="metric"><span>产物价值(最低卖单)</span><b>' + fmt(totalOutputSell) + ' ISK</b></div>' +
+                    '<div class="metric total"><span>利润 / 利润率</span><b class="' + propClass(totalProfit) + '">' +
+                        (totalProfit === null ? '-' : fmt(totalProfit) + ' ISK / ' + fmt(totalMargin) + '%') + '</b></div>' +
+                '</div>' +
+                '<div class="note">物品买入价:' + fmt(r.sell_min) + ' ISK/个,最高买单 ' + fmt(r.buy_max) + ' ISK/个。' +
+                    '利润未扣交易税、设施税与运输成本;化矿率可在顶部调整,最高 55%。</div>' +
+            '</div>' +
+        '</div></td></tr>';
+    }
+
+    function buildRow(r) {
+        let costHtml, outputHtml, profitHtml, marginHtml;
+        if (!(r.cost > 0)) {
+            costHtml = '<td class="no-quote">无卖单</td>';
+            outputHtml = '<td>' + (r.outputBuy > 0 ? fmt(r.outputBuy) : '<span class="no-quote">缺矿物价</span>') + '</td>';
+            profitHtml = '<td class="zero">-</td>';
+            marginHtml = '<td class="zero">-</td>';
+        } else if (r.outputBuy <= 0) {
+            costHtml = '<td>' + fmt(r.cost) + '</td>';
+            outputHtml = '<td class="no-quote">缺矿物价</td>';
+            profitHtml = '<td class="zero">-</td>';
+            marginHtml = '<td class="zero">-</td>';
+        } else {
+            costHtml = '<td>' + fmt(r.cost) + '</td>';
+            outputHtml = '<td>' + fmt(r.outputBuy) + '</td>';
+            profitHtml = '<td class="' + propClass(r.profit) + '">' + fmt(r.profit) + '</td>';
+            marginHtml = '<td class="' + propClass(r.profit) + '">' + fmt(r.margin) + '%</td>';
+        }
+
+        const badge = r.kind === 'ammo'
+            ? '<span class="badge ammo">T1 弹药</span>'
+            : '<span class="badge equipment">' + escapeHtml(r.meta) + '</span>';
+
+        let html = '<tr class="item-row' + (expandedId === r.id ? ' expanded' : '') + '" data-id="' + r.id + '">' +
+            '<td><span class="item-name">' + escapeHtml(r.name) + '</span>' + badge + '</td>' +
+            '<td>' + escapeHtml(r.group) + '</td>' +
+            '<td>' + escapeHtml(r.meta) + '</td>' +
+            '<td>' + fmtInt(r.portion) + ' 个</td>' +
+            costHtml + outputHtml + profitHtml + marginHtml +
+        '</tr>';
+        if (expandedId === r.id) html += buildDetail(r);
+        return html;
+    }
+
+    function render() {
+        if (!data) return;
+        rows = (data.items || []).map(computeRow);
+        renderHeaders();
+
+        const visible = filteredRows();
+        const sorted = sortRows(visible);
+        const positive = rows.filter(r => r.profit !== null && r.profit > 0).length;
+        $('stat-line').innerHTML =
+            '已收录 <b>' + rows.length + '</b> 个物品 · 当前筛选 <b>' + sorted.length + '</b> 个 · ' +
+            state.rate + '% 化矿率下正利润 <span class="pos"><b>' + positive + '</b></span> 个' +
+            '<span class="updated">行情:' + escapeHtml(data.updated_at || '尚未更新,请先运行 update_market.py') + '</span>';
+
+        const tbody = $('table-body');
+        if (sorted.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="8" class="empty-row">没有匹配的物品</td></tr>';
+            return;
+        }
+        tbody.innerHTML = sorted.map(buildRow).join('');
+    }
+
+    function bindEvents() {
+        $('search').addEventListener('input', e => {
+            state.search = e.target.value;
+            render();
+        });
+        $('kind-select').addEventListener('change', e => {
+            state.kind = e.target.value;
+            rebuildGroupOptions();
+            render();
+        });
+        $('group-select').addEventListener('change', e => {
+            state.group = e.target.value;
+            render();
+        });
+        $('rate').addEventListener('input', e => {
+            let v = parseFloat(e.target.value);
+            if (!Number.isFinite(v)) v = 0;
+            v = Math.max(0, Math.min(55, v));
+            state.rate = v;
+            render();
+            if (batchEntries.length || batchUnmatched.length) renderBatch();
+        });
+        $('rate').addEventListener('blur', e => {
+            e.target.value = state.rate;
+        });
+        $('batch-parse').addEventListener('click', parseBatchInput);
+        $('batch-clear').addEventListener('click', () => {
+            $('batch-input').value = '';
+            batchEntries = [];
+            batchUnmatched = [];
+            renderBatch();
+        });
+        $('batch-input').addEventListener('keydown', e => {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                e.preventDefault();
+                parseBatchInput();
+            }
+        });
+        document.querySelectorAll('th.sortable').forEach(th => {
+            th.addEventListener('click', () => {
+                const key = th.getAttribute('data-key');
+                if (state.sortKey === key) {
+                    state.sortDir = state.sortDir === 'desc' ? 'asc' : 'desc';
+                } else {
+                    state.sortKey = key;
+                    state.sortDir = TEXT_KEYS[key] ? 'asc' : 'desc';
+                }
+                render();
+            });
+        });
+        $('table-body').addEventListener('click', e => {
+            const row = e.target.closest('tr.item-row');
+            if (!row) return;
+            const id = Number(row.getAttribute('data-id'));
+            if (expandedId === id) {
+                expandedId = null;
+                calcQty = null;
+            } else {
+                expandedId = id;
+                calcQty = null;
+            }
+            render();
+        });
+        $('table-body').addEventListener('input', e => {
+            if (e.target.id !== 'calc-qty') return;
+            let n = parseInt(e.target.value, 10);
+            if (!Number.isFinite(n) || n < 1) n = 1;
+            calcQty = n;
+            render();
+            const input = $('calc-qty');
+            if (input) {
+                input.focus();
+                input.setSelectionRange(input.value.length, input.value.length);
+            }
+        });
+    }
+
+    async function load() {
+        try {
+            const res = await fetch('/api/reprocess');
+            const json = await res.json();
+            if (!json.success) throw new Error(json.error || '化矿数据加载失败');
+            data = json.data;
+            buildItemIndex();
+            rebuildGroupOptions();
+            bindEvents();
+            render();
+        } catch (err) {
+            console.error(err);
+            $('table-body').innerHTML = '<tr><td colspan="8" class="empty-row">化矿数据加载失败,请刷新重试</td></tr>';
+            toast(err.message || '化矿数据加载失败', true);
+        }
+    }
+
+    load();
+})();
+</script>
+</body>
+</html>

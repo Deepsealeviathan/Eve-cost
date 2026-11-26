@@ -20,6 +20,7 @@ import requests
 
 from db_config import load_db_config
 from Select import compute_profit_rows
+from reprocessing import price_ids as reprocessing_price_ids
 
 # ================== 用户配置 ==================
 ESI = "https://ali-esi.evepc.163.com/latest"   # 网易国服 ESI 镜像
@@ -192,8 +193,11 @@ def aggregate_jita44(orders):
     return stats
 
 
-def sync_to_db(tracked, stats):
-    """upsert items 和 market_prices,无订单的物品价格置 0。"""
+def sync_to_db(tracked, stats, catalog_ids=None):
+    """upsert items 和 market_prices,无订单的物品价格置 0。
+
+    catalog_ids 为空时全部写入 items;化矿物品只更新价格、不进入主物品目录。
+    """
     now = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())
 
     items_sql = """
@@ -213,7 +217,11 @@ def sync_to_db(tracked, stats):
             updated_at = VALUES(updated_at)
     """
 
-    items_rows = [(tid, info["name"], info["category"]) for tid, info in tracked.items()]
+    items_rows = [
+        (tid, info["name"], info["category"])
+        for tid, info in tracked.items()
+        if info.get("name") and (catalog_ids is None or tid in catalog_ids)
+    ]
     price_rows = []
     for tid in tracked:
         s = stats.get(tid)
@@ -409,13 +417,18 @@ def snapshot_profit():
 def main():
     print("收集跟踪物品清单...")
     tracked = collect_tracked_items()
-    print(f"共 {len(tracked)} 种物品")
+    reprocess_ids = reprocessing_price_ids() - set(tracked)
+    price_tracked = dict(tracked)
+    for type_id in reprocess_ids:
+        price_tracked[type_id] = {"name": None, "category": None}
+    print(f"配方物品 {len(tracked)} 种,化矿附加物品 {len(reprocess_ids)} 种,共 {len(price_tracked)} 种")
 
     orders = fetch_region_orders()
     stats = aggregate_jita44(orders)
 
     print("同步数据库...")
-    total = sync_to_db(tracked, stats)
+    # 化矿物品只写 market_prices,不写入主物品目录(items)
+    total = sync_to_db(price_tracked, stats, catalog_ids=set(tracked))
     print(f"导入完成,共更新 {total} 条记录。")
 
     # 调整价:制造安装费(EIV)数据源,失败只记日志
@@ -425,6 +438,7 @@ def main():
         print(f"调整价同步失败(不影响价格更新): {e}")
 
     # 历史行情与利润快照:失败只记日志,不影响价格主流程
+    # 只对配方物品拉历史,避免为数百个化矿垃圾增加上千次请求
     try:
         sync_price_history(fetch_price_history(tracked))
     except Exception as e:
