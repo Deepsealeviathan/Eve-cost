@@ -1,12 +1,8 @@
 # -*- coding: utf-8 -*-
 """生成 reprocessing.json:全部 T1 衍生装备(衍生 1~4 级)与 T1 弹药的化矿数据。
 
-材料数量来自官方 SDE:衍生 1~4 级装备沿 variationParentTypeID 回溯到 T1 母装备,
-取母装备的工业材料表(即其蓝图制造材料,与母装备 typeMaterials 一致),
-避免直接使用衍生装备自身的材料表导致产出明显偏低。T1 弹药按自身材料表计算。
-
-物品/材料中文名与分组优先取网易 ESI,缺失时回退到 SDE 中文名。
-输出文件供 Web 页面与 update_market.py 读取,运行期不再需要 SDE。
+材料数量来自官方 SDE 的 typeMaterials.jsonl,物品/材料中文名与分组优先取网易 ESI,
+缺失时回退到 SDE 中文名。输出文件供 Web 页面与 update_market.py 读取,运行期不再需要 SDE。
 
 用法:
     python build_reprocessing_data.py
@@ -83,18 +79,6 @@ def zh_name(value):
     return value or ""
 
 
-def resolve_base_type(type_id, types):
-    """沿 variationParentTypeID 回溯到该物品的 T1 基础类型。"""
-    seen = set()
-    current = type_id
-    while True:
-        parent = types.get(current, {}).get("variationParentTypeID")
-        if not parent or parent in seen:
-            return current
-        seen.add(current)
-        current = parent
-
-
 def collect_candidates(zip_path):
     """按分类、衍生等级与化矿材料筛出候选物品。"""
     with zipfile.ZipFile(zip_path) as zf:
@@ -103,9 +87,8 @@ def collect_candidates(zip_path):
             row["_key"]: row.get("materials") or []
             for row in read_jsonl(zf, "typeMaterials.jsonl")
         }
-        types = {row["_key"]: row for row in read_jsonl(zf, "types.jsonl")}
         candidates = {}
-        for row in types.values():
+        for row in read_jsonl(zf, "types.jsonl"):
             group = groups.get(row.get("groupID"))
             if not group or not row.get("published"):
                 continue
@@ -123,13 +106,6 @@ def collect_candidates(zip_path):
                 continue
             if not materials.get(row["_key"]):
                 continue
-            basis_id = None
-            basis_name = None
-            if kind == "equipment":
-                base_id = resolve_base_type(row["_key"], types)
-                if base_id != row["_key"] and materials.get(base_id):
-                    basis_id = base_id
-                    basis_name = zh_name(types[base_id].get("name"))
             candidates[row["_key"]] = {
                 "kind": kind,
                 "meta_level": meta_level or 0,
@@ -137,9 +113,7 @@ def collect_candidates(zip_path):
                 "portion_size": row.get("portionSize") or 1,
                 "sde_name": zh_name(row.get("name")),
                 "sde_group": zh_name(group.get("name")),
-                "basis_id": basis_id,
-                "basis_name": basis_name,
-                "materials": materials[basis_id or row["_key"]],
+                "materials": materials[row["_key"]],
             }
     return candidates
 
@@ -149,8 +123,6 @@ def resolve_esi(candidates):
     type_ids = set(candidates)
     for info in candidates.values():
         type_ids.update(m["materialTypeID"] for m in info["materials"])
-        if info["basis_id"]:
-            type_ids.add(info["basis_id"])
     group_ids = {info["group_id"] for info in candidates.values()}
 
     def fetch_type(type_id):
@@ -196,9 +168,6 @@ def resolve_esi(candidates):
             "kind": info["kind"],
             "meta_level": info["meta_level"],
             "portion_size": esi_type.get("portion_size") or info["portion_size"],
-            "basis_id": info["basis_id"],
-            "basis_name": ((type_data.get(info["basis_id"]) or {}).get("name")
-                           or info["basis_name"]) if info["basis_id"] else None,
             "materials": materials,
         })
 
@@ -233,7 +202,7 @@ def main():
             mat.pop("name", None)
 
     payload = {
-        "version": 2,
+        "version": 1,
         "max_rate": 0.55,
         "material_names": material_names,
         "items": items,

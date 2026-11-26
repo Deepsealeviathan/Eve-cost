@@ -248,10 +248,6 @@
             padding: 18px 22px 22px;
         }
         .detail-title { font-size: 14px; font-weight: 800; margin-bottom: 10px; color: #334155; }
-        .basis-tag {
-            display: inline-block; margin-left: 8px; padding: 2px 8px; border-radius: 999px;
-            background: #e0f2fe; color: #075985; font-size: 11px; font-weight: 700;
-        }
         table.mat-table { width: 100%; font-size: 12px; }
         .mat-table th { position: static; padding: 7px 8px; text-align: right; background: #eef2f7; border-bottom: 1px solid #dbe3ec; }
         .mat-table th:first-child { text-align: left; }
@@ -312,8 +308,7 @@
         <h1>♻️ 垃圾回收化矿</h1>
         <p class="desc">
             收录全部 <strong>衍生等级 1~4 的 T1 衍生装备</strong> 与 <strong>所有 T1 弹药</strong>,
-            按最高 <strong>55%</strong> 化矿率计算每份产出。衍生装备按其 <strong>T1 母装备的工业材料表</strong>折算,
-            数据取自官方 SDE,行情来自网易 ESI 吉他 4-4。
+            按最高 <strong>55%</strong> 化矿率计算每份产出。材料数量取自官方 SDE,行情来自网易 ESI 吉他 4-4。
             <span class="warn">利润按“最低卖单买入物品、最高买单即时卖出矿物”估算,未扣交易税与设施税。</span>
         </p>
     </header>
@@ -483,7 +478,6 @@
             kind: item.kind,
             meta: item.kind === 'ammo' ? 'T1' : ('衍生 ' + (item.meta_level || 0)),
             metaLevel: item.meta_level || 0,
-            basisName: item.basis_name || null,
             portion: portion,
             buy_max: item.buy_max || 0,
             sell_min: item.sell_min || 0,
@@ -785,12 +779,9 @@
 
         return '<tr class="detail-row" data-detail-for="' + r.id + '"><td colspan="8"><div class="detail-box">' +
             '<div>' +
-                '<div class="detail-title">化矿产物明细(每份 ' + fmtInt(portion) + ' 个)' +
-                    (r.basisName ? '<span class="basis-tag">基准:' + escapeHtml(r.basisName) + ' 工业材料</span>' : '') +
-                '</div>' +
+                '<div class="detail-title">化矿产物明细(每份 ' + fmtInt(portion) + ' 个)</div>' +
                 '<table class="mat-table">' +
-                    '<thead><tr><th>材料</th><th>' + (r.basisName ? '母装备基础量' : '每份基础量') + '</th>' +
-                    '<th>每份产出(' + state.rate + '%)</th>' +
+                    '<thead><tr><th>材料</th><th>每份基础量</th><th>每份产出(' + state.rate + '%)</th>' +
                     '<th>本次产出</th><th>最高买单</th><th>最低卖单</th><th>产物价值(买单)</th></tr></thead>' +
                     '<tbody>' + matRows + '</tbody>' +
                 '</table>' +
@@ -811,10 +802,7 @@
                     '<div class="metric total"><span>利润 / 利润率</span><b class="' + propClass(totalProfit) + '">' +
                         (totalProfit === null ? '-' : fmt(totalProfit) + ' ISK / ' + fmt(totalMargin) + '%') + '</b></div>' +
                 '</div>' +
-                '<div class="note">' + (r.basisName
-                    ? '材料基准:T1 母装备「' + escapeHtml(r.basisName) + '」的工业材料表,衍生装备自身材料表不参与计算。'
-                    : '材料基准:该物品自身的官方材料表。') +
-                    '物品买入价:' + fmt(r.sell_min) + ' ISK/个,最高买单 ' + fmt(r.buy_max) + ' ISK/个。' +
+                '<div class="note">物品买入价:' + fmt(r.sell_min) + ' ISK/个,最高买单 ' + fmt(r.buy_max) + ' ISK/个。' +
                     '利润未扣交易税、设施税与运输成本;化矿率可在顶部调整,最高 55%。</div>' +
             '</div>' +
         '</div></td></tr>';

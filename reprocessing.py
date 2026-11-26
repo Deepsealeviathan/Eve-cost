@@ -1,9 +1,5 @@
 # -*- coding: utf-8 -*-
-"""垃圾回收化矿:读取 reprocessing.json,结合行情库计算 55% 化矿产出与收益。
-
-衍生装备的材料表在生成阶段已替换为其 T1 母装备的工业材料表,
-接口原样透出 basis_id / basis_name 供页面标注化矿基准。
-"""
+"""垃圾回收化矿:读取 reprocessing.json,结合行情库计算 55% 化矿产出与收益。"""
 import json
 from pathlib import Path
 
@@ -89,8 +85,6 @@ def get_catalog():
             "kind": item["kind"],
             "meta_level": item["meta_level"],
             "portion_size": item["portion_size"],
-            "basis_id": item.get("basis_id"),
-            "basis_name": item.get("basis_name"),
             "buy_max": buy_max,
             "sell_min": sell_min,
             "materials": item["materials"],
