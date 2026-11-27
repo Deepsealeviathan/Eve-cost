@@ -1,0 +1,25 @@
+{
+  "id": 16267,
+  "name": "黑闪冰",
+  "tier": "冰矿",
+  "recipe": {
+    "outputCount": 1,
+    "inputs": [
+      {
+        "materialId": 16272,
+        "materialname": "重水",
+        "count": 691
+      },
+      {
+        "materialId": 16273,
+        "materialname": "液化臭氧",
+        "count": 1381
+      },
+      {
+        "materialId": 16275,
+        "materialname": "锶包合物",
+        "count": 69
+      }
+    ]
+  }
+}

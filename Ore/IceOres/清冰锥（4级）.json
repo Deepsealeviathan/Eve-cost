@@ -1,0 +1,30 @@
+{
+  "id": 17978,
+  "name": "清冰锥（4级）",
+  "tier": "冰矿",
+  "recipe": {
+    "outputCount": 1,
+    "inputs": [
+      {
+        "materialId": 16272,
+        "materialname": "重水",
+        "count": 104
+      },
+      {
+        "materialId": 16273,
+        "materialname": "液化臭氧",
+        "count": 55
+      },
+      {
+        "materialId": 16274,
+        "materialname": "氦同位素",
+        "count": 483
+      },
+      {
+        "materialId": 16275,
+        "materialname": "锶包合物",
+        "count": 1
+      }
+    ]
+  }
+}
