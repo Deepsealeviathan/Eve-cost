@@ -642,63 +642,6 @@
         .toast{position:fixed;top:20px;left:50%;transform:translateX(-50%);z-index:999;display:none;padding:10px 20px;border-radius:10px;background:rgba(28,36,48,.96);border:1px solid rgba(255,255,255,.18);color:#e8eef7;font-size:14px;box-shadow:0 8px 28px rgba(0,0,0,.4)}
         .toast.err{border-color:rgba(255,110,110,.65);color:#ffb4b4}
 
-        /* 制造参数面板:勾选后才按 ME / 改装件 / 安装费重算 */
-        .craft-panel {
-            background: var(--card);
-            border-radius: 16px;
-            padding: 16px 20px;
-            margin: 0 0 18px;
-            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.16);
-        }
-        .craft-head {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            flex-wrap: wrap;
-            font-size: 14px;
-            font-weight: 600;
-        }
-        .craft-head label { display: flex; align-items: center; gap: 8px; cursor: pointer; }
-        .craft-hint { font-size: 12px; color: var(--muted); font-weight: 400; }
-        .craft-body {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
-            gap: 14px;
-            margin-top: 14px;
-        }
-        .craft-field { display: flex; flex-direction: column; gap: 6px; font-size: 12px; color: var(--muted); }
-        .craft-field select, .craft-field input {
-            padding: 8px 10px;
-            border: 1px solid var(--border);
-            border-radius: 10px;
-            font-size: 13px;
-            background: #f9fafb;
-            color: var(--text);
-        }
-        .rig-box { display: flex; flex-wrap: wrap; gap: 8px; }
-        .rig-check {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            font-size: 12px;
-            background: #f3f4f6;
-            border: 1px solid var(--border);
-            border-radius: 999px;
-            padding: 4px 10px;
-            cursor: pointer;
-            color: var(--text);
-        }
-        .rig-check.checked { background: #eef2ff; border-color: #c7d2fe; }
-        .craft-summary {
-            grid-column: 1 / -1;
-            font-size: 12px;
-            color: #374151;
-            background: #f8fafc;
-            border: 1px dashed var(--border);
-            border-radius: 10px;
-            padding: 8px 12px;
-        }
-
         @media (max-width: 900px) {
             .page { flex-direction: column; align-items: stretch; }
             .sidebar {
@@ -761,36 +704,6 @@
                 </div>
             </div>
 
-            <div class="craft-panel">
-                <div class="craft-head">
-                    <label><input type="checkbox" id="craft-enabled"> 制造参数(蓝图 ME / 改装件 / 安装费)</label>
-                    <span class="craft-hint">勾选后按实际建筑重算材料用量并叠加安装费;不勾选只按 ME0 材料量估算</span>
-                </div>
-                <div class="craft-body hidden" id="craft-body">
-                    <div class="craft-field">
-                        <span>建筑(决定可安装的改装件规格)</span>
-                        <select id="structure-select"></select>
-                    </div>
-                    <div class="craft-field">
-                        <span>星系安全等级(影响改装件效果)</span>
-                        <select id="sec-select"></select>
-                    </div>
-                    <div class="craft-field">
-                        <span>蓝图 ME 等级(0-10,每级 −1%)</span>
-                        <input type="number" id="me-input" min="0" max="10" value="0">
-                    </div>
-                    <div class="craft-field">
-                        <span>星系成本系数(制造,%)</span>
-                        <input type="number" id="sci-input" min="0" max="100" step="0.01" value="0">
-                    </div>
-                    <div class="craft-field" style="grid-column: 1 / -1;">
-                        <span>改装件(可多选,同一建筑最多 3 个)</span>
-                        <div class="rig-box" id="rig-box"></div>
-                    </div>
-                    <div class="craft-summary" id="craft-summary"></div>
-                </div>
-            </div>
-
             <div class="section-label">📝 待查询物品</div>
             <div class="query-list" id="query-list">
                 <div class="query-row">
@@ -829,16 +742,12 @@
                         <span id="total-items" class="value"></span>
                     </div>
                     <div class="summary-card">
-                        <span class="label" id="label-buy">按收购价预估总成本</span>
+                        <span class="label">按收购价预估总成本</span>
                         <span><span id="total-buy" class="value"></span> ISK</span>
                     </div>
                     <div class="summary-card">
-                        <span class="label" id="label-sell">按出售价预估总成本</span>
+                        <span class="label">按出售价预估总成本</span>
                         <span><span id="total-sell" class="value"></span> ISK</span>
-                    </div>
-                    <div class="summary-card" id="fee-card" style="display:none;">
-                        <span class="label">制造安装费合计</span>
-                        <span><span id="total-fee" class="value"></span> ISK</span>
                     </div>
                 </div>
                 <div class="actions" style="margin-top: 18px;">
@@ -889,7 +798,6 @@
         </div>
     </div>
 
-    <script src="{{ url_for('static', filename='craft_rules.js') }}"></script>
     <script>
         const errorDiv = document.getElementById('error');
         const resultDiv = document.getElementById('result');
@@ -1310,7 +1218,6 @@
                     return;
                 }
 
-                lastServerData = json.data;
                 renderBatchResult(json.data);
 
                 // 部分物品未找到:结果区上方黄条提示 + toast
@@ -1404,185 +1311,14 @@
         }
 
         // ==========================================
-        // 制造参数:蓝图 ME / 改装件 / 安装费(规则来自 static/craft_rules.js)
-        // ==========================================
-        function craftState() {
-            const on = document.getElementById('craft-enabled').checked;
-            const structure = CRAFT_RULES.STRUCTURES.find(s => s.id === document.getElementById('structure-select').value)
-                || CRAFT_RULES.STRUCTURES[0];
-            const sec = CRAFT_RULES.SEC_PRESETS.find(s => s.id === document.getElementById('sec-select').value)
-                || CRAFT_RULES.SEC_PRESETS[0];
-            let me = parseInt(document.getElementById('me-input').value, 10);
-            if (!Number.isFinite(me)) me = 0;
-            me = Math.max(0, Math.min(10, me));
-            let sci = parseFloat(document.getElementById('sci-input').value);
-            if (!Number.isFinite(sci) || sci < 0) sci = 0;
-            sci = Math.min(sci, 100);
-            const rigs = [...document.querySelectorAll('#rig-box input:checked')]
-                .map(cb => CRAFT_RULES.RIG_POOL.find(r => r.id === cb.value))
-                .filter(Boolean);
-            return { on, structure, sec, me, sci, rigs };
-        }
-
-        function buildCraftSelects() {
-            const stSel = document.getElementById('structure-select');
-            CRAFT_RULES.STRUCTURES.forEach(s => {
-                const o = document.createElement('option');
-                o.value = s.id;
-                o.textContent = s.label;
-                stSel.appendChild(o);
-            });
-            stSel.value = 'station';
-            const secSel = document.getElementById('sec-select');
-            CRAFT_RULES.SEC_PRESETS.forEach(s => {
-                const o = document.createElement('option');
-                o.value = s.id;
-                o.textContent = s.label;
-                secSel.appendChild(o);
-            });
-            secSel.value = 'hisec';
-            try {
-                const savedSci = localStorage.getItem('eveCostSci');
-                if (savedSci !== null) document.getElementById('sci-input').value = savedSci;
-            } catch (e) { /* 隐私模式下 localStorage 不可用,忽略 */ }
-            buildRigBox();
-        }
-
-        function buildRigBox() {
-            const st = CRAFT_RULES.STRUCTURES.find(s => s.id === document.getElementById('structure-select').value);
-            const box = document.getElementById('rig-box');
-            box.innerHTML = '';
-            if (!st || !st.size) {
-                box.innerHTML = '<span style="font-size:12px;color:#9ca3af;">NPC 站没有可安装的改装件</span>';
-                return;
-            }
-            CRAFT_RULES.RIG_POOL.filter(r => r.size === st.size).forEach(r => {
-                const lab = document.createElement('label');
-                lab.className = 'rig-check';
-                lab.innerHTML = `<input type="checkbox" value="${r.id}"> ${r.label}`;
-                const cb = lab.querySelector('input');
-                cb.addEventListener('change', e => {
-                    if (document.querySelectorAll('#rig-box input:checked').length > CRAFT_RULES.MAX_RIG_SLOTS) {
-                        e.target.checked = false;
-                        lab.classList.remove('checked');
-                        toast(`一座建筑最多同时安装 ${CRAFT_RULES.MAX_RIG_SLOTS} 个改装件`, true);
-                        return;
-                    }
-                    lab.classList.toggle('checked', cb.checked);
-                    refreshCraftView();
-                });
-                box.appendChild(lab);
-            });
-        }
-
-        function updateCraftSummary() {
-            const st = craftState();
-            const rate = CRAFT_RULES.feeRate(st.sci, st.structure.structFee);
-            const rigNames = st.rigs.length
-                ? st.rigs.map(r => r.label).join('、')
-                : '未选';
-            document.getElementById('craft-summary').innerHTML =
-                `材料:蓝图 ME −${st.me}% × 结构减免 −${(st.structure.structMe * 100).toFixed(0)}% × 改装件按分类取最高(已选 ${st.rigs.length}/${CRAFT_RULES.MAX_RIG_SLOTS}:${rigNames})`
-                + `<br>安装费费率:星系成本 ${st.sci.toFixed(2)}% × (1 − ${(st.structure.structFee * 100).toFixed(0)}%) + SCC 4.00% = <b>${(rate * 100).toFixed(4)}%</b>`;
-        }
-
-        // 参数变化:更新摘要,并基于最近一次服务器结果重算展示
-        function refreshCraftView() {
-            updateCraftSummary();
-            if (lastServerData) renderBatchResult(lastServerData);
-        }
-
-        // 按父材料缩放比例同步子材料数量/金额,保持展开树与顶层一致
-        function scaleMaterial(m, scale) {
-            const out = Object.assign({}, m, {
-                total_num: (m.total_num || 0) * scale,
-                total_buy: (m.total_buy || 0) * scale,
-                total_sell: (m.total_sell || 0) * scale,
-            });
-            if (m.sub_materials && m.sub_materials.length) {
-                out.sub_materials = m.sub_materials.map(sub => scaleMaterial(sub, scale));
-            }
-            return out;
-        }
-
-        // 把服务器结果(ME0 材料量)换算成所选建筑下的材料成本与安装费
-        function applyCraftParams(raw) {
-            const st = craftState();
-            if (!st.on) {
-                return {
-                    items: raw.items,
-                    grand_total_buy: raw.grand_total_buy,
-                    grand_total_sell: raw.grand_total_sell,
-                    fee_total: 0,
-                    params: null,
-                };
-            }
-            let gBuy = 0, gSell = 0, gFee = 0;
-            const items = raw.items.map(item => {
-                // 无配方物品(基础材料)不套材料减免,也没有安装费
-                if (item.output_count === undefined) {
-                    gBuy += item.total_buy;
-                    gSell += item.total_sell;
-                    return Object.assign({}, item, { job_fee: 0, craft_runs: 0 });
-                }
-                const oc = item.output_count || 1;
-                const runs = Math.max(1, Math.ceil(item.quantity / oc));
-                const rigEff = CRAFT_RULES.rigBonusFor(item.tier, st.rigs, st.sec.scale);
-                const factor = CRAFT_RULES.meFactor(st.me) * (1 - rigEff) * (1 - st.structure.structMe);
-                let totalBuy = 0, totalSell = 0;
-                const materials = (item.materials || []).map(m => {
-                    if (m.missing) return m;
-                    const base = Math.round((m.num_per_unit || 0) * oc);   // 单轮 ME0 用量
-                    const need = Math.max(runs, Math.ceil(base * runs * factor - 1e-9));  // 每种材料每轮至少 1 个
-                    const oldTotal = m.total_num || 0;
-                    const scaled = scaleMaterial(m, oldTotal > 0 ? need / oldTotal : 1);
-                    scaled.total_num = need;
-                    scaled.total_buy = need * (m.buy_max || 0);
-                    scaled.total_sell = need * (m.sell_min || 0);
-                    totalBuy += scaled.total_buy;
-                    totalSell += scaled.total_sell;
-                    return scaled;
-                });
-                const fee = Math.floor((item.eiv_per_run || 0) * runs
-                    * CRAFT_RULES.feeRate(st.sci, st.structure.structFee));
-                gBuy += totalBuy;
-                gSell += totalSell;
-                gFee += fee;
-                return Object.assign({}, item, {
-                    materials,
-                    total_buy: totalBuy,
-                    total_sell: totalSell,
-                    job_fee: fee,
-                    craft_runs: runs,
-                });
-            });
-            return {
-                items,
-                grand_total_buy: gBuy,
-                grand_total_sell: gSell,
-                fee_total: gFee,
-                params: st,
-            };
-        }
-
-        // ==========================================
         // 渲染结果
         // ==========================================
-        function renderBatchResult(raw) {
-            const data = applyCraftParams(raw);
-            lastQueryData = data;  // 记录最近一次展示结果,供 CSV 导出/复制使用
-            document.getElementById('result-title').textContent = data.params
-                ? '批量成本估算(含制造参数)' : '批量成本估算';
+        function renderBatchResult(data) {
+            lastQueryData = data;  // 记录最近一次成功结果,供 CSV 导出/复制使用
+            document.getElementById('result-title').textContent = '批量成本估算';
             document.getElementById('total-items').textContent = data.items.length;
             document.getElementById('total-buy').textContent = fmt(data.grand_total_buy);
             document.getElementById('total-sell').textContent = fmt(data.grand_total_sell);
-            document.getElementById('label-buy').textContent = data.params
-                ? '材料成本合计(收购价)' : '按收购价预估总成本';
-            document.getElementById('label-sell').textContent = data.params
-                ? '材料成本合计(出售价)' : '按出售价预估总成本';
-            const feeCard = document.getElementById('fee-card');
-            feeCard.style.display = data.params ? '' : 'none';
-            document.getElementById('total-fee').textContent = fmt(data.fee_total);
 
             const tbody = document.getElementById('result-body');
             tbody.innerHTML = '';
@@ -1632,17 +1368,6 @@
                          <span style="color:#d97706; font-weight:700;">${fmt(item.market_sell || 0)} ISK</span>
                        </div>`
                     : '';
-                // 勾选制造参数后:展示材料成本 + 安装费 = 合计(卖价采购口径)
-                const craftSummary = (data.params && item.craft_runs)
-                    ? `<div style="margin-top:4px; font-size:13px; color:#374151;">
-                         <span style="font-weight:600;">制造费估算(${item.craft_runs} 轮 × ${item.output_count} 个):</span>
-                         <span>材料 ${fmt(item.total_sell)}</span>
-                         <span style="margin:0 6px; color:#9ca3af;">+</span>
-                         <span>安装费 ${fmt(item.job_fee || 0)}</span>
-                         <span style="margin:0 6px; color:#9ca3af;">=</span>
-                         <b style="color:var(--primary);">${fmt(item.total_sell + (item.job_fee || 0))} ISK</b>
-                       </div>`
-                    : '';
 
                 const groupRow = document.createElement('tr');
                 groupRow.innerHTML = `
@@ -1653,7 +1378,6 @@
                                 ${icon} ${item.name} × ${item.quantity} ${tierLabel}
                                 ${costSummary}
                                 ${marketSummary}
-                                ${craftSummary}
                             </div>
                         </div>
                     </td>
@@ -1783,8 +1507,7 @@
         // ==========================================
         // CSV 导出 / 复制(批量查询成功后可用)
         // ==========================================
-        let lastServerData = null;  // 最近一次服务器原始结果(参数变化时重算用)
-        let lastQueryData = null;   // 最近一次展示结果(含制造参数),CSV 导出用
+        let lastQueryData = null;  // 最近一次成功的批量查询结果
 
         function csvCell(v) {
             // 含逗号/引号/换行的字段按 CSV 规范加引号转义
@@ -1798,22 +1521,14 @@
         }
 
         function buildCsv(data) {
-            // 列:物品,数量,单件材料成本(卖单价采购),材料总成本(卖单价采购),材料总成本(买单价采购)
-            // 勾选制造参数时追加:制造安装费、合计(材料 + 安装费)。末行仅合计各金额列。
-            const withFee = !!data.params;
-            const head = ['物品', '数量', '单件材料成本(卖单价采购)', '材料总成本(卖单价采购)', '材料总成本(买单价采购)'];
-            if (withFee) head.push('制造安装费', '合计(材料+安装费)');
-            const lines = [head.join(',')];
+            // 列:物品,数量,单件成本(卖单价采购),总成本(卖单价采购),总成本(买单价采购);末行仅合计两个总成本
+            const lines = [['物品', '数量', '单件成本(卖单价采购)', '总成本(卖单价采购)', '总成本(买单价采购)'].join(',')];
             data.items.forEach(item => {
                 const qty = item.quantity || 1;
                 const unitSell = qty ? item.total_sell / qty : 0;
-                const row = [csvCell(item.name), qty, round2(unitSell), round2(item.total_sell), round2(item.total_buy)];
-                if (withFee) row.push(round2(item.job_fee || 0), round2(item.total_sell + (item.job_fee || 0)));
-                lines.push(row.join(','));
+                lines.push([csvCell(item.name), qty, round2(unitSell), round2(item.total_sell), round2(item.total_buy)].join(','));
             });
-            const total = [csvCell('合计'), '', '', round2(data.grand_total_sell), round2(data.grand_total_buy)];
-            if (withFee) total.push(round2(data.fee_total), round2(data.grand_total_sell + data.fee_total));
-            lines.push(total.join(','));
+            lines.push([csvCell('合计'), '', '', round2(data.grand_total_sell), round2(data.grand_total_buy)].join(','));
             return lines.join('\r\n');
         }
 
@@ -1887,31 +1602,6 @@
         // 页面加载:先恢复 URL 中的查询行,再加载物品目录
         document.addEventListener('DOMContentLoaded', () => {
             applyListFromUrl();
-            buildCraftSelects();
-
-            const enableBox = document.getElementById('craft-enabled');
-            enableBox.addEventListener('change', () => {
-                document.getElementById('craft-body').classList.toggle('hidden', !enableBox.checked);
-                if (enableBox.checked) updateCraftSummary();
-                if (lastServerData) renderBatchResult(lastServerData);
-            });
-
-            // 建筑决定可装的改装件规格,换建筑要重建改装件列表
-            document.getElementById('structure-select').addEventListener('change', () => {
-                buildRigBox();
-                refreshCraftView();
-            });
-            ['sec-select', 'me-input'].forEach(id => {
-                const el = document.getElementById(id);
-                el.addEventListener('input', refreshCraftView);
-                el.addEventListener('change', refreshCraftView);
-            });
-            const sciInput = document.getElementById('sci-input');
-            sciInput.addEventListener('input', () => {
-                try { localStorage.setItem('eveCostSci', sciInput.value); } catch (e) { /* 忽略 */ }
-                refreshCraftView();
-            });
-
             loadCatalog();
         });
     </script>

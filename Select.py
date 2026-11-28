@@ -422,8 +422,11 @@ def get_catalog(use_cache=True):
     分类在 update_market.py 入库时已写入 items.category(P1~P4 / categories.json 自定义 / 其他)。
     返回列表,形如:
     [{'id':34,'name':'三钛合金','buy_max':9.58,'buy_min':9.1,'sell_max':10.5,
-      'sell_min':10,'buy_volume':123,'sell_volume':456,'update_time':'...','tier':'矿物'}, ...]
+      'sell_min':10,'buy_volume':123,'sell_volume':456,'adjusted_price':9.9,
+      'update_time':'...','tier':'矿物'}, ...]
 
+    adjusted_price 来自 adjusted_prices 表(ESI 调整价),供清单汇总页按官方 EIV 公式
+    估算安装费;表未建时为 None。
     结果带 30 秒进程内缓存(use_cache=False 可强制读库),多页共用一份目录。
     """
     if use_cache and _CATALOG_CACHE['data'] is not None \
@@ -436,15 +439,33 @@ def get_catalog(use_cache=True):
         try:
             conn = pymysql.connect(**load_db_config())
             with conn.cursor() as cursor:
-                cursor.execute("""
-                    SELECT i.type_id, i.name, p.buy_max, p.buy_min, p.sell_max, p.sell_min,
-                           p.buy_volume, p.sell_volume, p.updated_at, i.category
-                    FROM items i
-                    LEFT JOIN market_prices p
-                        ON p.type_id = i.type_id AND p.region_id = %s
-                    ORDER BY i.name ASC
-                """, (REGION_ID,))
-                rows = cursor.fetchall()
+                # adjusted_prices 仅用于安装费估算;旧库未建该表时降级为不带调整价的查询
+                try:
+                    cursor.execute("""
+                        SELECT i.type_id, i.name, p.buy_max, p.buy_min, p.sell_max, p.sell_min,
+                               p.buy_volume, p.sell_volume, p.updated_at, i.category,
+                               a.adjusted_price
+                        FROM items i
+                        LEFT JOIN market_prices p
+                            ON p.type_id = i.type_id AND p.region_id = %s
+                        LEFT JOIN adjusted_prices a ON a.type_id = i.type_id
+                        ORDER BY i.name ASC
+                    """, (REGION_ID,))
+                    rows = cursor.fetchall()
+                    has_adjusted = True
+                except pymysql.Error as e:
+                    if getattr(e, 'args', [None])[0] != 1146:
+                        raise
+                    cursor.execute("""
+                        SELECT i.type_id, i.name, p.buy_max, p.buy_min, p.sell_max, p.sell_min,
+                               p.buy_volume, p.sell_volume, p.updated_at, i.category
+                        FROM items i
+                        LEFT JOIN market_prices p
+                            ON p.type_id = i.type_id AND p.region_id = %s
+                        ORDER BY i.name ASC
+                    """, (REGION_ID,))
+                    rows = cursor.fetchall()
+                    has_adjusted = False
             data = [
                 {
                     'id': row[0],
@@ -456,7 +477,8 @@ def get_catalog(use_cache=True):
                     'buy_volume': row[6] or 0,
                     'sell_volume': row[7] or 0,
                     'update_time': str(row[8]) if row[8] is not None else '-',
-                    'tier': row[9] or '其他'
+                    'tier': row[9] or '其他',
+                    'adjusted_price': row[10] if has_adjusted else None,
                 }
                 for row in rows
             ]
