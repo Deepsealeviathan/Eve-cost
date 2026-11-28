@@ -3,12 +3,14 @@
 import os
 import json
 import csv
+import logging
 import sys
 import time
 import threading
 import subprocess
 import re
 import hmac
+from datetime import timedelta
 
 # 从 flask 库导入五个工具：
 # Flask: 创建 Web 应用的核心类
@@ -25,7 +27,8 @@ import update_market
 # query_by_name: 读取 JSON 制作清单并查询数据库计算成本
 # get_catalog: 物品目录
 # get_recipes: 全部配方轻量索引
-from Select import query_by_name, get_catalog, get_recipes, get_profit_snapshot, get_price_history
+from Select import (query_by_name, get_catalog, get_recipes, get_profit_snapshot,
+                    get_price_history, get_health, invalidate_catalog_cache)
 from reprocessing import get_catalog as get_reprocessing_catalog
 
 # 配置加载:数据库连接 / 管理员密钥 / 定时任务参数
@@ -34,15 +37,27 @@ from db_config import load_db_config, load_security_config, load_schedule_config
 # 反代部署时还原访客真实 IP 的中间件(werkzeug 随 Flask 一同安装)
 from werkzeug.middleware.proxy_fix import ProxyFix
 
+# 统一日志:时间 + 级别 + 模块名,输出到 stderr(gunicorn/systemd 会收集)
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s %(levelname)s %(name)s: %(message)s',
+)
+log = logging.getLogger('eve_cost.app')
+
 # 创建一个 Flask 应用实例
 # __name__ 是当前模块名，Flask 用它来确定资源路径
 app = Flask(__name__)
+
+# 接口直接返回可读中文(Flask 默认转成 \uXXXX,徒增响应体积、不便于排查)
+app.json.ensure_ascii = False
 
 # 会话签名密钥与管理员密码:启动时强制读取,缺失/为空直接报错提示
 _security = load_security_config()
 app.secret_key = _security['secret_key']
 # Cookie 属性:SameSite=Lax 拦截跨站 POST 伪造(CSRF)
 app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+# 管理员登录态闲置 30 分钟自动失效(每次请求会顺延),避免公用电脑上长期留权
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=30)
 
 # HTTPS 部署时给会话 Cookie 加 Secure 标记(仅经 HTTPS 传输);本地 HTTP 开发不开
 if os.environ.get('EVE_COST_HTTPS') == '1':
@@ -73,7 +88,7 @@ def _api_error(e, hint='服务器开小差了,请稍后重试'):
 
     避免把原始报错文本(如网络层的 "[Errno 32] Broken pipe")直接弹给用户。
     """
-    print(f"[接口异常] {request.path}: {e!r}", flush=True)
+    log.exception('[接口异常] %s', request.path)
     return jsonify({'success': False, 'error': hint})
 
 
@@ -107,6 +122,7 @@ def admin_login():
     if password and hmac.compare_digest(
             password.encode('utf-8'), _security['admin_password'].encode('utf-8')):
         _login_failures.pop(ip, None)
+        session.permanent = True   # 启用过期时间(见 PERMANENT_SESSION_LIFETIME)
         session['admin'] = True
         return jsonify({'success': True})
 
@@ -129,6 +145,21 @@ def admin_logout():
     """退出管理员登录"""
     session.pop('admin', None)
     return jsonify({'success': True})
+
+
+@app.route('/admin/health')
+def admin_health_page():
+    """数据自检页:行情新鲜度、无报价物品、配方/调整价/历史行情覆盖度"""
+    return render_template('admin_health.html')
+
+
+@app.route('/api/health')
+def api_health():
+    """返回自检数据(只读统计,不触发任何写库操作)"""
+    try:
+        return jsonify({'success': True, 'data': get_health()})
+    except Exception as e:
+        return _api_error(e, '数据自检失败,请稍后重试')
 
 
 # ================== 页面与查询接口(游客可用) ==================
@@ -313,6 +344,7 @@ def update_database():
         # 从输出中解析更新条数(与 update_market.py 的打印保持一致的半角逗号)
         match = re.search(r'导入完成,共更新 (\d+) 条记录', result.stdout)
         updated = int(match.group(1)) if match else None
+        invalidate_catalog_cache()   # 目录缓存立即失效,页面刷新即可看到新价格
 
         return jsonify({
             'success': True,
@@ -408,15 +440,16 @@ def _auto_update_loop(interval_seconds):
     while True:
         if _update_lock.acquire(blocking=False):
             try:
-                print(f'[定时更新] {time.strftime("%Y-%m-%d %H:%M:%S")} 开始行情更新...', flush=True)
+                log.info('定时更新:开始行情更新')
                 update_market.main()
-                print(f'[定时更新] {time.strftime("%Y-%m-%d %H:%M:%S")} 行情更新完成', flush=True)
+                invalidate_catalog_cache()
+                log.info('定时更新:行情更新完成')
             except Exception as e:
-                print(f'[定时更新] 行情更新失败: {e}', flush=True)
+                log.exception('定时更新:行情更新失败: %s', e)
             finally:
                 _update_lock.release()
         else:
-            print('[定时更新] 跳过:已有更新任务正在进行', flush=True)
+            log.info('定时更新:跳过,已有更新任务正在进行')
         time.sleep(interval_seconds)
 
 
@@ -429,7 +462,8 @@ if os.environ.get('EVE_COST_DISABLE_AUTO_UPDATE') != '1':
         target=_auto_update_loop, args=(_interval,),
         daemon=True, name='auto-update',
     ).start()
-    print(f'定时行情更新已启用:启动 {AUTO_UPDATE_STARTUP_DELAY}s 后首次执行,此后每 {_interval}s 一次', flush=True)
+    log.info('定时行情更新已启用:启动 %ss 后首次执行,此后每 %ss 一次',
+             AUTO_UPDATE_STARTUP_DELAY, _interval)
 
 
 # 判断当前文件是否是直接运行（不是被其他文件导入）

@@ -5,9 +5,9 @@ from pathlib import Path
 
 import pymysql
 
-from db_config import load_db_config
+from db_config import load_db_config, get_region_id
 
-REGION_ID = 10000002
+REGION_ID = get_region_id()
 MAX_RATE = 0.55
 DATA_PATH = Path(__file__).resolve().parent / "reprocessing.json"
 

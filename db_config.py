@@ -56,6 +56,26 @@ def load_security_config():
     return {'admin_password': admin_password, 'secret_key': secret_key}
 
 
+DEFAULT_REGION_ID = 10000002  # 伏尔戈星域 The Forge(吉他 4-4 所在星域)
+
+
+def get_region_id():
+    """读取 [market].region_id(行情所属星域),缺省 10000002。
+
+    配方 JSON 的费用估算、行情更新、化矿页共用这一个星域,避免三处各写死一份。
+    """
+    parser = _load_parser()
+    if not parser.has_section('market'):
+        return DEFAULT_REGION_ID
+    raw = parser['market'].get('region_id', str(DEFAULT_REGION_ID))
+    try:
+        return int(raw.strip())
+    except ValueError:
+        raise ValueError(
+            f"config.ini [market].region_id 必须是整数星域 ID,当前值: {raw!r}(默认 10000002)"
+        )
+
+
 def load_schedule_config():
     """读取 [schedule].update_interval_seconds(行情自动更新间隔秒数,缺省 7200=2 小时)。"""
     parser = _load_parser()

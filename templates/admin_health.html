@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>数据自检 - EVE 批量制作成本查询</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        :root {
+            --primary: #4f46e5;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --bg: #0b0f19;
+            --card: rgba(255, 255, 255, 0.94);
+            --text: #1f2937;
+            --muted: #6b7280;
+            --border: rgba(0, 0, 0, 0.08);
+        }
+        .top-nav { display: flex; gap: 8px; flex-wrap: wrap; max-width: 1100px; margin: 0 auto 16px; }
+        .top-nav a {
+            padding: 7px 16px; border-radius: 999px; background: rgba(255, 255, 255, .08);
+            border: 1px solid rgba(255, 255, 255, .15); color: #e8eef7; text-decoration: none; font-size: 13px;
+        }
+        .top-nav a:hover { background: rgba(255, 255, 255, .18); }
+        .top-nav a.active { background: rgba(86, 156, 255, .28); border-color: rgba(86, 156, 255, .55); color: #fff; }
+        body {
+            font-family: "Microsoft YaHei", "PingFang SC", Arial, sans-serif;
+            background:
+                radial-gradient(circle at 10% 20%, rgba(79, 70, 229, 0.18) 0%, transparent 35%),
+                radial-gradient(circle at 90% 80%, rgba(6, 182, 212, 0.14) 0%, transparent 35%),
+                linear-gradient(135deg, #0b0f19 0%, #111827 50%, #0b0f19 100%);
+            min-height: 100vh; padding: 40px 20px; color: var(--text);
+        }
+        .page { max-width: 1100px; margin: 0 auto; }
+        h1 { color: #e8eef7; font-size: 24px; margin-bottom: 6px; }
+        .sub { color: #9db3cc; font-size: 13px; margin-bottom: 20px; }
+        .card {
+            background: var(--card); border-radius: 18px; padding: 22px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25); margin-bottom: 18px;
+        }
+        .card h2 { font-size: 16px; margin-bottom: 14px; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; }
+        .stat { background: #f8fafc; border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; }
+        .stat .label { font-size: 12px; color: var(--muted); }
+        .stat .value { font-size: 20px; font-weight: 700; margin-top: 4px; word-break: break-all; }
+        .stat .value.small { font-size: 14px; }
+        .warn { color: var(--danger); }
+        .ok { color: var(--success); }
+        table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        th, td { padding: 8px 10px; text-align: left; border-bottom: 1px solid var(--border); }
+        th { color: var(--muted); font-weight: 600; font-size: 12px; }
+        .scroll { max-height: 320px; overflow-y: auto; }
+        .btn {
+            border: none; padding: 10px 18px; border-radius: 10px; cursor: pointer;
+            font-size: 14px; font-weight: 600; color: #fff;
+            background: linear-gradient(135deg, var(--primary) 0%, #3730a3 100%);
+        }
+        .btn:disabled { opacity: .6; cursor: not-allowed; }
+        .muted { color: var(--muted); font-size: 12px; }
+        .error { color: var(--danger); font-size: 14px; }
+        .hidden { display: none !important; }
+        .tag { display: inline-block; padding: 2px 8px; border-radius: 999px; background: #eef2ff; color: #3730a3; font-size: 12px; }
+    </style>
+</head>
+<body>
+    <nav class="top-nav">
+        <a href="/">📦 成本查询</a>
+        <a href="/components">🛠️ 组件计算器</a>
+        <a href="/bom">🧾 清单汇总</a>
+        <a href="/profit">💰 利润排行</a>
+        <a href="/reprocess">♻️ 垃圾化矿</a>
+        <a href="/admin/health" class="active">🩺 数据自检</a>
+    </nav>
+
+    <div class="page">
+        <h1>🩺 数据自检</h1>
+        <div class="sub" id="generated-at">只读统计:行情新鲜度、无报价物品、配方与安装费数据覆盖度。</div>
+
+        <div id="load-error" class="card error hidden">自检数据加载失败,请稍后刷新重试。</div>
+
+        <div class="card">
+            <h2>📈 行情</h2>
+            <div class="grid">
+                <div class="stat"><div class="label">行情最后更新</div><div class="value small" id="market-time">-</div></div>
+                <div class="stat"><div class="label">目录物品总数</div><div class="value" id="item-total">-</div></div>
+                <div class="stat"><div class="label">有报价物品</div><div class="value ok" id="item-priced">-</div></div>
+                <div class="stat"><div class="label">无任何报价</div><div class="value warn" id="item-unpriced">-</div></div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>🧾 配方与安装费</h2>
+            <div class="grid">
+                <div class="stat"><div class="label">配方文件数</div><div class="value" id="recipe-total">-</div></div>
+                <div class="stat"><div class="label">可制造物品(有产出/输入)</div><div class="value" id="recipe-craftable">-</div></div>
+                <div class="stat"><div class="label">配方材料种类</div><div class="value" id="material-ids">-</div></div>
+                <div class="stat"><div class="label">目录中无配方物品</div><div class="value" id="item-no-recipe">-</div></div>
+                <div class="stat"><div class="label">调整价条数(EIV)</div><div class="value" id="adjusted-count">-</div></div>
+                <div class="stat"><div class="label">调整价更新时间</div><div class="value small" id="adjusted-time">-</div></div>
+                <div class="stat"><div class="label">缺调整价的材料</div><div class="value" id="adjusted-missing">-</div></div>
+            </div>
+            <div class="muted" id="adjusted-missing-list" style="margin-top:10px;"></div>
+        </div>
+
+        <div class="card">
+            <h2>🗂 历史行情与利润快照</h2>
+            <div class="grid">
+                <div class="stat"><div class="label">历史日线条数</div><div class="value" id="history-rows">-</div></div>
+                <div class="stat"><div class="label">覆盖物品数</div><div class="value" id="history-ids">-</div></div>
+                <div class="stat"><div class="label">日期范围</div><div class="value small" id="history-range">-</div></div>
+                <div class="stat"><div class="label">利润快照条目</div><div class="value" id="snapshot-count">-</div></div>
+                <div class="stat"><div class="label">快照更新时间</div><div class="value small" id="snapshot-time">-</div></div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>⚠️ 无任何报价物品 <span class="muted" id="unpriced-note"></span></h2>
+            <div class="scroll">
+                <table>
+                    <thead><tr><th>分类</th><th>物品</th><th>type_id</th></tr></thead>
+                    <tbody id="unpriced-body"><tr><td colspan="3" class="muted">加载中...</td></tr></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>📊 分类分布</h2>
+            <div class="scroll">
+                <table>
+                    <thead><tr><th>分类</th><th>物品数</th></tr></thead>
+                    <tbody id="category-body"><tr><td colspan="2" class="muted">加载中...</td></tr></tbody>
+                </table>
+            </div>
+        </div>
+
+        <button class="btn" id="btn-refresh" onclick="loadHealth()">🔄 重新自检</button>
+    </div>
+
+    <script>
+        // 区间/数值展示:无数据统一显示「-」
+        function text(v) {
+            return (v === null || v === undefined || v === '') ? '-' : String(v);
+        }
+
+        function esc(s) {
+            const div = document.createElement('div');
+            div.textContent = s === null || s === undefined ? '' : String(s);
+            return div.innerHTML;
+        }
+
+        async function loadHealth() {
+            const btn = document.getElementById('btn-refresh');
+            btn.disabled = true;
+            btn.textContent = '自检中...';
+            try {
+                const res = await fetch('/api/health');
+                const json = await res.json();
+                if (!json.success) throw new Error(json.error || '自检失败');
+                render(json.data);
+                document.getElementById('load-error').classList.add('hidden');
+            } catch (e) {
+                document.getElementById('load-error').classList.remove('hidden');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '🔄 重新自检';
+            }
+        }
+
+        function render(data) {
+            document.getElementById('generated-at').textContent = '自检时间:' + text(data.generated_at);
+
+            const items = data.items || {};
+            const recipes = data.recipes || {};
+            const market = data.market || {};
+            const adjusted = data.adjusted || {};
+            const history = data.history || {};
+            const snapshot = data.snapshot || {};
+
+            document.getElementById('market-time').textContent = text(market.updated_at);
+            document.getElementById('item-total').textContent = text(items.total);
+            document.getElementById('item-priced').textContent = text(items.priced);
+            document.getElementById('item-unpriced').textContent = text(items.unpriced);
+
+            document.getElementById('recipe-total').textContent = text(recipes.total);
+            document.getElementById('recipe-craftable').textContent = text(recipes.craftable);
+            document.getElementById('material-ids').textContent = text(recipes.material_ids);
+            document.getElementById('item-no-recipe').textContent = text(items.without_recipe);
+            document.getElementById('adjusted-count').textContent = text(adjusted.count);
+            document.getElementById('adjusted-time').textContent = text(adjusted.updated_at);
+            const missing = adjusted.missing_materials || [];
+            document.getElementById('adjusted-missing').textContent = missing.length;
+            document.getElementById('adjusted-missing-list').textContent = missing.length
+                ? '缺调整价的材料 type_id(安装费会偏低):' + missing.slice(0, 40).join(', ')
+                  + (missing.length > 40 ? ` 等 ${missing.length} 个` : '')
+                : '全部配方材料都有调整价,EIV 安装费可正常计算';
+
+            document.getElementById('history-rows').textContent = text(history.rows);
+            document.getElementById('history-ids').textContent = text(history.type_ids);
+            document.getElementById('history-range').textContent =
+                history.from ? `${history.from} ~ ${history.to}` : '-';
+            document.getElementById('snapshot-count').textContent = text(snapshot.count);
+            document.getElementById('snapshot-time').textContent = text(snapshot.updated_at);
+
+            const list = items.unpriced_list || [];
+            document.getElementById('unpriced-note').textContent = list.length
+                ? `(共 ${list.length} 个,通常是无人挂单的冷门物品)` : '(全部物品都有报价)';
+            document.getElementById('unpriced-body').innerHTML = list.length
+                ? list.map(i => `<tr><td><span class="tag">${esc(i.tier)}</span></td><td>${esc(i.name)}</td><td>${esc(i.id)}</td></tr>`).join('')
+                : '<tr><td colspan="3" class="muted">无</td></tr>';
+
+            const cats = items.by_category || {};
+            const rows = Object.keys(cats).map(k => `<tr><td>${esc(k)}</td><td>${esc(cats[k])}</td></tr>`).join('');
+            document.getElementById('category-body').innerHTML = rows || '<tr><td colspan="2" class="muted">无</td></tr>';
+        }
+
+        loadHealth();
+    </script>
+</body>
+</html>

@@ -18,14 +18,14 @@ from pathlib import Path
 import pymysql
 import requests
 
-from db_config import load_db_config
+from db_config import load_db_config, get_region_id
 from Select import compute_profit_rows
 from reprocessing import price_ids as reprocessing_price_ids
 
 # ================== 用户配置 ==================
 ESI = "https://ali-esi.evepc.163.com/latest"   # 网易国服 ESI 镜像
 DATASOURCE = "serenity"                          # 晨曦服务器
-REGION_ID = 10000002                             # 伏尔戈星域(The Forge)
+REGION_ID = get_region_id()                      # 行情星域,config.ini [market] 可改,默认伏尔戈
 JITA_44 = 60003760                               # 吉他 IV - 卫星 4 - 加达里海军组装车间
 
 HEADERS = {"User-Agent": "eve-cost/0.6 (https://github.com/Deepsealeviathan/Eve-cost)"}
@@ -33,6 +33,7 @@ MAX_WORKERS = 8        # 并发拉取页数,出现大量连接错误时调小
 MAX_RETRIES = 4
 BATCH_SIZE = 100
 HISTORY_DAYS = 90      # 历史行情保留天数(趋势图时间窗)
+HISTORY_KEEP_DAYS = 365  # 库里实际保留天数,更老的日线在每次更新时清理
 
 BASE_DIR = Path(__file__).resolve().parent
 
@@ -47,13 +48,6 @@ RECIPE_ROOTS = [
     'Planetary_Commodities/P3', 'Planetary_Commodities/P4',
 ]
 
-# 不出现在任何配方中、但有市场价的物品,在此手动补充 type_id(静态数据,不会变)
-EXTRA_TYPE_IDS = {
-    "氧燃料块": 4312,
-    "氢燃料块": 4246,
-    "氦燃料块": 4247,
-    "氮燃料块": 4051,
-}
 # ==============================================
 
 _thread_local = threading.local()
@@ -92,7 +86,6 @@ def collect_tracked_items():
     """
     收集需要跟踪行情的物品:
     - 扫描 RECIPE_ROOTS 下所有配方 JSON,取自身 id 和配方 inputs 的 materialId
-    - 追加 EXTRA_TYPE_IDS 中的物品
     - 分类:行星产物按目录记 P1~P4,其余查 categories.json,都不在则「其他」
     返回 {type_id: {"name": str, "category": str}}
     """
@@ -117,10 +110,6 @@ def collect_tracked_items():
             add(data.get('id'), data.get('name'))
             for inp in data.get('recipe', {}).get('inputs', []):
                 add(inp.get('materialId'), inp.get('materialname'))
-
-    for name, type_id in EXTRA_TYPE_IDS.items():
-        tracked.setdefault(type_id, name)
-        name_category.setdefault(name, None)
 
     # 分类:行星产物目录 > categories.json > 其他
     for tier in ('P1', 'P2', 'P3', 'P4'):
@@ -348,7 +337,8 @@ def fetch_price_history(tracked):
 
 def sync_price_history(history):
     """增量写入 price_history:只插入比库中该物品最新日期更新的行。
-    绝大多数更新周期内每个物品只有 0~1 条新日线,写入量极小。"""
+    绝大多数更新周期内每个物品只有 0~1 条新日线,写入量极小。
+    同时清理 HISTORY_KEEP_DAYS 天以前的老日线,避免表无限增长拖慢趋势图查询。"""
     conn = None
     try:
         conn = pymysql.connect(**load_db_config())
@@ -369,7 +359,14 @@ def sync_price_history(history):
                     new_rows,
                 )
             conn.commit()
-            print(f"历史行情入库:新增 {len(new_rows)} 条")
+            # 趋势图只用最近 90 天,库里保留更长的 365 天用于对比,再老的直接删掉
+            cursor.execute(
+                "DELETE FROM price_history WHERE date < CURDATE() - INTERVAL %s DAY",
+                (HISTORY_KEEP_DAYS,),
+            )
+            purged = cursor.rowcount
+            conn.commit()
+            print(f"历史行情入库:新增 {len(new_rows)} 条,清理 {HISTORY_KEEP_DAYS} 天前 {purged} 条")
     finally:
         if conn:
             conn.close()

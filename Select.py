@@ -1,14 +1,19 @@
 # -*- coding: utf-8 -*-
 import os
 import json
+import logging
+import re
 import time
 import pymysql
 from pathlib import Path
 
-from db_config import load_db_config
+from db_config import load_db_config, get_region_id
+
+log = logging.getLogger('eve_cost.select')
 
 # ================== 配置区 ==================
-REGION_ID = 10000002  # 行情所属星域(伏尔戈 The Forge / 吉他)
+# 行情所属星域(默认伏尔戈 The Forge / 吉他),可在 config.ini [market] 修改
+REGION_ID = get_region_id()
 
 
 def _get_search_roots():
@@ -43,43 +48,72 @@ def _get_search_roots():
 SEARCH_ROOTS = _get_search_roots()
 # ===========================================
 
-
-_PATH_LOOKUP_CACHE = {}   # 物品名 -> 配方文件路径(配方目录在运行期不变,查找一次后缓存)
+# 名称索引有效期(秒):新增/改名配方 JSON 后最多 10 秒自动生效,无需重启服务
+_NAME_INDEX_TTL = 10.0
+_NAME_INDEX = {'built': 0.0, 'exact': {}, 'normalized': {}}
 _JSON_DATA_CACHE = {}     # 文件路径 -> (mtime, 解析后的 dict),文件变更自动失效
+
+# 全角符号归一化表:国服物品名用「（）」,用户习惯输入「()」
+_FULLWIDTH_MAP = str.maketrans({
+    '（': '(', '）': ')', '【': '[', '】': ']', '〔': '(', '〕': ')',
+    '×': 'x', 'Ｘ': 'X', 'ｘ': 'x', '－': '-', '　': ' ',
+})
+
+
+def normalize_name(name):
+    """物品名归一化:全角括号/乘号转半角,去掉所有空白。
+
+    「白釉冰（4级）」与「白釉冰(4级)」归一化后同键,用户用半角括号也能查到。
+    """
+    if not name:
+        return ''
+    return re.sub(r'\s+', '', str(name).translate(_FULLWIDTH_MAP))
+
+
+def _build_name_index():
+    """遍历配方目录,建立 精确名 -> 路径、归一化名 -> 路径 两张索引。"""
+    exact = {}
+    normalized = {}
+    for root in SEARCH_ROOTS:
+        if not os.path.isdir(root):
+            log.warning('配方目录不存在,已跳过: %s', root)
+            continue
+        for path in sorted(str(p) for p in Path(root).rglob('*.json')):
+            name = os.path.splitext(os.path.basename(path))[0]
+            if name in exact:
+                log.warning('配方文件重名,使用先出现的: %s(忽略 %s)', exact[name], path)
+                continue
+            exact[name] = path
+            normalized.setdefault(normalize_name(name), path)
+    return exact, normalized
+
+
+def _name_index():
+    """按 TTL 刷新名称索引;避免每个材料节点都递归扫描目录。"""
+    now = time.time()
+    if now - _NAME_INDEX['built'] > _NAME_INDEX_TTL:
+        exact, normalized = _build_name_index()
+        _NAME_INDEX.update(built=now, exact=exact, normalized=normalized)
+    return _NAME_INDEX['exact'], _NAME_INDEX['normalized']
 
 
 def find_json_file(name):
+    """查找 {name}.json:先精确匹配,再按归一化名匹配(全角/半角括号、空格差异)。
+
+    索引带 TTL,新建配方文件后无需重启服务;找不到返回 None。
     """
-    在所有配置的根目录及其子目录中递归查找 {name}.json
-    返回找到的完整路径；没找到返回 None
-    """
-    if name in _PATH_LOOKUP_CACHE:
-        return _PATH_LOOKUP_CACHE[name]
-
-    target = f"{name}.json"
-    found_paths = []
-
-    for root in SEARCH_ROOTS:
-        if not os.path.isdir(root):
-            print(f"警告：目录不存在，已跳过: {root}")
-            continue
-
-        for path in Path(root).rglob(target):
-            found_paths.append(str(path))
-
-    if not found_paths:
-        _PATH_LOOKUP_CACHE[name] = None
+    if not name:
         return None
+    exact, normalized = _name_index()
+    path = exact.get(name)
+    if path:
+        return path
+    key = normalize_name(name)
+    path = normalized.get(key)
+    if path:
+        log.info('名称归一化命中: %r -> %s', name, path)
+    return path
 
-    if len(found_paths) > 1:
-        print(f"警告：找到多个 {target}，使用:")
-        for i, p in enumerate(found_paths):
-            marker = "  -> " if i == 0 else "     "
-            print(f"{marker}{p}")
-
-    result = found_paths[0]
-    _PATH_LOOKUP_CACHE[name] = result
-    return result
 
 
 def _load_recipe_json(path):
@@ -155,7 +189,7 @@ def _query_price_map(ids, ctx):
             except (pymysql.Error, OSError) as e:
                 ctx.close()
                 if attempt == 1:
-                    print(f"数据库错误: {e}")
+                    log.error('数据库错误: %s', e)
                     for tid in missing:
                         result.setdefault(tid, (0, 0))
 
@@ -186,7 +220,7 @@ def _query_adjusted_prices(ids, ctx):
                     ctx.adjusted_all = {}
                     break
                 if attempt == 1:
-                    print(f"读取调整价失败: {e}")
+                    log.error('读取调整价失败: %s', e)
                     ctx.adjusted_all = {}
 
     return {tid: ctx.adjusted_all.get(tid) for tid in ids}
@@ -281,7 +315,7 @@ def _query_crafted(data, quantity, tier, ctx):
         # 递归计算原材料成本（基础材料会查询数据库，合成物会继续递归）
         sub_result = query_by_name(sub_name, total_num, _ctx=ctx)
         if sub_result is None:
-            print(f"警告：无法计算材料 {sub_name} 的成本")
+            log.warning('无法计算材料 %s 的成本', sub_name)
             materials.append({
                 'name': sub_name,
                 'id': sub_id,
@@ -351,13 +385,13 @@ def query_by_name(name, quantity=1, _ctx=None):
     try:
         json_path = find_json_file(name)
         if json_path is None:
-            print(f"错误：未找到 {name}.json（已搜索全部配方目录）")
+            log.warning('未找到配方文件: %s.json', name)
             return None
 
         try:
             data = _load_recipe_json(json_path)
         except Exception as e:
-            print(f"JSON 读取/解析失败: {e}")
+            log.error('JSON 读取/解析失败: %s', e)
             return None
 
         tier = data.get('tier', 'P1')
@@ -372,12 +406,30 @@ def query_by_name(name, quantity=1, _ctx=None):
             _ctx.close()
 
 
-def get_catalog():
+_CATALOG_CACHE = {'ts': 0.0, 'data': None}
+CATALOG_TTL = 30.0   # 目录缓存有效期(秒):目录页/组件页/健康页共用,避免每次请求都扫库
+
+
+def invalidate_catalog_cache():
+    """行情更新后主动失效目录缓存,让页面立刻看到新价格。"""
+    _CATALOG_CACHE['ts'] = 0.0
+    _CATALOG_CACHE['data'] = None
+
+
+def get_catalog(use_cache=True):
     """
-    从 items / market_prices 读取所有物品的 ID、name、buy_max、sell_min 和分类,
+    从 items / market_prices 读取所有物品的 ID、name、买卖价与挂单量、分类,
     分类在 update_market.py 入库时已写入 items.category(P1~P4 / categories.json 自定义 / 其他)。
-    返回列表,形如 [{'id':34,'name':'三钛合金','buy_max':9.58,'sell_min':10,'tier':'其他'}, ...]
+    返回列表,形如:
+    [{'id':34,'name':'三钛合金','buy_max':9.58,'buy_min':9.1,'sell_max':10.5,
+      'sell_min':10,'buy_volume':123,'sell_volume':456,'update_time':'...','tier':'矿物'}, ...]
+
+    结果带 30 秒进程内缓存(use_cache=False 可强制读库),多页共用一份目录。
     """
+    if use_cache and _CATALOG_CACHE['data'] is not None \
+            and time.time() - _CATALOG_CACHE['ts'] < CATALOG_TTL:
+        return _CATALOG_CACHE['data']
+
     conn = None
     # 连接偶发中断(转发层抖动)时自动重试一次
     for attempt in (0, 1):
@@ -385,33 +437,42 @@ def get_catalog():
             conn = pymysql.connect(**load_db_config())
             with conn.cursor() as cursor:
                 cursor.execute("""
-                    SELECT i.type_id, i.name, p.buy_max, p.sell_min, p.updated_at, i.category
+                    SELECT i.type_id, i.name, p.buy_max, p.buy_min, p.sell_max, p.sell_min,
+                           p.buy_volume, p.sell_volume, p.updated_at, i.category
                     FROM items i
                     LEFT JOIN market_prices p
                         ON p.type_id = i.type_id AND p.region_id = %s
                     ORDER BY i.name ASC
                 """, (REGION_ID,))
                 rows = cursor.fetchall()
-            return [
+            data = [
                 {
                     'id': row[0],
                     'name': row[1],
-                    'buy_max': row[2],
-                    'sell_min': row[3],
-                    'update_time': str(row[4]) if row[4] is not None else '-',
-                    'tier': row[5] or '其他'
+                    'buy_max': row[2] or 0,
+                    'buy_min': row[3] or 0,
+                    'sell_max': row[4] or 0,
+                    'sell_min': row[5] or 0,
+                    'buy_volume': row[6] or 0,
+                    'sell_volume': row[7] or 0,
+                    'update_time': str(row[8]) if row[8] is not None else '-',
+                    'tier': row[9] or '其他'
                 }
                 for row in rows
             ]
+            if use_cache:
+                _CATALOG_CACHE.update(ts=time.time(), data=data)
+            return data
         except (pymysql.Error, OSError) as e:
             if attempt == 1:
-                print(f"读取目录失败: {e}")
+                log.error('读取目录失败: %s', e)
                 return []
             time.sleep(0.1)
         finally:
             if conn:
                 conn.close()
                 conn = None
+
 
 
 def get_recipes():
@@ -544,7 +605,7 @@ def get_profit_snapshot():
             if getattr(e, 'args', [None])[0] == 1146:
                 return {'updated_at': None, 'items': []}
             if attempt == 1:
-                print(f"读取利润快照失败: {e}")
+                log.error('读取利润快照失败: %s', e)
                 return {'updated_at': None, 'items': []}
             time.sleep(0.1)
         finally:
@@ -585,8 +646,108 @@ def get_price_history(type_id):
             if getattr(e, 'args', [None])[0] == 1146:
                 return []
             if attempt == 1:
-                print(f"读取历史行情失败: {e}")
+                log.error('读取历史行情失败: %s', e)
                 return []
+            time.sleep(0.1)
+        finally:
+            if conn:
+                conn.close()
+                conn = None
+
+
+def _safe_rows(cursor, sql, params=()):
+    """执行统计查询;表不存在(1146,未升级 schema)时返回空列表而不是中断整个自检。"""
+    try:
+        cursor.execute(sql, params)
+        return cursor.fetchall()
+    except pymysql.Error as e:
+        if getattr(e, 'args', [None])[0] == 1146:
+            return []
+        raise
+
+
+def get_health():
+    """数据自检页数据源:行情新鲜度、无报价物品、配方/调整价/历史行情/利润快照覆盖度。
+
+    不写库、不改状态,失败时由调用方统一报错。
+    """
+    items = get_catalog()
+    recipes = get_recipes()
+
+    priced = [i for i in items if (i.get('buy_max') or 0) > 0 or (i.get('sell_min') or 0) > 0]
+    unpriced = sorted(
+        ({'id': i['id'], 'name': i['name'], 'tier': i['tier']}
+         for i in items if not ((i.get('buy_max') or 0) > 0 or (i.get('sell_min') or 0) > 0)),
+        key=lambda x: (x['tier'], x['name']),
+    )
+    category_counts = {}
+    for i in items:
+        category_counts[i['tier']] = category_counts.get(i['tier'], 0) + 1
+
+    recipe_names = {r['name'] for r in recipes if r['outputCount']}
+    craftable = [r for r in recipes if r['outputCount'] and r['inputs']]
+    material_ids = {inp['id'] for r in recipes for inp in r['inputs'] if inp.get('id') is not None}
+
+    health = {
+        'generated_at': time.strftime('%Y-%m-%d %H:%M:%S', time.localtime()),
+        'items': {
+            'total': len(items),
+            'priced': len(priced),
+            'unpriced': len(unpriced),
+            'unpriced_list': unpriced,
+            'without_recipe': len([i for i in items if i['name'] not in recipe_names]),
+            'by_category': dict(sorted(category_counts.items(), key=lambda kv: -kv[1])),
+        },
+        'recipes': {
+            'total': len(recipes),
+            'craftable': len(craftable),
+            'material_ids': len(material_ids),
+        },
+        'market': {'updated_at': None},
+        'adjusted': {'count': 0, 'updated_at': None, 'missing_materials': []},
+        'history': {'rows': 0, 'type_ids': 0, 'from': None, 'to': None},
+        'snapshot': {'count': 0, 'updated_at': None},
+    }
+
+    conn = None
+    for attempt in (0, 1):
+        try:
+            conn = pymysql.connect(**load_db_config())
+            with conn.cursor() as cursor:
+                rows = _safe_rows(
+                    cursor, "SELECT MAX(updated_at) FROM market_prices WHERE region_id = %s",
+                    (REGION_ID,))
+                if rows and rows[0][0]:
+                    health['market']['updated_at'] = str(rows[0][0])
+
+                rows = _safe_rows(cursor, "SELECT type_id, updated_at FROM adjusted_prices")
+                health['adjusted']['count'] = len(rows)
+                adj_time = max((r[1] for r in rows if r[1]), default=None)
+                if adj_time:
+                    health['adjusted']['updated_at'] = str(adj_time)
+                adjusted_ids = {r[0] for r in rows}
+                health['adjusted']['missing_materials'] = sorted(
+                    material_ids - adjusted_ids)
+
+                rows = _safe_rows(
+                    cursor,
+                    "SELECT COUNT(*), COUNT(DISTINCT type_id), MIN(date), MAX(date) FROM price_history")
+                if rows and rows[0][0]:
+                    health['history'].update(
+                        rows=rows[0][0], type_ids=rows[0][1],
+                        **{'from': str(rows[0][2]) if rows[0][2] else None,
+                           'to': str(rows[0][3]) if rows[0][3] else None})
+
+                rows = _safe_rows(
+                    cursor, "SELECT COUNT(*), MAX(updated_at) FROM profit_snapshot")
+                if rows and rows[0][0]:
+                    health['snapshot'].update(
+                        count=rows[0][0],
+                        updated_at=str(rows[0][1]) if rows[0][1] else None)
+            return health
+        except (pymysql.Error, OSError) as e:
+            if attempt == 1:
+                raise
             time.sleep(0.1)
         finally:
             if conn:

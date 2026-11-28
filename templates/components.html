@@ -387,6 +387,7 @@
           <a href="/bom">🧾 清单汇总</a>
           <a href="/profit">💰 利润排行</a>
           <a href="/reprocess">♻️ 垃圾化矿</a>
+          <a href="/admin/health">🩺 数据自检</a>
         </nav>
         <div class="topbar">
             <h1>🛠️ 组件制造计算器</h1>
@@ -508,6 +509,7 @@
     </main>
 </div>
 
+<script src="{{ url_for('static', filename='craft_rules.js') }}"></script>
 <script>
 // ==========================================
 // 组件目录(侧边栏)
@@ -586,39 +588,9 @@ async function loadCatalog() {
 document.getElementById('catalog-search').addEventListener('input', renderList);
 
 // ==========================================
-// 建筑加成数据(来源: 游戏 SDE,经晨曦 ESI dogma 核实)
+// 建筑加成数据(结构 / 改装件 / 安等系数)与成本查询页共用 static/craft_rules.js
 // ==========================================
-// 一座工程综合体最多 3 个改装件槽位;同类改装件不叠加,取最高减免
-// structMe = 材料减免;structFee = 制造安装费减免(只作用于星系成本系数部分)
-const STRUCTURES = [
-    { id: 'station', label: 'NPC 站(无任何减免)',                     size: null, structMe: 0,    structFee: 0 },
-    { id: 'raitaru', label: '莱塔卢(中型 EC,材料 1%,费用 3%)',         size: 'M',  structMe: 0.01, structFee: 0.03 },
-    { id: 'azbel',   label: '阿兹贝尔(大型 EC,材料 1%,费用 4%)',       size: 'L',  structMe: 0.01, structFee: 0.04 },
-    { id: 'sotiyo',  label: '索迪约(超大型 EC,材料 1%,费用 5%)',       size: 'XL', structMe: 0.01, structFee: 0.05 },
-];
-
-// 改装件:base 为基础减免(T1=2.0%, T2=2.4%),scope 为适用的组件分类;size 须与建筑规格匹配
-const RIG_POOL = [
-    { id: 'M-adv1',  size: 'M',  label: '高级组件制造材料效率 I (2.0%)',     base: 0.02,  scope: ['旗舰高级组件', 'T2制造组件'] },
-    { id: 'M-adv2',  size: 'M',  label: '高级组件制造材料效率 II (2.4%)',    base: 0.024, scope: ['旗舰高级组件', 'T2制造组件'] },
-    { id: 'M-cap1',  size: 'M',  label: '基础旗舰组件制造材料效率 I (2.0%)',  base: 0.02,  scope: ['旗舰基础组件'] },
-    { id: 'M-cap2',  size: 'M',  label: '基础旗舰组件制造材料效率 II (2.4%)', base: 0.024, scope: ['旗舰基础组件'] },
-    { id: 'L-adv1',  size: 'L',  label: '高级组件制造效率 I (2.0%)',         base: 0.02,  scope: ['旗舰高级组件', 'T2制造组件'] },
-    { id: 'L-adv2',  size: 'L',  label: '高级组件制造效率 II (2.4%)',        base: 0.024, scope: ['旗舰高级组件', 'T2制造组件'] },
-    { id: 'L-cap1',  size: 'L',  label: '基础旗舰组件制造效率 I (2.0%)',     base: 0.02,  scope: ['旗舰基础组件'] },
-    { id: 'L-cap2',  size: 'L',  label: '基础旗舰组件制造效率 II (2.4%)',    base: 0.024, scope: ['旗舰基础组件'] },
-    { id: 'XL-1',    size: 'XL', label: '建筑和组件制造效率 I (2.0%)',       base: 0.02,  scope: ['旗舰基础组件', '旗舰高级组件', 'T2制造组件'] },
-    { id: 'XL-2',    size: 'XL', label: '建筑和组件制造效率 II (2.4%)',      base: 0.024, scope: ['旗舰基础组件', '旗舰高级组件', 'T2制造组件'] },
-];
-
-const MAX_RIG_SLOTS = 3;  // 工程综合体改装件槽位数
-
-// 安等系数: 改装件效果按星系类别放大 —— 高安 ×1.0 / 低安 ×1.9 / 00与虫洞 ×2.1(EVE 官方论坛确认的数值,仅作用于改装件,不作用于结构固有 1%)
-const SEC_PRESETS = [
-    { id: 'hisec',   label: '高安 (0.5 ~ 1.0) — 改装件系数 ×1.0',        scale: 1.0 },
-    { id: 'lowsec',  label: '低安 (0.1 ~ 0.4) — 改装件系数 ×1.9',        scale: 1.9 },
-    { id: 'nullsec', label: '00 / 虫洞 (-0.0 ~ -1.0) — 改装件系数 ×2.1', scale: 2.1 },
-];
+const { STRUCTURES, RIG_POOL, SEC_PRESETS, MAX_RIG_SLOTS } = CRAFT_RULES;
 
 function selectedRigs() {
     return [...document.querySelectorAll('#rig-box input:checked')]
@@ -626,12 +598,7 @@ function selectedRigs() {
         .filter(Boolean);
 }
 
-// 同类改装件不叠加:对指定分类取所有已装适用改装件中的最高基础减免,再乘安等系数
-function rigBonusFor(tier, rigs, scale) {
-    let best = 0;
-    rigs.forEach(r => { if (r.scope.includes(tier)) best = Math.max(best, r.base); });
-    return best * scale;
-}
+const rigBonusFor = CRAFT_RULES.rigBonusFor;
 
 function buildRigBox() {
     const st = STRUCTURES.find(s => s.id === document.getElementById('structure-select').value);

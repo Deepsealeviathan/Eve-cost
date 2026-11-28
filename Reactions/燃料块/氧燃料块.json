@@ -1,5 +1,55 @@
 {
   "id": 4312,
   "name": "氧燃料块",
-  "tier": "燃料"
+  "tier": "燃料",
+  "recipe": {
+    "outputCount": 40,
+    "inputs": [
+      {
+        "materialId": 17887,
+        "materialname": "氧同位素",
+        "count": 450
+      },
+      {
+        "materialId": 16272,
+        "materialname": "重水",
+        "count": 170
+      },
+      {
+        "materialId": 16273,
+        "materialname": "液化臭氧",
+        "count": 350
+      },
+      {
+        "materialId": 16275,
+        "materialname": "锶包合物",
+        "count": 20
+      },
+      {
+        "materialId": 44,
+        "materialname": "核能燃料",
+        "count": 4
+      },
+      {
+        "materialId": 3689,
+        "materialname": "机械元件",
+        "count": 4
+      },
+      {
+        "materialId": 9832,
+        "materialname": "冷却剂",
+        "count": 9
+      },
+      {
+        "materialId": 3683,
+        "materialname": "氧",
+        "count": 22
+      },
+      {
+        "materialId": 9848,
+        "materialname": "机器人技术",
+        "count": 1
+      }
+    ]
+  }
 }
